@@ -1,24 +1,18 @@
-const CLIENT_ID = 12345
-const TOKEN = 'TOKEN'
-const { REST, Routes } = require('discord.js');
+import { REST, Routes, Client, ClientOptions } from 'discord.js';
+import ready from './listeners/ready';
+import interactionCreate from './listeners/interactionCreate';
+import * as dotenv from 'dotenv'
+dotenv.config()
+const CLIENT_ID = process.env.CLIENT_ID;
+const TOKEN = process.env.TOKEN;
 
-const commands = [
-  {
-    name: 'ping',
-    description: 'Replies with Pong!',
-  },
-];
+console.log("Bot is starting...");
 
-const rest = new REST({ version: '10' }).setToken(TOKEN);
+const client = new Client({
+    intents: []
+});
 
-(async () => {
-  try {
-    console.log('Started refreshing application (/) commands.');
+ready(client);
+interactionCreate(client)
 
-    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-
-    console.log('Successfully reloaded application (/) commands.');
-  } catch (error) {
-    console.error(error);
-  }
-})();
+client.login(TOKEN);

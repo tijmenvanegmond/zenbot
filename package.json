@@ -4,7 +4,8 @@
   "description": "a discord zenbot",
   "main": "dist/bot.js",
   "dependencies": {
-    "discord.js": "^14.8.0"
+    "discord.js": "^14.8.0",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",
