@@ -4,8 +4,11 @@
   "description": "a discord zenbot",
   "main": "dist/bot.js",
   "dependencies": {
+    "@discordjs/voice": "^0.15.0",
     "discord.js": "^14.8.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "ffmpeg-static": "^5.1.0",
+    "libsodium-wrappers": "^0.7.11"
   },
   "devDependencies": {
     "@types/node": "^18.15.11",
@@ -14,7 +17,7 @@
   },
   "scripts": {
     "start": "ts-node src/bot.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node src/test.ts"
   },
   "repository": {
     "type": "git",

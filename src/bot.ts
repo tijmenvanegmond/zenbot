@@ -9,7 +9,8 @@ const TOKEN = process.env.TOKEN;
 console.log("Bot is starting...");
 
 const client = new Client({
-    intents: []
+    //get acces to voicedata, etc
+    intents: [641]
 });
 
 ready(client);
