@@ -46,9 +46,7 @@ async function PlayVoiceLine(voiceChannel: VoiceChannel, voiceLine: VoiceLineDat
     const subscription = connection.subscribe(audioPlayer);
 
     await audioPlayer.play(resource);
-
-    console.log(resource.started);
-
+    
     // subscription could be undefined if the connection is destroyed!
     if (subscription) {
         // Unsubscribe after 8 seconds (stop playing audio on the voice connection)

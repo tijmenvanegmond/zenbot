@@ -20,5 +20,5 @@ const handleSlashCommand = async (client: Client, interaction: CommandInteractio
 
     slashCommand.run(client, interaction);
 
-    console.log('Handled Interaction for command:', interaction.commandName);
+    console.log(`Handled Interaction with:${interaction.member?.user.username} for command:${interaction.commandName}`, );
 }; 
