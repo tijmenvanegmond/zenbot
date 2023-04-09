@@ -1,7 +1,8 @@
-import { REST, Routes, Client, ClientOptions } from 'discord.js';
+import { Client } from 'discord.js';
+import * as dotenv from 'dotenv'
 import ready from './listeners/ready';
 import interactionCreate from './listeners/interactionCreate';
-import * as dotenv from 'dotenv'
+import { VoiceLineDataCollection } from './voice/voiceLineData';
 dotenv.config()
 const CLIENT_ID = process.env.CLIENT_ID;
 const TOKEN = process.env.TOKEN;
@@ -15,5 +16,4 @@ const client = new Client({
 
 ready(client);
 interactionCreate(client)
-
 client.login(TOKEN);
