@@ -10,6 +10,7 @@ export default (client: Client): void => {
 };
 
 const handleSlashCommand = async (client: Client, interaction: CommandInteraction): Promise<void> => {
+    console.log(`Started Interaction with:${interaction.member?.user.username} for command:${interaction.commandName}`, );
     const slashCommand = CommandCollection.find(c => c.name === interaction.commandName);
     if (!slashCommand) {
         interaction.followUp({ content: "An error has occurred" });
@@ -17,8 +18,5 @@ const handleSlashCommand = async (client: Client, interaction: CommandInteractio
     }
 
     await interaction.deferReply();
-
     slashCommand.run(client, interaction);
-
-    console.log(`Handled Interaction with:${interaction.member?.user.username} for command:${interaction.commandName}`, );
 }; 

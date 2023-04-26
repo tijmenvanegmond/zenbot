@@ -12,13 +12,13 @@ export const Advice: Command = {
         const member = interaction?.member as GuildMember;
 
         const voiceline = VoiceLineDataCollection[Math.floor(Math.random() * VoiceLineDataCollection.length)];
-        console.log("Selected Advice:\""+voiceline.text+"\"");
 
         if (!member?.voice?.channelId) {
-           
+            console.log("reply-ing in text with advice:\""+voiceline.text+"\"");
             return await interaction.followUp({ content: voiceline.text, ephemeral: true })
         }
 
+        console.log("Joining voice-channel to give advice:\""+voiceline.text+"\"");
         PlayVoiceLine(member.voice.channel as VoiceChannel, voiceline)
 
         const content = "consider this..";
@@ -54,6 +54,7 @@ async function PlayVoiceLine(voiceChannel: VoiceChannel, voiceLine: VoiceLineDat
             subscription.unsubscribe()
             connection.disconnect()
             connection.destroy()
+            console.log(`leftvoice`);
         },
             voiceLine.length);
     }
