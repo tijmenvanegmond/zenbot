@@ -19,12 +19,13 @@
     "typescript": "^5.0.2"
   },
   "devDependencies": {
-    "@types/node": "^18.15.11",
-
+    "@types/node": "^18.15.11"
   },
   "scripts": {
     "start": "ts-node src/bot.ts",
-    "test": "ts-node src/test.ts"
+    "test": "ts-node src/test.ts",
+    "build:digitalocean": "npm install --production=false && npm run build && npm ci"
+
   },
   "repository": {
     "type": "git",
