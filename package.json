@@ -24,8 +24,7 @@
   "scripts": {
     "start": "ts-node src/bot.ts",
     "test": "ts-node src/test.ts",
-    "build:digitalocean": "npm install --production=false && npm run build && npm ci"
-
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
