@@ -13,7 +13,7 @@
         {
             "text": "If you do not bend...you break.",
             "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/0b/Zenyatta_-_If_you_do_not_bend%2C_you_break.ogg/revision/latest?cb=20170217142923",
-            "length": 4000
+            "length": 5000
         },
         {
             "text": "In anger, you defeat only yourself.",
@@ -58,7 +58,7 @@
         {
             "text": "Embrace the rhythm. Embrace the beat. Embrace the melody. Move your feet.",
             "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/e1/Zenyatta_move_your_feet.ogg/revision/latest?cb=20190129113707",
-            "length": 5000
+            "length": 8000
         }
     ]
 }

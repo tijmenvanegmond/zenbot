@@ -9,7 +9,7 @@
         "importHelpers": true,
         "experimentalDecorators": true,
         "esModuleInterop": true,
-        "skipLibCheck": true,
+        "skipLibCheck": false,
         "allowSyntheticDefaultImports": true,
         "resolveJsonModule": true,
         "forceConsistentCasingInFileNames": true,
