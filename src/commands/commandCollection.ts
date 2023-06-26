@@ -1,6 +1,6 @@
 import { Command } from "./command";
 import { Advice } from "./advice";
-import { Hello } from "./hello";
-import { Ping } from "./ping";
+import { Rename } from "./rename";
 
-export const CommandCollection: Command[] = [Hello, Ping, Advice]; 
+
+export const CommandCollection: Command[] = [Advice, Rename]; 

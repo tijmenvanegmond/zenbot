@@ -1,24 +1,25 @@
-import { CommandInteraction, Client, ApplicationCommandType, GuildMember, Channel, VoiceChannel } from "discord.js";
+import { CommandInteraction, Client,  GuildMember, VoiceChannel, SlashCommandBuilder } from "discord.js";
 import { Command } from "./command";
 import { StreamType, createAudioPlayer, createAudioResource, joinVoiceChannel } from '@discordjs/voice';
 import { VoiceLineData, VoiceLineDataCollection } from "../voice/voiceLineData";
 
 export const Advice: Command = {
-    name: "advice",
-    description: "Zen has an answer for everything (make sure you are in a voice channel)",
-    type: ApplicationCommandType.ChatInput,
-    run: async (client: Client, interaction: CommandInteraction) => {
+    data: new SlashCommandBuilder()
+        .setName("advice")
+        .setDescription("Zen has an answer for everything (make sure you are in a voice channel)"),
+
+    execute: async (client: Client, interaction: CommandInteraction) => {
 
         const member = interaction?.member as GuildMember;
 
         const voiceline = VoiceLineDataCollection[Math.floor(Math.random() * VoiceLineDataCollection.length)];
 
         if (!member?.voice?.channelId) {
-            console.log("reply-ing in text with advice:\""+voiceline.text+"\"");
+            console.log("reply-ing in text with advice:\"" + voiceline.text + "\"");
             return await interaction.followUp({ content: voiceline.text, ephemeral: true })
         }
 
-        console.log("Joining voice-channel to give advice:\""+voiceline.text+"\"");
+        console.log("Joining voice-channel to give advice:\"" + voiceline.text + "\"");
         PlayVoiceLine(member.voice.channel as VoiceChannel, voiceline)
 
         const content = "consider this..";
@@ -46,7 +47,7 @@ async function PlayVoiceLine(voiceChannel: VoiceChannel, voiceLine: VoiceLineDat
     const subscription = connection.subscribe(audioPlayer);
 
     await audioPlayer.play(resource);
-    
+
     // subscription could be undefined if the connection is destroyed!
     if (subscription) {
         // Unsubscribe after 8 seconds (stop playing audio on the voice connection)
