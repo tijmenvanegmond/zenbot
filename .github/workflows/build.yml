@@ -1,0 +1,30 @@
+name: Build
+
+on:
+  push:
+    branches:
+     - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v3
+      
+    - name: Install Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+    - name: Run Build
+      run: |
+        npm ci -d
+        npm run build
+        
+    - name: Deploy 🚀
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        repository: ./dist
+        branch: build
+        create_branch: true
