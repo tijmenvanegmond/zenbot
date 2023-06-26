@@ -13,11 +13,9 @@ const client = new Client({
     intents: [GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] //GatewayIntentBits.GuildPresences]
 });
 
-//runlisteners
+//run listeners
 onReady(client);
 onInteractionCreate(client)
 onVoiceChannelUpdate(client)
 
 client.login(TOKEN);
-
-
