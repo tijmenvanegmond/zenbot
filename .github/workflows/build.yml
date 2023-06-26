@@ -21,13 +21,9 @@ jobs:
       run: |
         npm ci -d
         npm run build
-
-        git add dist -f
         
-    - name: Deploy 🚀
-      uses: stefanzweifel/git-auto-commit-action@v4
+    - name: Commit Build
+      uses: EndBug/add-and-commit@v9
       with:
-        repository: ./dist
-        branch: build
-        commit_options: '-f'
-        create_branch: true
+        add: 'dist'
+        new_branch: build
