@@ -21,7 +21,7 @@
         "baseUrl": "./"
     },
     "files": [
-        "src/bot.ts"
+        "src/app.ts"
     ],
     "include": [
         "./**/*.ts"

@@ -6,7 +6,7 @@ import onVoiceChannelUpdate from './listeners/onVoiceChannelUpdate';
 dotenv.config()
 const TOKEN = process.env.TOKEN;
 
-console.log("Bot is starting...");
+console.log("Zenbot is starting...");
 
 const client = new Client({
     //get acces to voicedata, etc
