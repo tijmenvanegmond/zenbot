@@ -21,10 +21,11 @@ jobs:
       run: |
         npm ci -d
         npm run build
+        git add dist
         
     - name: Deploy 🚀
       uses: stefanzweifel/git-auto-commit-action@v4
       with:
-        # repository: ./dist
+        repository: ./dist
         branch: build
         create_branch: true
