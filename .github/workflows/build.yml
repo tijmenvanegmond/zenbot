@@ -21,7 +21,7 @@ jobs:
       run: |
         npm ci -d
         npm run build
-        
+
         git add dist -f
         
     - name: Deploy 🚀
@@ -29,4 +29,5 @@ jobs:
       with:
         repository: ./dist
         branch: build
+        commit_options: '-f'
         create_branch: true
