@@ -10,7 +10,14 @@ console.log("Zenbot is starting...");
 
 const client = new Client({
     //get acces to voicedata, etc
-    intents: [GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildVoiceStates] //GatewayIntentBits.GuildPresences]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers, 
+        GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildMessages,
+		//GatewayIntentBits.MessageContent,
+        //GatewayIntentBits.GuildPresences
+    ]
 });
 
 //run listeners

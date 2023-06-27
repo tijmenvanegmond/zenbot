@@ -22,7 +22,7 @@
     "@types/node": "^18.15.11"
   },
   "scripts": {
-    "start": "ts-node src/bot.ts",
+    "start": "ts-node src/app.ts",
     "test": "ts-node src/test.ts",
     "build": "tsc"
   },
