@@ -1,4 +1,4 @@
-import { Client, Events, GuildMember, VoiceBasedChannel, VoiceChannel, VoiceState } from "discord.js";
+import { Client, Events, GuildMember, VoiceBasedChannel, VoiceState } from "discord.js";
 
 const VOICE_CHANNEL_ID = "1120775680624443413";
 
@@ -8,11 +8,16 @@ export default (client: Client): void => {
         const botUser = member?.user.bot;
 
         if (botUser) {
-            console.log(`Ignoring bot user ${member?.displayName}`);
+            console.log(`Ignoring channel change: user ${member?.displayName} is a bot`);
             return;
         }
 
-        console.log(`user ${member?.displayName} moved from ${oldState.channelId} to ${newState.channelId}  `);
+        if (oldState.channelId === newState.channelId) {
+            console.log(`Ignoring channel change: channnel id didn't change`);
+            return;
+        }
+
+        console.log(`user ${member?.displayName} moved from ${oldState.channelId} to ${newState.channelId}`);
 
         if (newState.channelId === VOICE_CHANNEL_ID) {
             //user joined
@@ -25,7 +30,7 @@ export default (client: Client): void => {
             updateChannel(channel, newState.member!)
         }
         else {
-            console.log(`Ignoring channel change`)
+            console.log(`Ignoring channel change: channelId doesn't match id:${VOICE_CHANNEL_ID}`)
         }
     });
 };
@@ -98,7 +103,7 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
             possibleNames.push("Pair of Legends");
             possibleNames.push("Dynamic Dorks");
             possibleNames.push("The Dual Delinquents");
-            possibleNames.push(`${memberNames[0]} & ${memberNames[0]}'s Get Together`)
+            possibleNames.push(`${memberNames[0]} & ${memberNames[1]}'s Get Together`)
             break;
         case 3:
             possibleNames.push("Trio of Trolls");
