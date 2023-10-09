@@ -1,2 +1,2 @@
 # zenbot
-Discord zen voice bot
+A Discord Zenyatta voice bot.
