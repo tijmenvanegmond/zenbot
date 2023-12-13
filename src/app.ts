@@ -12,13 +12,15 @@ const client = new Client({
     //get acces to voicedata, etc
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers, 
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates,
-		GatewayIntentBits.GuildMessages,
-		//GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessages,
+        //GatewayIntentBits.MessageContent,
         //GatewayIntentBits.GuildPresences
     ]
 });
+
+
 
 //run listeners
 onReady(client);
