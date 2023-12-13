@@ -29,9 +29,10 @@ export const TTS: Command = {
         let ttsPyOptions = {
             args: [text]
         };
-
-        await PythonShell.run('src/tts.py', ttsPyOptions); //writes to output.mp3
-
+        console.log("Passing text to a tts-python script");
+        var result = await PythonShell.run('src/tts2.py', ttsPyOptions); //writes to output.mp3
+            
+        console.log(result);
         console.log("Joining voice-channel to tts");
 
         PlayVoiceLine(member.voice.channel as VoiceChannel);
@@ -45,7 +46,7 @@ export const TTS: Command = {
 };
 
 
-async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.mp3") {
+async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.wav") {
     const resource = createAudioResource(__dirname, {
         inputType: StreamType.Arbitrary,
     });
@@ -70,7 +71,7 @@ async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.m
             connection.destroy()
             console.log(`Zenbot left voice channel`);
         },
-            8000);
+            20000);
     }
 
 }

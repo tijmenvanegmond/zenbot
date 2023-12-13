@@ -4,7 +4,7 @@
   "description": "a discord zenbot",
   "main": "dist/bot.js",
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "dependencies": {
     "@discordjs/voice": "^0.15.0",

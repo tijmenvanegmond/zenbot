@@ -5,6 +5,8 @@ engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 
+print("Using voice" + voices[0].name)
+
 rate = 180
 engine.setProperty('rate', rate)     # setting up voice rate
 
