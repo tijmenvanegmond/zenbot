@@ -30,7 +30,7 @@ export const TTS: Command = {
             args: [text]
         };
         console.log("Passing text to a tts-python script");
-        var result = await PythonShell.run('src/tts2.py', ttsPyOptions); //writes to output.mp3
+        var result = await PythonShell.run('src/tts.py', ttsPyOptions); //writes to output.mp3
             
         console.log(result);
         console.log("Joining voice-channel to tts");
@@ -46,7 +46,7 @@ export const TTS: Command = {
 };
 
 
-async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.wav") {
+async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.mp3") {
     const resource = createAudioResource(__dirname, {
         inputType: StreamType.Arbitrary,
     });
@@ -62,16 +62,23 @@ async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.w
 
     await audioPlayer.play(resource);
 
-    // subscription could be undefined if the connection is destroyed!
-    if (subscription) {
-        // Unsubscribe after 8 seconds (stop playing audio on the voice connection)
-        setTimeout(() => {
-            subscription.unsubscribe()
-            connection.disconnect()
-            connection.destroy()
-            console.log(`Zenbot left voice channel`);
-        },
-            20000);
-    }
+    leaveChannelAfter();
 
+    function leaveChannelAfter() {
+        if (subscription) {
+            // Unsubscribe after done playing
+            setTimeout(() => {
+                if (resource.ended) { //done playing
+                    subscription.unsubscribe();
+                    connection.disconnect();
+                    connection.destroy();
+                    console.log(`Zenbot left voice channel`);
+                } else {
+                    leaveChannelAfter();
+                }
+            },
+                //check every second
+                1000);
+        }
+    }
 }

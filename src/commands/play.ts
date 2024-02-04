@@ -1,28 +1,39 @@
-import { CommandInteraction, Client,  GuildMember, VoiceChannel, SlashCommandBuilder } from "discord.js";
+import { CommandInteraction, Client, GuildMember, VoiceChannel, SlashCommandBuilder, CommandInteractionOptionResolver } from "discord.js";
 import { Command } from "./command";
 import { StreamType, createAudioPlayer, createAudioResource, joinVoiceChannel } from '@discordjs/voice';
-import { VoiceLineData, VoiceLineDataCollection } from "../voice/voiceLineData";
+import { PythonShell } from 'python-shell';
 
-export const Advice: Command = {
+
+export const play: Command = {
     data: new SlashCommandBuilder()
-        .setName("advice")
-        .setDescription("Zen has an answer for everything (make sure you are in a voice channel)"),
+        .setName("play")
+        .setDescription("plays an audio file"),
 
     execute: async (client: Client, interaction: CommandInteraction) => {
 
         const member = interaction?.member as GuildMember;
 
-        const voiceline = VoiceLineDataCollection[Math.floor(Math.random() * VoiceLineDataCollection.length)];
-
         if (!member?.voice?.channelId) {
-            console.log("reply-ing in text with advice:\"" + voiceline.text + "\"");
-            return await interaction.followUp({ content: voiceline.text, ephemeral: true })
+            console.log("reply-ing in text");
+            return await interaction.followUp({ content: "You have to be in voice to use this", ephemeral: true })
         }
 
-        console.log("Joining voice-channel to give advice:\"" + voiceline.text + "\"");
-        PlayVoiceLine(member.voice.channel as VoiceChannel, voiceline)
+        let options = interaction.options as CommandInteractionOptionResolver
+        let text = options.getString('tts_text') || "no text provided";
 
-        const content = "consider this..";
+
+        let ttsPyOptions = {
+            args: [text]
+        };
+
+        var result = await PythonShell.run('src/tts2.py', ttsPyOptions); //writes to output.mp3
+            
+        console.log(result);
+        console.log("Joining voice-channel to tts");
+
+        PlayVoiceLine(member.voice.channel as VoiceChannel);
+
+        const content = "attemting to TTS";
         await interaction.followUp({
             ephemeral: true,
             content
@@ -31,9 +42,8 @@ export const Advice: Command = {
 };
 
 
-async function PlayVoiceLine(voiceChannel: VoiceChannel, voiceLine: VoiceLineData) {
-
-    const resource = createAudioResource(voiceLine.voiceUri, {
+async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.wav") {
+    const resource = createAudioResource(__dirname, {
         inputType: StreamType.Arbitrary,
     });
 

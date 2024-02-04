@@ -13,7 +13,8 @@ export default (client: Client): void => {
         }
 
         if (oldState.channelId === newState.channelId) {
-            console.log(`Ignoring channel change: channnel id didn't change`);
+            //no change in channelId
+            //console.log(`Ignoring channel change: channnel id didn't change`);
             return;
         }
 
@@ -30,7 +31,7 @@ export default (client: Client): void => {
             updateChannel(channel, newState.member!)
         }
         else {
-            console.log(`Ignoring channel change: channelId doesn't match id:${VOICE_CHANNEL_ID}`)
+            //console.log(`Ignoring channel change: channelId doesn't match id:${VOICE_CHANNEL_ID}`)
         }
     });
 };
