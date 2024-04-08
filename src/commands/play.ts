@@ -33,10 +33,9 @@ export const play: Command = {
 
         PlayVoiceLine(member.voice.channel as VoiceChannel);
 
-        const content = "attemting to TTS";
         await interaction.followUp({
             ephemeral: true,
-            content
+            content: `Attemting to Play Voice Line in Voice Channel ${member.voice.channel?.name}`
         });
     }
 };

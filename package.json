@@ -1,6 +1,6 @@
 {
   "name": "zenbot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "a discord zenbot",
   "main": "dist/bot.js",
   "engines": {
@@ -9,18 +9,18 @@
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.15.0",
+    "@google-cloud/text-to-speech": "^5.0.2",
     "discord.js": "^14.8.0",
     "dotenv": "^16.0.3",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
     "npm": "^9.6.5",
     "python-shell": "^5.0.0",
-    "run": "^1.4.0",
-    "start": "^5.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2"
   },
-  "devDependencies": {
+  "devDependencies": {    
+    "prettier": "^3.2.5",
     "@types/node": "^18.15.11"
   },
   "scripts": {

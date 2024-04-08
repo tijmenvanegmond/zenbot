@@ -4,7 +4,7 @@ import onReady from './listeners/onReady';
 import onInteractionCreate from './listeners/onInteractionCreate';
 import onVoiceChannelUpdate from './listeners/onVoiceChannelUpdate';
 dotenv.config()
-const TOKEN = process.env.TOKEN;
+const DISOCRD_API_TOKEN = process.env.DISOCRD_API_TOKEN;
 
 console.log("Zenbot is starting...");
 
@@ -27,4 +27,4 @@ onReady(client);
 onInteractionCreate(client)
 onVoiceChannelUpdate(client)
 
-client.login(TOKEN);
+client.login(DISOCRD_API_TOKEN);
