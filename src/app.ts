@@ -6,6 +6,7 @@ import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
 dotenv.config();
 const DISOCRD_API_TOKEN = process.env.DISOCRD_API_TOKEN;
+const LOG_LEVEL = process.env.LOG_LEVEL;
 
 console.log("Zenbot is starting...");
 
@@ -29,7 +30,7 @@ discordClient.login(DISOCRD_API_TOKEN);
 
 //A small server for health checks
 const fastify = Fastify({
-  logger: false,
+  logger: LOG_LEVEL === "DEBUG",
 });
 
 // Declare a route

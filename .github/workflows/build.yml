@@ -21,9 +21,3 @@ jobs:
       run: |
         npm ci -d
         npm run build
-        
-    - name: Commit Build
-      uses: EndBug/add-and-commit@v9
-      with:
-        add: 'dist -f'
-        new_branch: build
