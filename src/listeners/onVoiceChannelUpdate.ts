@@ -91,22 +91,20 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
 
   //wild cards
   possibleNames.push("Pixel Purgatory");
-  possibleNames.push("Nerdvana Lounge");
-  possibleNames.push("The Geek Grotto");
-  possibleNames.push("Gaming Asylum");
-  possibleNames.push("The LAN Party Lair");
   possibleNames.push("Rage Quit Retreat");
-  possibleNames.push("Level Up Lounge");
 
   let numMembers = memberNames.length;
   console.log(`There's ${numMembers} in the voice channel`);
   switch (numMembers) {
     case 0:
       possibleNames.push("Empty Lounge");
-      possibleNames.push("Empty Lounge");
-      possibleNames.push("Empty Lounge");
-      possibleNames.push("Empty Lounge");
-      possibleNames.push("Empty Lounge");
+      possibleNames.push("No one here but us chickens");
+      possibleNames.push("Ghost Town");
+      possibleNames.push("The Void");
+      possibleNames.push("The Abyss");
+      possibleNames.push("Empty Space");
+      possibleNames.push("Pending Removal");
+      possibleNames.push("Server cost");
       possibleNames.push("404 Lounge");
       break;
     case 1:
@@ -119,9 +117,6 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
       possibleNames.push("One-Man Lounge");
       possibleNames.push(`Only 1?, Lamesauce`);
       possibleNames.push(`Omg you reading this?`);
-      possibleNames.push(`-<:[[${memberNames[0]}'s here]]>-`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
       possibleNames.push(`${memberNames[0]}'s Lounge`);
       possibleNames.push(`${memberNames[0]}'s Lounge`);
       possibleNames.push(`${memberNames[0]}'s Lounge`);
@@ -141,6 +136,9 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
       possibleNames.push("Pair of Legends");
       possibleNames.push("Dynamic Dorks");
       possibleNames.push("The Dual Delinquents");
+      possibleNames.push(
+        `${memberNames[0]} & ${memberNames[1]}`
+      );
       possibleNames.push(
         `${memberNames[0]} & ${memberNames[1]}'s Get Together`
       );

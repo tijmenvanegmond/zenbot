@@ -74,13 +74,14 @@ async function ListenToVoiceChannel(
     });
 
     console.log(`User ${userId} stopped speaking`);
-    
 
-    for (let i = 0; i < audioStreamCollection.length; i++) {
-      const audioBuffer = audioStreamCollection[i];
-      let result = audioBuffer;
-      writeStream.write(result);
-    }
+    const audioBuffer = audioStreamCollection[1];
+    writeStream.write(audioBuffer);
+    // for (let i = 0; i < audioStreamCollection.length; i++) {
+    //   const audioBuffer = audioStreamCollection[i];
+    //   writeStream.write(audioBuffer);
+    // }
+    
     writeStream.end();
     console.log(`The file ${fileName} was saved!`);
   });
