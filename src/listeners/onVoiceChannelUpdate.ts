@@ -125,7 +125,6 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
       possibleNames.push(`${memberNames[0]}'s Lounge`);
       possibleNames.push(`${memberNames[0]}'s Lounge`);
       possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
       break;
     case 2:
       possibleNames.push("Dynamic Duo");
