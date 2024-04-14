@@ -7,6 +7,7 @@ import Fastify from "fastify";
 dotenv.config();
 const DISOCRD_API_TOKEN = process.env.DISOCRD_API_TOKEN;
 const LOG_LEVEL = process.env.LOG_LEVEL;
+const PORT = process.env.PORT;
 
 console.log("Zenbot is starting...");
 
@@ -35,16 +36,14 @@ const fastify = Fastify({
 
 // Declare a route
 fastify.get("/", async function handler(request, reply) {
-  return {
-    numberOfGuilds: discordClient.guilds.cache.size,
-    uptime: discordClient.uptime,
-  };
+  reply
+    .code(200)
+    .header("Content-Type", "application/json; charset=utf-8")
+    .send({
+      numberOfGuilds: discordClient.guilds.cache.size,
+      uptimeInSeconds: discordClient.uptime! / 1000,
+    });
 });
 
 // Run the server!
-try {
-  fastify.listen({ port: 8080 });
-} catch (err) {
-  fastify.log.error(err);
-  process.exit(1);
-}
+fastify.listen({ host: "0.0.0.0", port: Number(PORT) });
