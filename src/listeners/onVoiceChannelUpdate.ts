@@ -89,12 +89,12 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
   if (channel.members.some((m) => m.user.id === "299595170767306752"))
     possibleNames.push("Discord Jerkoff Session");
 
+  let numMembers = memberNames.length;
+  console.log(`There's ${numMembers} in the voice channel`);
+  
   //wild cards
   possibleNames.push("Pixel Purgatory");
   possibleNames.push("Rage Quit Retreat");
-
-  let numMembers = memberNames.length;
-  console.log(`There's ${numMembers} in the voice channel`);
   switch (numMembers) {
     case 0:
       possibleNames.push("Empty Lounge");
@@ -135,9 +135,7 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
       possibleNames.push("Pair of Legends");
       possibleNames.push("Dynamic Dorks");
       possibleNames.push("The Dual Delinquents");
-      possibleNames.push(
-        `${memberNames[0]} & ${memberNames[1]}`
-      );
+      possibleNames.push(`${memberNames[0]} & ${memberNames[1]}`);
       possibleNames.push(
         `${memberNames[0]} & ${memberNames[1]}'s Get Together`
       );

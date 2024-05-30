@@ -17,15 +17,17 @@ export const Rename: Command = {
     execute: async (client: Client, interaction: CommandInteraction) => {
         let options = interaction.options as CommandInteractionOptionResolver
         let member = options.getMember('user_to_rename') as GuildMember;
-        let newNickname = options.getString('new_nickname');
+        const newNickname = options.getString('new_nickname');
+        const oldNickname = member.nickname;
 
-        console.log(`Changing user:${member.nickname}'s nickname to:"${newNickname}"`);
+
+        console.log(`Changing user:${oldNickname}'s nickname to:"${newNickname}"`);
 
         try {
-            await member.setNickname(options.getString('new_nickname'));
+            await member.setNickname(newNickname);
             await interaction.followUp({
                 ephemeral: true,
-                content: `Changed user:${member.nickname}'s nickname to:"${newNickname}"`
+                content: `Changed user:${oldNickname}'s nickname to:"${newNickname}"`
             });
         } catch (error) {
             let message = `Failed to change user:${member.nickname}'s nickname to:"${newNickname}"!`

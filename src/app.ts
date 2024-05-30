@@ -4,6 +4,7 @@ import onReady from "./listeners/onReady";
 import onInteractionCreate from "./listeners/onInteractionCreate";
 import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
+import onPlayerUpdate from "./listeners/onPlayerUpdate";
 dotenv.config();
 const DISOCRD_API_TOKEN = process.env.DISOCRD_API_TOKEN;
 const LOG_LEVEL = process.env.LOG_LEVEL;
@@ -27,6 +28,7 @@ const discordClient = new Client({
 onReady(discordClient);
 onInteractionCreate(discordClient);
 onVoiceChannelUpdate(discordClient);
+onPlayerUpdate(discordClient);
 discordClient.login(DISOCRD_API_TOKEN);
 
 //A small server for health checks
