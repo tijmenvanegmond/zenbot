@@ -47,5 +47,9 @@ fastify.get("/", async function handler(request, reply) {
     });
 });
 
+fastify.get("/ping", async function handler(request, reply) {
+  reply.code(200).send("pong")
+});
+
 // Run the server!
 fastify.listen({ host: "0.0.0.0", port: Number(PORT) });

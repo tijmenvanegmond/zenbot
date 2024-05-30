@@ -32,19 +32,17 @@ export const Advice: Command = {
 
 
 async function PlayVoiceLine(voiceChannel: VoiceChannel, voiceLine: VoiceLineData) {
-
-    const resource = createAudioResource(voiceLine.voiceUri, {
-        inputType: StreamType.Arbitrary,
-    });
-
     const connection = joinVoiceChannel({
         channelId: voiceChannel.id,
         guildId: voiceChannel.guildId,
         adapterCreator: voiceChannel.guild.voiceAdapterCreator,
     });
-
     const audioPlayer = createAudioPlayer();
     const subscription = connection.subscribe(audioPlayer);
+
+    const resource = createAudioResource(voiceLine.voiceUri, {
+        inputType: StreamType.Arbitrary,
+    });
 
     await audioPlayer.play(resource);
 
