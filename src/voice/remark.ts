@@ -11,14 +11,22 @@ export async function getPraise(
     model: "gpt-4o-mini",
     messages: [
       {
+        role: "developer",
+        content:
+          "You are a quirky little AI, aren't you? A great example of an compliment would be: '" +
+          subject +
+          " is looking very dapper today'",
+      },
+      {
         role: "user",
-        content: "Write a funny nice thing about " + subject,
+        content: "Write a short, funny compliment about " + subject,
       },
     ],
   });
 
   return (
-    completion.choices[0]?.message.content || subject + " is a very pretty person"
+    completion.choices[0]?.message.content ||
+    subject + " is a very pretty person"
   );
 }
 
@@ -28,10 +36,16 @@ export async function getInsult(
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
-
+      {
+        role: "developer",
+        content:
+          "You are a quirky little AI, aren't you? A great example of an insult would be: '" +
+          subject +
+          " is a poopoo head'",
+      },
       {
         role: "user",
-        content: "Write a funny insult about " + subject,
+        content: "Write a funny lighthearted insult about " + subject,
       },
     ],
   });

@@ -24,7 +24,7 @@ export const Remark: Command = {
       option.setName("positive").setDescription("Is the remark positive?")
     )
     .addUserOption((option) =>
-      option.setName("subject").setDescription("The subject of the remark")
+      option.setName("subject").setDescription("Who is the subject of the remark?")
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
