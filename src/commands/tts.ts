@@ -7,13 +7,9 @@ import {
   CommandInteractionOptionResolver,
 } from "discord.js";
 import { Command } from "./command";
-import {
-  StreamType,
-  createAudioPlayer,
-  createAudioResource,
-  joinVoiceChannel,
-} from "@discordjs/voice";
-import { PythonShell } from "python-shell";
+import { StreamType, createAudioPlayer, createAudioResource, joinVoiceChannel } from '@discordjs/voice';
+import { turnTextIntoSpeechBuffer } from "../voice/tts";
+
 
 export const TTS: Command = {
   data: new SlashCommandBuilder()
@@ -37,17 +33,10 @@ export const TTS: Command = {
     let options = interaction.options as CommandInteractionOptionResolver;
     let text = options.getString("tts_text") || "no text provided";
 
-    let ttsPyOptions = {
-      args: [text],
-    };
+        await turnTextIntoSpeechBuffer(text);
+        console.log("Joining voice-channel to tts");
 
-    console.log("Passing text to a tts-python script");
-    var result = await PythonShell.run("src/tts.py", ttsPyOptions); //writes to output.mp3
-
-    console.log(result);
-    console.log("Joining voice-channel to tts");
-
-    PlayVoiceLine(member.voice.channel as VoiceChannel);
+        PlayVoiceLine(member.voice.channel as VoiceChannel, );
 
     await interaction.followUp({
       ephemeral: true,
@@ -56,13 +45,10 @@ export const TTS: Command = {
   },
 };
 
-async function PlayVoiceLine(
-  voiceChannel: VoiceChannel,
-  __dirname = "./output.mp3"
-) {
-  const resource = createAudioResource(__dirname, {
-    inputType: StreamType.Arbitrary,
-  });
+async function PlayVoiceLine(voiceChannel: VoiceChannel, __dirname = "./output.opus") {
+    const resource = createAudioResource(__dirname, {
+        inputType: StreamType.Opus,
+    });
 
   const connection = joinVoiceChannel({
     channelId: voiceChannel.id,
@@ -73,28 +59,17 @@ async function PlayVoiceLine(
   const audioPlayer = createAudioPlayer();
   const subscription = connection.subscribe(audioPlayer);
 
-  await audioPlayer.play(resource);
+    audioPlayer.play(resource);
 
-  leaveChannelAfter();
-
-  function leaveChannelAfter() {
-    if (subscription) {
-      // Unsubscribe after done playing
-      setTimeout(
-        () => {
-          if (resource.ended) {
-            //done playing
-            subscription.unsubscribe();
-            connection.disconnect();
-            connection.destroy();
+    audioPlayer.on('stateChange', (oldState, newState) => {
+        console.log(`Audio player transitioned from ${oldState.status} to ${newState.status}`);
+        if (newState.status === 'idle') {
+            if(subscription)
+                subscription.unsubscribe();
+            connection.disconnect()
+            connection.destroy()
             console.log(`Zenbot left voice channel`);
-          } else {
-            leaveChannelAfter();
-          }
-        },
-        //check every second
-        1000
-      );
-    }
-  }
+        };
+    });
+
 }

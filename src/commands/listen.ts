@@ -8,7 +8,6 @@ import {
 } from "discord.js";
 import { Command } from "./command";
 import { joinVoiceChannel } from "@discordjs/voice";
-import { OpusEncoder } from "@discordjs/opus";
 import * as fs from "fs";
 
 const OUTPUT_FILE = "listen-test.opus";
@@ -56,7 +55,6 @@ async function ListenToVoiceChannel(
 
   let reciever = connection.receiver;
 
-  const encoder = new OpusEncoder(48000, 2);
   let audioStreamCollection: Buffer[] = [];
 
   reciever.speaking.on("start", (userId) => {

@@ -1,23 +1,21 @@
 {
   "name": "zenbot",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "a discord zenbot",
   "main": "dist/bot.js",
   "engines": {
     "node": "20.x"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.9.0",
-    "@discordjs/voice": "^0.15.0",
-    "@google-cloud/text-to-speech": "^5.0.2",
-    "discord.js": "^14.8.0",
+    "@discordjs/voice": "^0.18.0",
+    "discord.js": "^14.17",
     "dotenv": "^16.0.3",
     "fastify": "^4.26.2",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
-    "python-shell": "^5.0.0",
+    "openai": "^4.77.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.2"
+    "typescript": "^5.7.2"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -41,7 +39,7 @@
     "voice",
     "zen"
   ],
-  "author": "",
+  "author": "Tijmen van Egmond",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/tijmenvanegmond/zenbot/issues"
