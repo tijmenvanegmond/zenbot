@@ -14,6 +14,8 @@ import {
   joinVoiceChannel,
 } from "@discordjs/voice";
 import { turnTextIntoSpeechBuffer } from "../voice/tts";
+import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
+import path from "node:path";
 
 export const TTS: Command = {
   data: new SlashCommandBuilder()
@@ -39,9 +41,17 @@ export const TTS: Command = {
 
     try {
       await turnTextIntoSpeechBuffer(text);
-      console.log("Joining voice-channel to tts");
 
-      await PlayVoiceLine(member.voice.channel as VoiceChannel);
+      const outputFilePath = "./output.opus";
+      const filepath = path.resolve(outputFilePath);
+      const resource = createAudioResource(filepath, {
+        inputType: StreamType.Opus,
+      });
+
+      await PlayResourceInVoiceChannel(
+        member.voice.channel as VoiceChannel,
+        resource
+      );
 
       await interaction.followUp({
         ephemeral: true,
@@ -56,50 +66,3 @@ export const TTS: Command = {
     }
   },
 };
-
-async function PlayVoiceLine(
-  voiceChannel: VoiceChannel,
-  __dirname = "./output.opus"
-) {
-  try {
-    const resource = createAudioResource(__dirname, {
-      inputType: StreamType.Opus,
-    });
-
-    const connection = joinVoiceChannel({
-      channelId: voiceChannel.id,
-      guildId: voiceChannel.guildId,
-      adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-    });
-
-    const audioPlayer = createAudioPlayer();
-
-    const subscription = connection.subscribe(audioPlayer);
-    audioPlayer.play(resource);
-
-    audioPlayer.on("stateChange", (oldState, newState) => {
-      console.log(
-        `Audio player transitioned from ${oldState.status} to ${newState.status}`
-      );
-      if (newState.status === "autopaused") {
-        audioPlayer.unpause();
-      }
-      if (newState.status === "idle") {
-        if (subscription) subscription.unsubscribe();
-        connection.disconnect();
-        connection.destroy();
-        console.log(`Zenbot left voice channel`);
-      }
-    });
-
-    audioPlayer.on("error", (error) => {
-      console.error("Error in audio player:", error);
-      if (subscription) subscription.unsubscribe();
-      connection.disconnect();
-      connection.destroy();
-    });
-
-  } catch (error) {
-    console.error("Error in PlayVoiceLine function:", error);
-  }
-}

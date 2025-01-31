@@ -9,12 +9,12 @@ import {
 import { Command } from "./command";
 import {
   StreamType,
-  createAudioPlayer,
   createAudioResource,
-  joinVoiceChannel,
 } from "@discordjs/voice";
 import { turnTextIntoSpeechBuffer } from "../voice/tts";
 import { getInsult, getPraise } from "../voice/remark";
+import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
+import path from "node:path";
 
 export const Remark: Command = {
   data: new SlashCommandBuilder()
@@ -46,11 +46,15 @@ export const Remark: Command = {
       text = await getInsult(options.getUser("subject")?.username);
     }
 
-    await turnTextIntoSpeechBuffer(text);
-    console.log("Joining voice-channel to tts");
+    const outputFilePath = "./output.opus";
+    const filepath = path.resolve(outputFilePath);
+    await turnTextIntoSpeechBuffer(text, filepath);
+    const resource = createAudioResource(filepath, {
+      inputType: StreamType.Opus,
+    });
 
-    PlayVoiceLine(member.voice.channel as VoiceChannel);
-    
+    await PlayResourceInVoiceChannel(member.voice.channel as VoiceChannel, resource);
+
     await interaction.followUp({
       ephemeral: true,
       content: text,
@@ -58,31 +62,3 @@ export const Remark: Command = {
   },
 };
 
-async function PlayVoiceLine(voiceChannel: VoiceChannel,  __dirname = "./output.opus") {
-  const resource = createAudioResource(__dirname, {
-    inputType: StreamType.Opus,
-  });
-
-  const connection = joinVoiceChannel({
-    channelId: voiceChannel.id,
-    guildId: voiceChannel.guildId,
-    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-  });
-
-  const audioPlayer = createAudioPlayer();
-  const subscription = connection.subscribe(audioPlayer);
-
-  audioPlayer.play(resource);
-
-  audioPlayer.on("stateChange", (oldState, newState) => {
-    console.log(
-      `Audio player transitioned from ${oldState.status} to ${newState.status}`
-    );
-    if (newState.status === "idle") {
-      if (subscription) subscription.unsubscribe();
-      connection.disconnect();
-      connection.destroy();
-      console.log(`Zenbot left voice channel`);
-    }
-  });
-}
