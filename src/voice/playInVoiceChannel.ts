@@ -24,16 +24,6 @@ export default async function PlayResourceInVoiceChannel(
     const subscription = connection.subscribe(audioPlayer);
 
     audioPlayer.on("stateChange", (oldState, newState) => {
-      console.log(
-        `Audio player transitioned from ${oldState.status} to ${newState.status}`
-      );
-      console.log("Audio player is autopaused, attempting to unpause...");
-      if (newState.status === "autopaused") {
-        setTimeout(() => {
-            console.log("Unpausing audio player...");
-          audioPlayer.unpause();
-        }, 1000); // Add a 1-second delay before unpausing
-      }
       if (newState.status === "idle") {
         if (subscription) subscription.unsubscribe();
         connection.disconnect();

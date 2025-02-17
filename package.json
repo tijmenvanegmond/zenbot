@@ -6,6 +6,13 @@
   "engines": {
     "node": "20.x"
   },
+  "scripts": {
+    "start": "node dist/app.js",
+    "dev": "nodemon src/app.ts",
+    "tts": "ts-node src/doTTS.ts",
+    "test": "ts-node src/test.ts",
+    "build": "tsc"
+  },
   "dependencies": {
     "@discordjs/voice": "^0.18.0",
     "discord.js": "^14.17",
@@ -13,21 +20,13 @@
     "fastify": "^4.26.2",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
-    "openai": "^4.77.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.7.2"
+    "openai": "^4.77.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "nodemon": "^3.1.0",
-    "prettier": "^3.2.5"
-  },
-  "scripts": {
-    "start": "node dist/app.js",
-    "dev": "nodemon src/app.ts",
-    "tts": "ts-node src/doTTS.ts",
-    "test": "ts-node src/test.ts",
-    "build": "tsc"
+    "prettier": "^3.2.5",
+    "typescript": "^5.7.2"
   },
   "repository": {
     "type": "git",
