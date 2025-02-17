@@ -34,3 +34,16 @@ jobs:
           context: .
           push: true
           tags: registry.digitalocean.com/reg-one/zenbot:latest
+
+      - name: Deploy to DigitalOcean droplet
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            docker login registry.digitalocean.com -u ${{ secrets.DOCR_ACCESS_TOKEN }} -p ${{ secrets.DOCR_ACCESS_TOKEN }}
+            docker pull registry.digitalocean.com/reg-one/zenbot:latest
+            docker stop zenbot || true
+            docker rm zenbot || true
+            docker run -d --name zenbot --restart unless-stopped registry.digitalocean.com/reg-one/zenbot:latest

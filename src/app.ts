@@ -1,11 +1,10 @@
+import "dotenv/config";
 import { Client, GatewayIntentBits } from "discord.js";
-import * as dotenv from "dotenv";
 import onReady from "./listeners/onReady";
 import onInteractionCreate from "./listeners/onInteractionCreate";
 import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
 import onPlayerUpdate from "./listeners/onPlayerUpdate";
-dotenv.config();
 const DISCORD_API_TOKEN = process.env.DISCORD_API_TOKEN;
 const LOG_LEVEL = process.env.LOG_LEVEL;
 const PORT = process.env.PORT;
@@ -13,7 +12,6 @@ const PORT = process.env.PORT;
 console.log("Zenbot is starting...");
 
 const discordClient = new Client({
-  //get acces to voicedata, etc
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
@@ -35,8 +33,6 @@ discordClient.login(DISCORD_API_TOKEN);
 const fastify = Fastify({
   logger: LOG_LEVEL === "DEBUG",
 });
-
-// Declare a route
 fastify.get("/", async function handler(request, reply) {
   reply
     .code(200)
@@ -46,10 +42,5 @@ fastify.get("/", async function handler(request, reply) {
       uptimeInSeconds: discordClient.uptime! / 1000,
     });
 });
-
-fastify.get("/ping", async function handler(request, reply) {
-  reply.code(200).send("pong")
-});
-
-// Run the server!
 fastify.listen({ host: "0.0.0.0", port: Number(PORT) });
+
