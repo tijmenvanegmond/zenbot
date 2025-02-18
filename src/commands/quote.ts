@@ -6,6 +6,7 @@ import {
   SlashCommandBuilder,
   TextChannel,
   CommandInteractionOptionResolver,
+  Message,
 } from "discord.js";
 import { Command } from "./command";
 import { StreamType, createAudioResource } from "@discordjs/voice";
@@ -35,7 +36,7 @@ export const Quote: Command = {
     const options = interaction.options as CommandInteractionOptionResolver;
     const quoteChannel = options.getChannel("quote_channel") as TextChannel;
     
-    if (!quoteChannel || quoteChannel.type !== 0) { // 0 is GUILD_TEXT
+    if (!quoteChannel || quoteChannel.type !== 0) {
       return await interaction.followUp({
         content: "Please provide a valid text channel",
         ephemeral: true,
@@ -43,8 +44,12 @@ export const Quote: Command = {
     }
 
     try {
-      // Fetch last 100 messages from the quote channel
-      const messages = await quoteChannel.messages.fetch({ limit: 100 });
+      // Fetch messages with content
+      const messages = (await quoteChannel.messages.fetch({ 
+        limit: 100,
+        cache: false,
+      })).filter((msg: Message) => msg.content && msg.content.length > 0);
+
       if (messages.size === 0) {
         return await interaction.followUp({
           content: "No messages found in the quote channel",
@@ -52,9 +57,8 @@ export const Quote: Command = {
         });
       }
 
-      // Select a random message
-      const randomIndex = Math.floor(Math.random() * messages.size);
-      const randomMessage = Array.from(messages.values())[randomIndex];
+      const messagesArray = Array.from(messages.values());
+      const randomMessage = messagesArray[Math.floor(Math.random() * messagesArray.length)];
       
       // Convert the quote to speech
       await turnTextIntoSpeechBuffer(randomMessage.content);
