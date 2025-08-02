@@ -46,4 +46,4 @@ jobs:
             docker pull registry.digitalocean.com/reg-one/zenbot:latest
             docker stop zenbot || true
             docker rm zenbot || true
-            docker run -d --name zenbot --restart unless-stopped --env-file .env registry.digitalocean.com/reg-one/zenbot:latest
+            docker run -d --name zenbot --restart unless-stopped --env-file .env -p 8080:8080 registry.digitalocean.com/reg-one/zenbot:latest

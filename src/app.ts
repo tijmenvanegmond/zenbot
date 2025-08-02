@@ -17,7 +17,7 @@ const discordClient = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
-    //GatewayIntentBits.MessageContent,
+    GatewayIntentBits.MessageContent,
     //GatewayIntentBits.GuildPresences
   ],
 });
