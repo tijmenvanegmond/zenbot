@@ -9,7 +9,7 @@ import {
 
 export default async function PlayResourceInVoiceChannel(
   voiceChannel: VoiceChannel,
-  resource: AudioResource
+  resource: AudioResource,
 ) {
   try {
     const connection: VoiceConnection = joinVoiceChannel({

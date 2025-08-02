@@ -43,4 +43,3 @@ fastify.get("/", async function handler(request, reply) {
     });
 });
 fastify.listen({ host: "0.0.0.0", port: Number(PORT) });
-

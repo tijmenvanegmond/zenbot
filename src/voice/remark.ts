@@ -5,7 +5,7 @@ dotenv.config();
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function getPraise(
-  subject: string = "a discord user"
+  subject: string = "a discord user",
 ): Promise<string> {
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -31,7 +31,7 @@ export async function getPraise(
 }
 
 export async function getInsult(
-  subject: string = "a discord user"
+  subject: string = "a discord user",
 ): Promise<string> {
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",

@@ -7,10 +7,7 @@ import {
   CommandInteractionOptionResolver,
 } from "discord.js";
 import { Command } from "./command";
-import {
-  StreamType,
-  createAudioResource,
-} from "@discordjs/voice";
+import { StreamType, createAudioResource } from "@discordjs/voice";
 import { turnTextIntoSpeechBuffer } from "../voice/tts";
 import { getInsult, getPraise } from "../voice/remark";
 import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
@@ -21,10 +18,12 @@ export const Remark: Command = {
     .setName("remark")
     .setDescription("A positive or Negative remark")
     .addBooleanOption((option) =>
-      option.setName("positive").setDescription("Is the remark positive?")
+      option.setName("positive").setDescription("Is the remark positive?"),
     )
     .addUserOption((option) =>
-      option.setName("subject").setDescription("Who is the subject of the remark?")
+      option
+        .setName("subject")
+        .setDescription("Who is the subject of the remark?"),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
@@ -53,7 +52,10 @@ export const Remark: Command = {
       inputType: StreamType.Opus,
     });
 
-    await PlayResourceInVoiceChannel(member.voice.channel as VoiceChannel, resource);
+    await PlayResourceInVoiceChannel(
+      member.voice.channel as VoiceChannel,
+      resource,
+    );
 
     await interaction.followUp({
       ephemeral: true,
@@ -61,4 +63,3 @@ export const Remark: Command = {
     });
   },
 };
-

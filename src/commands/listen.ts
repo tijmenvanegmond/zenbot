@@ -30,13 +30,15 @@ export const Listen: Command = {
 
     let options = interaction.options as CommandInteractionOptionResolver;
 
-    console.log(`Joining voice-channel ${member.voice.channel?.name} to listen`);
+    console.log(
+      `Joining voice-channel ${member.voice.channel?.name} to listen`,
+    );
 
     ListenToVoiceChannel(client, member.voice.channel as VoiceChannel);
 
     await interaction.followUp({
       ephemeral: true,
-      content :`Attemting to Listen to Voice Channel ${member.voice.channel?.name}`
+      content: `Attemting to Listen to Voice Channel ${member.voice.channel?.name}`,
     });
   },
 };
@@ -44,7 +46,7 @@ export const Listen: Command = {
 async function ListenToVoiceChannel(
   client: Client,
   voiceChannel: VoiceChannel,
-  fileName = OUTPUT_FILE
+  fileName = OUTPUT_FILE,
 ) {
   const connection = joinVoiceChannel({
     selfDeaf: false,
@@ -66,7 +68,6 @@ async function ListenToVoiceChannel(
   });
 
   reciever.speaking.on("end", (userId) => {
-
     var writeStream = fs.createWriteStream(process.cwd() + "/" + fileName, {
       flags: "a",
     });
@@ -79,7 +80,7 @@ async function ListenToVoiceChannel(
     //   const audioBuffer = audioStreamCollection[i];
     //   writeStream.write(audioBuffer);
     // }
-    
+
     writeStream.end();
     console.log(`The file ${fileName} was saved!`);
   });

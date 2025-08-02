@@ -27,7 +27,7 @@ export default (client: Client): void => {
       }
 
       console.log(
-        `user ${member?.displayName} moved from ${oldState.channel?.name} to ${newState.channel?.name}`
+        `user ${member?.displayName} moved from ${oldState.channel?.name} to ${newState.channel?.name}`,
       );
 
       channel = newState.channel ?? oldState.channel;
@@ -39,7 +39,7 @@ export default (client: Client): void => {
 
       if (botUser) {
         console.log(
-          `Ignoring channel change: user ${member?.displayName} is a bot`
+          `Ignoring channel change: user ${member?.displayName} is a bot`,
         );
         return;
       }
@@ -50,14 +50,14 @@ export default (client: Client): void => {
       }
 
       updateChannel(channel, newState.member!);
-    }
+    },
   );
 };
 
 async function updateChannel(
   channel: VoiceBasedChannel,
   member: GuildMember,
-  left = false
+  left = false,
 ) {
   let newChannelName = getNewChannelName(channel, member);
 
@@ -68,7 +68,7 @@ async function updateChannel(
 
   try {
     console.log(
-      `Updating Channel ${channel.id}'s name to :"${newChannelName}"`
+      `Updating Channel ${channel.id}'s name to :"${newChannelName}"`,
     );
     await channel.setName(newChannelName);
   } catch (error) {
@@ -91,7 +91,7 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
 
   let numMembers = memberNames.length;
   console.log(`There's ${numMembers} in the voice channel`);
-  
+
   //wild cards
   possibleNames.push("Pixel Purgatory");
   possibleNames.push("Rage Quit Retreat");
@@ -137,7 +137,7 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
       possibleNames.push("The Dual Delinquents");
       possibleNames.push(`${memberNames[0]} & ${memberNames[1]}`);
       possibleNames.push(
-        `${memberNames[0]} & ${memberNames[1]}'s Get Together`
+        `${memberNames[0]} & ${memberNames[1]}'s Get Together`,
       );
       break;
     case 3:

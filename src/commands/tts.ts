@@ -1,28 +1,21 @@
 import {
-  CommandInteraction,
   Client,
-  GuildMember,
-  VoiceChannel,
-  SlashCommandBuilder,
+  CommandInteraction,
   CommandInteractionOptionResolver,
+  GuildMember,
+  SlashCommandBuilder,
+  VoiceChannel,
 } from "discord.js";
-import { Command } from "./command";
-import {
-  StreamType,
-  createAudioPlayer,
-  createAudioResource,
-  joinVoiceChannel,
-} from "@discordjs/voice";
-import { turnTextIntoSpeechBuffer } from "../voice/tts";
 import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
-import path from "node:path";
+import { createTTSStream } from "../voice/tts";
+import { Command } from "./command";
 
 export const TTS: Command = {
   data: new SlashCommandBuilder()
     .setName("tts")
     .setDescription("just TTS")
     .addStringOption((option) =>
-      option.setName("tts_text").setDescription("The text to TTS")
+      option.setName("tts_text").setDescription("The text to TTS"),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
@@ -35,22 +28,18 @@ export const TTS: Command = {
         ephemeral: true,
       });
     }
-
     let options = interaction.options as CommandInteractionOptionResolver;
     let text = options.getString("tts_text") || "no text provided";
 
     try {
-      await turnTextIntoSpeechBuffer(text);
+      // Use the new createTTSStream function from voice/tts.ts
 
-      const outputFilePath = "./output.opus";
-      const filepath = path.resolve(outputFilePath);
-      const resource = createAudioResource(filepath, {
-        inputType: StreamType.Opus,
-      });
+      // Get audio resource directly from the stream
+      const resource = await createTTSStream(text);
 
       await PlayResourceInVoiceChannel(
         member.voice.channel as VoiceChannel,
-        resource
+        resource,
       );
 
       await interaction.followUp({
