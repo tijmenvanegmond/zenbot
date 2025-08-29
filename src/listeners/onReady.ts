@@ -11,9 +11,9 @@ export default (client: Client): void => {
       await client.application.commands.set(
         CommandCollection.map((c) => c.data),
       );
-      console.log(`Commands registered, ${client.user.username} is online`);
+      console.log(`🧘 Commands flow like the Iris... ${client.user.username} has achieved digital enlightenment`);
     } catch (error) {
-      console.error("Failed to register commands!");
+      console.error("🚨 The path to command harmony has been disrupted!");
       throw error;
     }
   });

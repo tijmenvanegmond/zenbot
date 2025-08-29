@@ -1,7 +1,7 @@
 {
   "name": "zenbot",
-  "version": "0.0.3",
-  "description": "a discord zenbot",
+  "version": "0.1.0",
+  "description": "🧘 A Discord bot channeling Zenyatta's wisdom - Experience tranquility through code",
   "main": "dist/bot.js",
   "engines": {
     "node": "20.x"
@@ -37,9 +37,18 @@
     "discord",
     "bot",
     "voice",
-    "zen"
+    "zen",
+    "zenyatta",
+    "overwatch",
+    "philosophy",
+    "tts",
+    "harmony",
+    "tranquility"
   ],
-  "author": "Tijmen van Egmond",
+  "authors": [
+    "Tijmen van Egmond",
+    "Claude (Anthropic's AI Assistant)"
+  ],
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/tijmenvanegmond/zenbot/issues"

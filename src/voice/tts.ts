@@ -4,9 +4,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "stream";
 import { createAudioResource, StreamType } from "@discordjs/voice";
+import { logger } from "../utils/logger";
 dotenv.config();
 
-const instructions = `You sound like Daftpunk. You are a funny R-O-B-O-T`;
+const instructions = `You are Zenyatta, the omnic monk from Overwatch. Speak with wisdom, tranquility, and philosophical insight. Use phrases like "Experience tranquility", "Embrace the iris", "True self is without form". Be serene but profound.`;
 export async function turnTextIntoSpeechBuffer(
   input: string,
   output = "./output.opus",
@@ -27,24 +28,39 @@ export async function turnTextIntoSpeechBuffer(
 }
 
 export async function createTTSStream(input: string) {
+  logger.info(`Creating TTS for text: "${input}"`);
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const response = await client.audio.speech.create({
-    model: "gpt-4o-mini-tts",
-    voice: "nova",
-    instructions,
-    input,
-    response_format: "opus",
-  });
+  try {
+    const response = await client.audio.speech.create({
+      model: "gpt-4o-mini-tts",
+      voice: "echo", 
+      input,
+      instructions: "Speak in a calm, wise, and serene tone like Zenyatta from Overwatch - an omnic monk with a deep, resonant, slightly robotic voice. Add subtle pauses between phrases for contemplation. Be philosophical and peaceful.",
+      response_format: "mp3",
+    });
 
-  // Convert the response to a Buffer and then to a proper Readable stream
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const stream = new Readable();
-  stream.push(buffer);
-  stream.push(null); // Signals the end of the stream
+    // Convert the response to a Buffer and then to a proper Readable stream
+    const buffer = Buffer.from(await response.arrayBuffer());
+    logger.info(`TTS buffer size: ${buffer.length} bytes`);
+    
+    if (buffer.length === 0) {
+      throw new Error("TTS response buffer is empty");
+    }
+    
+    const stream = new Readable();
+    stream.push(buffer);
+    stream.push(null); // Signals the end of the stream
 
-  // Create and return an audio resource
-  return createAudioResource(stream, {
-    inputType: StreamType.Opus,
-  });
+    // Create and return an audio resource
+    const resource = createAudioResource(stream, {
+      inputType: StreamType.Arbitrary,
+    });
+    
+    logger.info(`Created audio resource successfully`);
+    return resource;
+  } catch (error) {
+    logger.error("Error creating TTS stream:", error);
+    throw error;
+  }
 }

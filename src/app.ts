@@ -5,11 +5,14 @@ import onInteractionCreate from "./listeners/onInteractionCreate";
 import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
 import onPlayerUpdate from "./listeners/onPlayerUpdate";
-const DISCORD_API_TOKEN = process.env.DISCORD_API_TOKEN;
-const LOG_LEVEL = process.env.LOG_LEVEL;
-const PORT = process.env.PORT;
+import { registerApiRoutes } from "./api";
 
-console.log("Zenbot is starting...");
+// Allow overriding via command line arguments
+const DISCORD_API_TOKEN = process.argv[2] || process.env.DISCORD_API_TOKEN;
+const LOG_LEVEL = process.env.LOG_LEVEL;
+const PORT = process.argv[3] || process.env.PORT || 3001;
+
+console.log("🧘 Zenbot awakens... Experience tranquility through code.");
 
 const discordClient = new Client({
   intents: [
@@ -22,24 +25,19 @@ const discordClient = new Client({
   ],
 });
 
-//run listeners
+// Embrace the harmony of listeners - each one a pillar of enlightenment
 onReady(discordClient);
 onInteractionCreate(discordClient);
 onVoiceChannelUpdate(discordClient);
 onPlayerUpdate(discordClient);
 discordClient.login(DISCORD_API_TOKEN);
 
-//A small server for health checks
+// Initialize Fastify server - the gateway to digital enlightenment
 const fastify = Fastify({
   logger: LOG_LEVEL === "DEBUG",
 });
-fastify.get("/", async function handler(request, reply) {
-  reply
-    .code(200)
-    .header("Content-Type", "application/json; charset=utf-8")
-    .send({
-      numberOfGuilds: discordClient.guilds.cache.size,
-      uptimeInSeconds: discordClient.uptime! / 1000,
-    });
-});
+
+// Register all API routes - true self flows through many forms
+registerApiRoutes(fastify, discordClient);
+
 fastify.listen({ host: "0.0.0.0", port: Number(PORT) });
