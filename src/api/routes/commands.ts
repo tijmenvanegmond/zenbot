@@ -40,12 +40,29 @@ export default async function commandsRoutes(fastify: FastifyInstance, { discord
         get: (name: string) => options[name],
         getString: (name: string) => options[name],
         getInteger: (name: string) => parseInt(options[name]),
-        getBoolean: (name: string) => Boolean(options[name])
+        getBoolean: (name: string) => Boolean(options[name]),
+        getUser: (name: string) => {
+          // If it's a username string, try to find that user in the guild
+          const userValue = options[name];
+          if (typeof userValue === 'string') {
+            return guild.members.cache.find(member => 
+              member.displayName.toLowerCase().includes(userValue.toLowerCase()) ||
+              member.user.username.toLowerCase().includes(userValue.toLowerCase())
+            )?.user;
+          }
+          return userValue;
+        }
       },
       guild,
       channel,
       user: { id: userId, username: "API User" },
-      member: { user: { username: "API User" } },
+      member: { 
+        user: { username: "API User" },
+        voice: { 
+          channel: channel, // Simulate the API user being in the specified voice channel
+          channelId: channel.id // This is what validateVoiceChannel checks for
+        }
+      },
       deferReply: async () => {},
       followUp: async (content: any) => {
         logger.info(`API Command Response:`, content);

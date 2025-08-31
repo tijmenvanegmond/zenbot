@@ -13,14 +13,22 @@ import { playTTSInChannel } from "../utils/voiceHelpers";
 export const Remark: Command = {
   data: new SlashCommandBuilder()
     .setName("remark")
-    .setDescription("A positive or Negative remark")
-    .addBooleanOption((option) =>
-      option.setName("positive").setDescription("Is the remark positive?"),
+    .setDescription("Generate a positive or negative remark about someone")
+    .addStringOption((option) =>
+      option
+        .setName("type")
+        .setDescription("Type of remark")
+        .setRequired(true)
+        .addChoices(
+          { name: '😊 Positive', value: 'positive' },
+          { name: '😈 Negative', value: 'negative' }
+        )
     )
     .addUserOption((option) =>
       option
         .setName("subject")
-        .setDescription("Who is the subject of the remark?"),
+        .setDescription("Who is the subject of the remark?")
+        .setRequired(false),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
@@ -30,11 +38,11 @@ export const Remark: Command = {
     }
 
     const options = getInteractionOptions(interaction);
-    const isPositive = options.getBoolean("positive");
+    const remarkType = options.getString("type");
     const targetUser = options.getUser("subject");
     
     let text: string;
-    if (isPositive) {
+    if (remarkType === "positive") {
       text = await RemarkService.generatePraise(targetUser?.username);
     } else {
       text = await RemarkService.generateInsult(targetUser?.username);
@@ -45,9 +53,10 @@ export const Remark: Command = {
     try {
       await playTTSInChannel(voiceChannel, text);
 
+      const emoji = remarkType === "positive" ? "😊" : "😈";
       await interaction.followUp({
         ephemeral: true,
-        content: `🎭 **Remark delivered:** ${text}`,
+        content: `${emoji} **Remark delivered:** ${text}`,
       });
     } catch (error) {
       logger.error("Error during remark execution:", error);

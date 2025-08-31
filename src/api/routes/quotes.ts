@@ -4,6 +4,7 @@ import { VoiceService } from "../../services/voiceService";
 import { GuildService } from "../../services/guildService";
 import { logger } from "../../utils/logger";
 import { fetchAndParseQuotes, getRandomQuote } from "../../services/quoteService";
+import { ZenyattaService } from "../../services/zenyattaService";
 import { CHANNEL_TYPES } from "../../config";
 
 export default async function quotesRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
@@ -134,13 +135,13 @@ export default async function quotesRoutes(fastify: FastifyInstance, { discordCl
         return;
       }
 
-      // Play the parsed quote (just the quote part if it's a structured quote)
-      const textToPlay = randomQuote.isQuoted ? randomQuote.parsedQuote : randomQuote.content;
+      // Generate enhanced TTS with Zenyatta's contextual commentary
+      const enhancedText = await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
       
-      // Play TTS in the specified voice channel
-      await VoiceService.playTTSInChannel(voiceChannel as VoiceChannel, textToPlay);
+      // Play enhanced TTS in the specified voice channel
+      await VoiceService.playTTSInChannel(voiceChannel as VoiceChannel, enhancedText);
       
-      logger.info(`API: Quote TTS played in ${voiceChannel.name}: "${textToPlay}"`);
+      logger.info(`API: Enhanced quote TTS played in ${voiceChannel.name}: "${enhancedText.substring(0, 100)}..."`);
       
       reply.send({ 
         success: true,

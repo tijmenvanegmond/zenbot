@@ -10,6 +10,7 @@ import { logger } from "../utils/logger";
 import { validateVoiceChannel, getInteractionOptions, createErrorResponse } from "../utils/commandHelpers";
 import { playTTSInChannel } from "../utils/voiceHelpers";
 import { getRandomQuote } from "../services/quoteService";
+import { ZenyattaService } from "../services/zenyattaService";
 import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../config";
 
 export const Quote: Command = {
@@ -79,9 +80,9 @@ export const Quote: Command = {
         );
       }
 
-      // Play the parsed quote (just the quote part if it's a structured quote)
-      const textToPlay = randomQuote.isQuoted ? randomQuote.parsedQuote : randomQuote.content;
-      await playTTSInChannel(voiceChannel, textToPlay);
+      // Generate enhanced TTS with Zenyatta's contextual commentary
+      const enhancedText = await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
+      await playTTSInChannel(voiceChannel, enhancedText);
 
       // Create enhanced response with quote intelligence
       let responseContent = `💬 **Quote from #${quoteChannel.name}:** `;
