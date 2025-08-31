@@ -65,6 +65,7 @@ The bot requires:
   - `routes/guilds.ts` - Guild status and commands endpoints
   - `routes/voice.ts` - Voice channel operations and TTS endpoints
   - `routes/commands.ts` - Command execution endpoints
+  - `routes/quotes.ts` - Quote reading and TTS playback endpoints
 
 ### Utilities
 - `src/utils/logger.ts` - Structured logging with timestamps and log levels
@@ -82,6 +83,9 @@ The bot requires:
 - `GET /status` - Detailed bot status including guilds, members, ping
 - `GET /commands` - List all available bot commands
 
+### Channel Discovery
+- `GET /guilds/:guildId/text-channels` - List all text channels in guild with metadata
+
 ### Voice Channel Discovery
 - `GET /guilds/:guildId/voice-channels` - List all voice channels with members
 - `GET /guilds/:guildId/voice-channels/active` - Get channels with active users
@@ -97,6 +101,14 @@ The bot requires:
 - `POST /guilds/:guildId/tts` - Play TTS in bot's current channel
 - `GET /tts/voices` - List available OpenAI TTS voices
 
+### Quote Operations - Channeling Stored Wisdom
+- `GET /guilds/:guildId/channels/:channelId/quotes` - Get quotes from text channel with enhanced parsing
+  - Query parameters: `?limit=N`, `?random=true`, `?username=name`, `?userId=id`
+  - Smart parsing distinguishes between poster (who submitted) and speaker (who said the quote)
+  - Fast regex-based parsing with fallback AI batch processing capability
+  - Filters by both poster AND speaker when using username/userId
+- `POST /guilds/:guildId/voice-channels/:voiceChannelId/quote-tts` - Play random quote from text channel as TTS
+
 ### Command Execution
 - `POST /execute/:commandName` - Execute bot commands programmatically
 
@@ -110,6 +122,13 @@ The bot uses a modular command system where each command implements the `Command
 - TTS uses OpenAI's gpt-4o-mini-tts model with "echo" voice and MP3 format for Discord.js compatibility
 - Audio resources use `StreamType.Arbitrary` for proper playback
 - Voice character instructions help maintain Zenyatta's calm, wise, and serene tone
+
+### Quote System Architecture
+- Enhanced quote parsing distinguishes between message poster and actual speaker
+- Regex-based parsing handles formats: `Name: "quote"`, `Name: 'quote'`, `Name: anything`
+- User filtering works for both who posted the quote AND who spoke it
+- Optional AI batch processing available for complex quote formats (used sparingly to avoid API costs)
+- Quote responses include: `parsedQuote`, `speaker`, `isQuoted`, `poster` fields for full context
 
 ### API Development
 - All API routes are organized in separate files under `src/api/routes/`
@@ -149,5 +168,34 @@ When working with Zenbot, embrace these meditative practices:
 - The bot's voice remains a work in progress - embrace iteration
 - Users may resist change initially - let wisdom speak through actions
 - Balance is key: not too robotic, not too human, but authentically omnic
+
+## Enhanced Quote System Examples
+
+```bash
+# Discover available text channels in guild
+curl "http://localhost:3001/guilds/123/text-channels"
+
+# Get random quote from specific user (works for both posters and speakers)
+curl "http://localhost:3001/guilds/123/channels/456/quotes?username=osha&random=true"
+
+# Response shows both poster and speaker:
+{
+  "quote": {
+    "content": "osha: \"if we got gangbanged together\"",
+    "parsedQuote": "if we got gangbanged together", 
+    "speaker": "osha",
+    "isQuoted": true,
+    "poster": {
+      "username": "murlocninja_",
+      "displayName": "Murlocninja"
+    }
+  }
+}
+
+# Play contextual quote as TTS in voice channel
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"text":"From the archives, Osha wisdom... Experience tranquility"}' \
+  http://localhost:3001/guilds/123/voice-channels/789/tts
+```
 
 *"True self is without form... but proper error handling helps."*

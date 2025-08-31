@@ -9,6 +9,7 @@ import {
 import { Command } from "./command";
 import { joinVoiceChannel } from "@discordjs/voice";
 import * as fs from "fs";
+import { logger } from "../utils/logger";
 
 const OUTPUT_FILE = "listen-test.opus";
 
@@ -21,7 +22,7 @@ export const Listen: Command = {
     const member = interaction?.member as GuildMember;
 
     if (!member?.voice?.channelId) {
-      console.log("reply-ing in text");
+      logger.info("Replying in text - user not in voice channel");
       return await interaction.followUp({
         content: "You have to be in voice to use this",
         ephemeral: true,
@@ -30,9 +31,7 @@ export const Listen: Command = {
 
     let options = interaction.options as CommandInteractionOptionResolver;
 
-    console.log(
-      `Joining voice-channel ${member.voice.channel?.name} to listen`,
-    );
+    logger.info(`Joining voice channel ${member.voice.channel?.name} to listen`);
 
     ListenToVoiceChannel(client, member.voice.channel as VoiceChannel);
 
@@ -60,7 +59,7 @@ async function ListenToVoiceChannel(
   let audioStreamCollection: Buffer[] = [];
 
   reciever.speaking.on("start", (userId) => {
-    console.log(`User ${userId} started speaking`);
+    logger.info(`User ${userId} started speaking`);
     let audioStream = reciever.subscribe(userId);
     audioStream.on("data", (data) => {
       audioStreamCollection.push(data);
@@ -72,7 +71,7 @@ async function ListenToVoiceChannel(
       flags: "a",
     });
 
-    console.log(`User ${userId} stopped speaking`);
+    logger.info(`User ${userId} stopped speaking`);
 
     const audioBuffer = audioStreamCollection[1];
     writeStream.write(audioBuffer);
@@ -82,6 +81,6 @@ async function ListenToVoiceChannel(
     // }
 
     writeStream.end();
-    console.log(`The file ${fileName} was saved!`);
+    logger.info(`Audio file ${fileName} saved successfully`);
   });
 }

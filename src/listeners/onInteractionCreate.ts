@@ -1,5 +1,6 @@
 import { CommandInteraction, Client, BaseInteraction } from "discord.js";
 import { CommandCollection } from "../commands/commandCollection";
+import { logger } from "../utils/logger";
 
 export default (client: Client): void => {
   client.on("interactionCreate", async (interaction: BaseInteraction) => {
@@ -13,8 +14,8 @@ const handleSlashCommand = async (
   client: Client,
   interaction: CommandInteraction,
 ): Promise<void> => {
-  console.log(
-    `${interaction.member?.user.username} triggered command:${interaction.commandName}`,
+  logger.info(
+    `${interaction.member?.user.username} triggered command: ${interaction.commandName}`,
   );
   const slashCommand = CommandCollection.find(
     (c) => c.data.name === interaction.commandName,

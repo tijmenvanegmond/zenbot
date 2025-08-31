@@ -7,7 +7,6 @@ import { createAudioResource, StreamType } from "@discordjs/voice";
 import { logger } from "../utils/logger";
 dotenv.config();
 
-const instructions = `You are Zenyatta, the omnic monk from Overwatch. Speak with wisdom, tranquility, and philosophical insight. Use phrases like "Experience tranquility", "Embrace the iris", "True self is without form". Be serene but profound.`;
 export async function turnTextIntoSpeechBuffer(
   input: string,
   output = "./output.opus",

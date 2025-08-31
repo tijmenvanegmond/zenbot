@@ -3,6 +3,7 @@ import { Client, VoiceChannel, GuildMember } from "discord.js";
 import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
 import { createTTSStream } from "../../voice/tts";
 import PlayResourceInVoiceChannel from "../../voice/playInVoiceChannel";
+import { logger } from "../../utils/logger";
 
 export default async function voiceRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   
@@ -125,7 +126,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
         adapterCreator: guild.voiceAdapterCreator,
       });
       
-      console.log(`API: Bot joined voice channel: ${channel.name}`);
+      logger.info(`API: Bot joined voice channel: ${channel.name}`);
       
       reply.send({ 
         success: true,
@@ -136,7 +137,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
         }
       });
     } catch (error: any) {
-      console.error(`Error joining voice channel:`, error);
+      logger.error(`Error joining voice channel:`, error);
       reply.code(500).send({ 
         error: "Failed to join voice channel", 
         details: error.message 
@@ -164,7 +165,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
       connection.disconnect();
       connection.destroy();
       
-      console.log(`API: Bot left voice channel in guild: ${guild.name}`);
+      logger.info(`API: Bot left voice channel in guild: ${guild.name}`);
       
       reply.send({ 
         success: true,
@@ -172,7 +173,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
         guild: guild.name
       });
     } catch (error: any) {
-      console.error(`Error leaving voice channel:`, error);
+      logger.error(`Error leaving voice channel:`, error);
       reply.code(500).send({ 
         error: "Failed to leave voice channel", 
         details: error.message 
@@ -241,7 +242,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
       // Play in the specified voice channel
       await PlayResourceInVoiceChannel(channel as any, resource);
       
-      console.log(`API: TTS played in ${channel.name}: "${text}"`);
+      logger.info(`API: TTS played in ${channel.name}: "${text}"`);
       
       reply.send({ 
         success: true,
@@ -253,7 +254,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
         }
       });
     } catch (error: any) {
-      console.error(`Error playing TTS:`, error);
+      logger.error(`Error playing TTS:`, error);
       reply.code(500).send({ 
         error: "Failed to play TTS", 
         details: error.message 
@@ -296,7 +297,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
       // Play in the current voice channel
       await PlayResourceInVoiceChannel(currentChannel as any, resource);
       
-      console.log(`API: TTS played in current channel ${currentChannel.name}: "${text}"`);
+      logger.info(`API: TTS played in current channel ${currentChannel.name}: "${text}"`);
       
       reply.send({ 
         success: true,
@@ -308,7 +309,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
         }
       });
     } catch (error: any) {
-      console.error(`Error playing TTS:`, error);
+      logger.error(`Error playing TTS:`, error);
       reply.code(500).send({ 
         error: "Failed to play TTS", 
         details: error.message 

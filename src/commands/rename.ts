@@ -6,6 +6,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { Command } from "./command";
+import { logger } from "../utils/logger";
 
 export const Rename: Command = {
   data: new SlashCommandBuilder()
@@ -28,7 +29,7 @@ export const Rename: Command = {
     const newNickname = options.getString("new_nickname");
     const oldNickname = member.nickname;
 
-    console.log(`Changing user:${oldNickname}'s nickname to:"${newNickname}"`);
+    logger.info(`Changing user ${oldNickname}'s nickname to "${newNickname}"`);
 
     try {
       await member.setNickname(newNickname);
@@ -38,8 +39,7 @@ export const Rename: Command = {
       });
     } catch (error) {
       let message = `Failed to change user:${member.nickname}'s nickname to:"${newNickname}"!`;
-      console.error(message);
-      console.error(error);
+      logger.error(message, error);
 
       await interaction.followUp({
         ephemeral: true,

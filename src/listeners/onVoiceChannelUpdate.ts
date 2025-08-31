@@ -6,6 +6,7 @@ import {
   VoiceBasedChannel,
   VoiceState,
 } from "discord.js";
+import { logger } from "../utils/logger";
 
 const EXCLUDE_VOICE_CHANNEL_IDS = [
   "1146803612492777",
@@ -26,26 +27,22 @@ export default (client: Client): void => {
         return; //ignore if no change (it happens)
       }
 
-      console.log(
-        `user ${member?.displayName} moved from ${oldState.channel?.name} to ${newState.channel?.name}`,
-      );
+      logger.info(`User ${member?.displayName} moved from ${oldState.channel?.name} to ${newState.channel?.name}`);
 
       channel = newState.channel ?? oldState.channel;
 
       if (!channel) {
-        console.log(`Ignoring channel change: channel not found`);
+        logger.debug(`Ignoring channel change: channel not found`);
         return;
       }
 
       if (botUser) {
-        console.log(
-          `Ignoring channel change: user ${member?.displayName} is a bot`,
-        );
+        logger.debug(`Ignoring channel change: user ${member?.displayName} is a bot`);
         return;
       }
 
       if (EXCLUDE_VOICE_CHANNEL_IDS.includes(channel.id!)) {
-        console.log(`Ignoring channel[${channel.id}] is an excluded channel`);
+        logger.debug(`Ignoring channel ${channel.id} - excluded channel`);
         return;
       }
 
@@ -62,18 +59,15 @@ async function updateChannel(
   let newChannelName = getNewChannelName(channel, member);
 
   if (channel.name == newChannelName) {
-    console.log("Name Unchanged");
+    logger.debug("Channel name unchanged");
     return;
   }
 
   try {
-    console.log(
-      `Updating Channel ${channel.id}'s name to :"${newChannelName}"`,
-    );
+    logger.info(`Updating channel ${channel.id} name to "${newChannelName}"`);
     await channel.setName(newChannelName);
   } catch (error) {
-    console.log(`Failed to update Channel name`);
-    console.log(error);
+    logger.error(`Failed to update channel name`, error);
   }
 }
 
@@ -90,7 +84,7 @@ function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
     possibleNames.push("Discord Jerkoff Session");
 
   let numMembers = memberNames.length;
-  console.log(`There's ${numMembers} in the voice channel`);
+  logger.debug(`${numMembers} members in voice channel`);
 
   //wild cards
   possibleNames.push("Pixel Purgatory");

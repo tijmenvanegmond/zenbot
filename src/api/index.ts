@@ -3,6 +3,7 @@ import { Client } from "discord.js";
 import guildsRoutes from "./routes/guilds";
 import voiceRoutes from "./routes/voice";
 import commandsRoutes from "./routes/commands";
+import quotesRoutes from "./routes/quotes";
 
 export async function registerApiRoutes(fastify: FastifyInstance, discordClient: Client) {
   // Health check endpoint - the pulse of the Iris
@@ -21,4 +22,5 @@ export async function registerApiRoutes(fastify: FastifyInstance, discordClient:
   await fastify.register(guildsRoutes, { discordClient });
   await fastify.register(voiceRoutes, { discordClient });  
   await fastify.register(commandsRoutes, { discordClient });
+  await fastify.register(quotesRoutes, { discordClient });
 }

@@ -13,6 +13,7 @@ import { StreamType, createAudioResource } from "@discordjs/voice";
 import { turnTextIntoSpeechBuffer } from "../voice/tts";
 import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
 import path from "node:path";
+import { logger } from "../utils/logger";
 
 export const Quote: Command = {
   data: new SlashCommandBuilder()
@@ -78,7 +79,7 @@ export const Quote: Command = {
         content: `Playing quote: "${randomMessage.content}" in Voice Channel ${member.voice.channel?.name}`,
       });
     } catch (error) {
-      console.error("Error during quote command execution:", error);
+      logger.error("Error during quote command execution:", error);
       await interaction.followUp({
         ephemeral: true,
         content: "An error occurred while trying to play the quote.",

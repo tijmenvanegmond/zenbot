@@ -1,5 +1,6 @@
 import { Client, Events } from "discord.js";
 import { CommandCollection } from "../commands/commandCollection";
+import { logger } from "../utils/logger";
 
 export default (client: Client): void => {
   client.on(Events.ClientReady, async () => {
@@ -11,9 +12,9 @@ export default (client: Client): void => {
       await client.application.commands.set(
         CommandCollection.map((c) => c.data),
       );
-      console.log(`🧘 Commands flow like the Iris... ${client.user.username} has achieved digital enlightenment`);
+      logger.info(`Commands flow like the Iris... ${client.user.username} has achieved digital enlightenment`);
     } catch (error) {
-      console.error("🚨 The path to command harmony has been disrupted!");
+      logger.error("The path to command harmony has been disrupted!");
       throw error;
     }
   });

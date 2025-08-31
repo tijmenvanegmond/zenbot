@@ -9,6 +9,7 @@ import {
 import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
 import { createTTSStream } from "../voice/tts";
 import { Command } from "./command";
+import { logger } from "../utils/logger";
 
 export const TTS: Command = {
   data: new SlashCommandBuilder()
@@ -22,7 +23,7 @@ export const TTS: Command = {
     const member = interaction?.member as GuildMember;
 
     if (!member?.voice?.channelId) {
-      console.log("reply-ing in text");
+      logger.debug("Replying with text - user not in voice channel");
       return await interaction.followUp({
         content: "You have to be in voice to use this",
         ephemeral: true,
@@ -47,7 +48,7 @@ export const TTS: Command = {
         content: `Attempting to TTS in Voice Channel ${member.voice.channel?.name}`,
       });
     } catch (error) {
-      console.error("Error during TTS execution:", error);
+      logger.error("Error during TTS execution:", error);
       await interaction.followUp({
         ephemeral: true,
         content: "An error occurred while trying to perform TTS.",

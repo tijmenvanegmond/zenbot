@@ -12,6 +12,7 @@ import { turnTextIntoSpeechBuffer } from "../voice/tts";
 import { getInsult, getPraise } from "../voice/remark";
 import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
 import path from "node:path";
+import { logger } from "../utils/logger";
 
 export const Remark: Command = {
   data: new SlashCommandBuilder()
@@ -30,7 +31,7 @@ export const Remark: Command = {
     const member = interaction?.member as GuildMember;
 
     if (!member?.voice?.channelId) {
-      console.log("reply-ing in text");
+      logger.info("Replying in text - user not in voice channel");
       return await interaction.followUp({
         content: "You have to be in voice to use this",
         ephemeral: true,

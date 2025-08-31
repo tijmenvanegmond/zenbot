@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { Client } from "discord.js";
 import { CommandCollection } from "../../commands/commandCollection";
+import { logger } from "../../utils/logger";
 
 export default async function commandsRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   
@@ -47,17 +48,17 @@ export default async function commandsRoutes(fastify: FastifyInstance, { discord
       member: { user: { username: "API User" } },
       deferReply: async () => {},
       followUp: async (content: any) => {
-        console.log(`API Command Response:`, content);
+        logger.info(`API Command Response:`, content);
         return content;
       },
       reply: async (content: any) => {
-        console.log(`API Command Response:`, content);
+        logger.info(`API Command Response:`, content);
         return content;
       }
     };
     
     try {
-      console.log(`API triggered command: ${commandName} in guild: ${guild.name}`);
+      logger.info(`API triggered command: ${commandName} in guild: ${guild.name}`);
       await command.execute(discordClient, mockInteraction as any);
       reply.send({ 
         success: true, 
@@ -66,7 +67,7 @@ export default async function commandsRoutes(fastify: FastifyInstance, { discord
         channel: channel.name
       });
     } catch (error: any) {
-      console.error(`API command execution error:`, error);
+      logger.error(`API command execution error:`, error);
       reply.code(500).send({ 
         error: "Command execution failed", 
         details: error.message 

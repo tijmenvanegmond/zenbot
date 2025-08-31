@@ -6,13 +6,14 @@ import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
 import onPlayerUpdate from "./listeners/onPlayerUpdate";
 import { registerApiRoutes } from "./api";
+import { logger } from "./utils/logger";
 
 // Allow overriding via command line arguments
 const DISCORD_API_TOKEN = process.argv[2] || process.env.DISCORD_API_TOKEN;
 const LOG_LEVEL = process.env.LOG_LEVEL;
 const PORT = process.argv[3] || process.env.PORT || 3001;
 
-console.log("🧘 Zenbot awakens... Experience tranquility through code.");
+logger.info("Zenbot awakens... Experience tranquility through code.");
 
 const discordClient = new Client({
   intents: [
