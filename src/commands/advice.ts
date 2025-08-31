@@ -1,15 +1,15 @@
 import {
   CommandInteraction,
   Client,
-  GuildMember,
   VoiceChannel,
   SlashCommandBuilder,
 } from "discord.js";
 import { Command } from "./command";
-import { VoiceLineDataCollection, getContextualAdvice, VoiceLineCategories, getRandomVoiceLineFromCategory, createVoiceLineResource } from "../voice/voiceLineData";
-import { createTTSStream } from "../voice/tts";
-import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
+import { VoiceService } from "../services/voiceService";
 import { logger } from "../utils/logger";
+import { validateVoiceChannel, createErrorResponse } from "../utils/commandHelpers";
+import { playResourceInChannel } from "../utils/voiceHelpers";
+import { formatWisdomMessage, formatSimpleWisdomMessage } from "../utils/messageFormatters";
 
 export const Advice: Command = {
   data: new SlashCommandBuilder()
@@ -32,91 +32,48 @@ export const Advice: Command = {
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
     const adviceType = interaction.options?.get('type')?.value as string;
     
     // Get contextual voice line based on user selection
     let voiceLine;
     if (adviceType === 'random') {
-      // Choose random category and then random line from that category
       const categories = ['philosophical', 'greeting', 'harmony', 'discord', 'transcendence'] as const;
       const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-      voiceLine = getContextualAdvice(randomCategory);
+      voiceLine = VoiceService.getContextualAdvice(randomCategory);
     } else if (adviceType) {
-      voiceLine = getContextualAdvice(adviceType as 'greeting' | 'philosophical' | 'harmony' | 'discord' | 'transcendence');
+      voiceLine = VoiceService.getContextualAdvice(adviceType as 'greeting' | 'philosophical' | 'harmony' | 'discord' | 'transcendence');
     } else {
-      // Default to philosophical wisdom (which has voice line files)
-      voiceLine = getContextualAdvice('philosophical');
+      voiceLine = VoiceService.getContextualAdvice('philosophical');
     }
     
     logger.info(`Selected voice line: "${voiceLine.text}" with voiceUri: ${voiceLine.voiceUri ? 'available' : 'null'}`);
 
-    if (!member?.voice?.channelId) {
+    const validation = validateVoiceChannel(interaction);
+    if (!validation.isValid) {
       logger.info(`Replying with text advice: "${voiceLine.text}"`);
-      
-      // Get appropriate emoji based on advice type
-      const getAdviceEmoji = (type?: string) => {
-        switch (type) {
-          case 'greeting': return '🙏';
-          case 'harmony': return '💚';
-          case 'discord': return '⚡';
-          case 'transcendence': return '✨';
-          case 'random': return '🎲';
-          default: return '🧘';
-        }
-      };
-      
       return await interaction.followUp({
-        content: `${getAdviceEmoji(adviceType)} **Zenyatta's Wisdom:** ${voiceLine.text}`,
+        content: formatSimpleWisdomMessage(voiceLine.text, adviceType),
         ephemeral: true,
       });
     }
 
-    try {
-      // Use actual voice line files when available, with TTS fallback
-      const resource = await createVoiceLineResource(voiceLine);
+    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
 
-      await PlayResourceInVoiceChannel(
-        member.voice.channel as VoiceChannel,
-        resource,
-      );
+    try {
+      const resource = await VoiceService.createVoiceLineResource(voiceLine);
+      await playResourceInChannel(voiceChannel, resource);
 
       logger.info(`Delivered advice: "${voiceLine.text}"`);
       
-      // Get appropriate emoji based on advice type
-      const getAdviceEmoji = (type?: string) => {
-        switch (type) {
-          case 'greeting': return '🙏';
-          case 'harmony': return '💚';
-          case 'discord': return '⚡';
-          case 'transcendence': return '✨';
-          case 'random': return '🎲';
-          default: return '🧘';
-        }
-      };
-      
-      // Get appropriate message prefix based on type
-      const getAdvicePrefix = (type?: string) => {
-        switch (type) {
-          case 'greeting': return 'Peace be upon you...';
-          case 'harmony': return 'Embrace harmony...';
-          case 'discord': return 'Face your challenges...';
-          case 'transcendence': return 'Experience tranquility...';
-          case 'random': return 'The iris reveals...';
-          default: return 'Walk in wisdom...';
-        }
-      };
-
       await interaction.followUp({
         ephemeral: true,
-        content: `${getAdviceEmoji(adviceType)} **${getAdvicePrefix(adviceType)}** "${voiceLine.text}"`,
+        content: formatWisdomMessage(voiceLine.text, adviceType),
       });
     } catch (error) {
       logger.error("Error during advice execution:", error);
-      await interaction.followUp({
-        ephemeral: true,
-        content: "🚨 The path to wisdom encountered a disturbance. Please try again.",
-      });
+      await interaction.followUp(
+        createErrorResponse("🚨 The path to wisdom encountered a disturbance. Please try again.")
+      );
     }
   },
 };

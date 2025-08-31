@@ -1,15 +1,13 @@
 import {
   Client,
   CommandInteraction,
-  CommandInteractionOptionResolver,
-  GuildMember,
   SlashCommandBuilder,
   VoiceChannel,
 } from "discord.js";
-import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
-import { createTTSStream } from "../voice/tts";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
+import { validateVoiceChannel, getInteractionOptions, createErrorResponse, createSuccessResponse } from "../utils/commandHelpers";
+import { playTTSInChannel } from "../utils/voiceHelpers";
 
 export const TTS: Command = {
   data: new SlashCommandBuilder()
@@ -20,39 +18,26 @@ export const TTS: Command = {
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
-
-    if (!member?.voice?.channelId) {
-      logger.debug("Replying with text - user not in voice channel");
-      return await interaction.followUp({
-        content: "You have to be in voice to use this",
-        ephemeral: true,
-      });
+    const validation = validateVoiceChannel(interaction);
+    if (!validation.isValid) {
+      return await interaction.followUp(validation.response!);
     }
-    let options = interaction.options as CommandInteractionOptionResolver;
-    let text = options.getString("tts_text") || "no text provided";
+
+    const options = getInteractionOptions(interaction);
+    const text = options.getString("tts_text") || "no text provided";
+    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
 
     try {
-      // Use the new createTTSStream function from voice/tts.ts
-
-      // Get audio resource directly from the stream
-      const resource = await createTTSStream(text);
-
-      await PlayResourceInVoiceChannel(
-        member.voice.channel as VoiceChannel,
-        resource,
+      await playTTSInChannel(voiceChannel, text);
+      
+      await interaction.followUp(
+        createSuccessResponse(`TTS delivered in voice channel ${voiceChannel.name}`)
       );
-
-      await interaction.followUp({
-        ephemeral: true,
-        content: `Attempting to TTS in Voice Channel ${member.voice.channel?.name}`,
-      });
     } catch (error) {
       logger.error("Error during TTS execution:", error);
-      await interaction.followUp({
-        ephemeral: true,
-        content: "An error occurred while trying to perform TTS.",
-      });
+      await interaction.followUp(
+        createErrorResponse("An error occurred while trying to perform TTS.")
+      );
     }
   },
 };

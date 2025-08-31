@@ -1,0 +1,228 @@
+import OpenAI from "openai";
+import { Config, OPENAI_API_KEY, AI_CONFIG, VOICE_CONFIG } from "../config";
+import { logger } from "../utils/logger";
+
+/**
+ * Centralized OpenAI service to eliminate duplicate client creation
+ * and standardize AI operations across the application
+ */
+export class OpenAIService {
+  private static instance: OpenAI | null = null;
+
+  /**
+   * Gets singleton OpenAI client instance
+   */
+  static getClient(): OpenAI {
+    if (!this.instance) {
+      this.instance = new OpenAI({ 
+        apiKey: OPENAI_API_KEY 
+      });
+      logger.info('OpenAI client initialized');
+    }
+    return this.instance;
+  }
+
+  // ===== TTS METHODS =====
+
+  /**
+   * Creates TTS audio stream with Zenyatta personality
+   */
+  static async createTTSStream(text: string): Promise<Buffer> {
+    const client = this.getClient();
+    
+    try {
+      logger.info(`Creating TTS for text: "${text}"`);
+      
+      const response = await client.audio.speech.create({
+        model: VOICE_CONFIG.TTS_MODEL,
+        voice: VOICE_CONFIG.TTS_VOICE,
+        input: text,
+        instructions: VOICE_CONFIG.ZENYATTA_INSTRUCTIONS,
+        response_format: VOICE_CONFIG.TTS_FORMAT,
+      });
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      
+      if (buffer.length === 0) {
+        throw new Error('TTS response buffer is empty');
+      }
+      
+      logger.info(`TTS buffer created successfully: ${buffer.length} bytes`);
+      return buffer;
+    } catch (error) {
+      logger.error('Error creating TTS stream:', error);
+      throw new Error(`Failed to generate TTS: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Creates legacy TTS file (for backward compatibility)
+   */
+  static async createLegacyTTS(text: string): Promise<Buffer> {
+    const client = this.getClient();
+    
+    try {
+      const response = await client.audio.speech.create({
+        model: VOICE_CONFIG.LEGACY_TTS_MODEL,
+        voice: VOICE_CONFIG.LEGACY_TTS_VOICE,
+        input: text,
+        response_format: VOICE_CONFIG.LEGACY_TTS_FORMAT,
+      });
+
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) {
+      logger.error('Error creating legacy TTS:', error);
+      throw new Error(`Failed to generate legacy TTS: ${(error as Error).message}`);
+    }
+  }
+
+  // ===== CHAT COMPLETION METHODS =====
+
+  /**
+   * Generates AI chat completion with standard configuration
+   */
+  static async generateChatCompletion(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    options: {
+      temperature?: number;
+      maxTokens?: number;
+      model?: string;
+    } = {}
+  ): Promise<string> {
+    const client = this.getClient();
+    
+    try {
+      const response = await client.chat.completions.create({
+        model: options.model || AI_CONFIG.CHAT_MODEL,
+        messages,
+        temperature: options.temperature || AI_CONFIG.DEFAULT_TEMPERATURE,
+        max_tokens: options.maxTokens || AI_CONFIG.DEFAULT_MAX_TOKENS,
+      });
+
+      const content = response.choices[0]?.message.content;
+      if (!content) {
+        throw new Error('No content in AI response');
+      }
+
+      return content;
+    } catch (error) {
+      logger.error('Error generating chat completion:', error);
+      throw new Error(`Failed to generate AI response: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Generates a compliment about a subject
+   */
+  static async generateCompliment(subject: string = "a discord user"): Promise<string> {
+    try {
+      logger.info(`Generating compliment for: ${subject}`);
+      
+      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: `You are a quirky AI that generates funny, lighthearted compliments. 
+                   Keep them wholesome and playful. Example: "${subject} is looking very dapper today"`
+        },
+        {
+          role: "user",
+          content: `Write a short, funny compliment about ${subject}`
+        }
+      ];
+
+      const result = await this.generateChatCompletion(messages);
+      logger.info(`Generated compliment: "${result}"`);
+      return result;
+    } catch (error) {
+      logger.error('Error generating compliment:', error);
+      return `${subject} is absolutely wonderful!`;
+    }
+  }
+
+  /**
+   * Generates a lighthearted insult about a subject
+   */
+  static async generateInsult(subject: string = "a discord user"): Promise<string> {
+    try {
+      logger.info(`Generating insult for: ${subject}`);
+      
+      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: `You are a quirky AI that generates funny, lighthearted insults. 
+                   Keep them playful and silly, never mean or hurtful. Example: "${subject} is a poopoo head"`
+        },
+        {
+          role: "user",
+          content: `Write a funny lighthearted insult about ${subject}`
+        }
+      ];
+
+      const result = await this.generateChatCompletion(messages);
+      logger.info(`Generated insult: "${result}"`);
+      return result;
+    } catch (error) {
+      logger.error('Error generating insult:', error);
+      return `${subject} is being a silly goose!`;
+    }
+  }
+
+  /**
+   * Batch processes quotes with AI (used sparingly)
+   */
+  static async batchParseQuotes(contents: string[]): Promise<any[]> {
+    if (contents.length === 0) return [];
+    
+    try {
+      const batchContent = contents.map((c, i) => `${i}: ${c}`).join('\n');
+      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        {
+          role: "system", 
+          content: `Parse multiple Discord quotes. Return JSON array: [{"index": 0, "speaker": "name or null", "quote": "actual quote", "isQuoted": true/false}]`
+        },
+        {
+          role: "user",
+          content: batchContent
+        }
+      ];
+
+      const result = await this.generateChatCompletion(messages, {
+        temperature: 0.1,
+        maxTokens: 1000
+      });
+      
+      return JSON.parse(result);
+    } catch (error) {
+      logger.error('Batch AI parsing failed:', error);
+      // Fallback to simple parsing would be handled by the calling service
+      throw new Error(`Failed to parse quotes with AI: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Health check for OpenAI service
+   */
+  static async healthCheck(): Promise<boolean> {
+    try {
+      const client = this.getClient();
+      // Try a minimal request to verify API key works
+      await client.models.list();
+      return true;
+    } catch (error) {
+      logger.error('OpenAI health check failed:', error);
+      return false;
+    }
+  }
+}
+
+// Export convenience methods
+export const {
+  getClient,
+  createTTSStream,
+  createLegacyTTS,
+  generateChatCompletion,
+  generateCompliment,
+  generateInsult,
+  batchParseQuotes,
+  healthCheck
+} = OpenAIService;

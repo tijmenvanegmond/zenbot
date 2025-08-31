@@ -2,40 +2,18 @@ import adviceList from "./zenVoiceLines.json";
 import { createAudioResource, AudioResource, StreamType } from "@discordjs/voice";
 import { createTTSStream } from "./tts";
 import { logger } from "../utils/logger";
+import { VoiceLineData, VoiceLineCategories, AdviceContext, API_CONFIG } from "../types";
 import { Readable } from "stream";
 import https from "https";
 import http from "http";
 import fs from "fs";
 import path from "path";
 
-export interface VoiceLineData {
-  text: string;
-  voiceUri: string | null;
-  length: number;
-}
-
-export interface VoiceLineCategories {
-  heroSelected: VoiceLineData[];
-  setupPhase: VoiceLineData[];
-  orbOfHarmony: VoiceLineData[];
-  orbOfDiscord: VoiceLineData[];
-  transcendence: VoiceLineData[];
-  elimination: VoiceLineData[];
-  philosophical: VoiceLineData[];
-  greetings: VoiceLineData[];
-  interactions: {
-    genji: VoiceLineData[];
-    ramattra: VoiceLineData[];
-    symmetra: VoiceLineData[];
-  };
-  special: VoiceLineData[];
-}
-
 // Legacy collection for backward compatibility
 export const VoiceLineDataCollection: VoiceLineData[] = adviceList.legacy.data;
 
-// New categorized voice lines
-export const VoiceLineCategories: VoiceLineCategories = adviceList.categories;
+// New categorized voice lines - using lowercase to avoid naming conflicts
+const voiceLineCategories: VoiceLineCategories = adviceList.categories;
 
 // Helper function to get random voice line from a category
 export function getRandomVoiceLineFromCategory(category: VoiceLineData[]): VoiceLineData {
@@ -43,21 +21,21 @@ export function getRandomVoiceLineFromCategory(category: VoiceLineData[]): Voice
 }
 
 // Helper function to get contextual advice
-export function getContextualAdvice(context?: 'greeting' | 'philosophical' | 'harmony' | 'discord' | 'transcendence'): VoiceLineData {
+export function getContextualAdvice(context?: AdviceContext): VoiceLineData {
   switch (context) {
     case 'greeting':
-      return getRandomVoiceLineFromCategory(VoiceLineCategories.greetings);
+      return getRandomVoiceLineFromCategory(voiceLineCategories.greetings);
     case 'philosophical':
-      return getRandomVoiceLineFromCategory(VoiceLineCategories.philosophical);
+      return getRandomVoiceLineFromCategory(voiceLineCategories.philosophical);
     case 'harmony':
-      return getRandomVoiceLineFromCategory(VoiceLineCategories.orbOfHarmony);
+      return getRandomVoiceLineFromCategory(voiceLineCategories.orbOfHarmony);
     case 'discord':
-      return getRandomVoiceLineFromCategory(VoiceLineCategories.orbOfDiscord);
+      return getRandomVoiceLineFromCategory(voiceLineCategories.orbOfDiscord);
     case 'transcendence':
-      return getRandomVoiceLineFromCategory(VoiceLineCategories.transcendence);
+      return getRandomVoiceLineFromCategory(voiceLineCategories.transcendence);
     default:
       // Default to philosophical wisdom for general advice
-      return getRandomVoiceLineFromCategory(VoiceLineCategories.philosophical);
+      return getRandomVoiceLineFromCategory(voiceLineCategories.philosophical);
   }
 }
 
@@ -83,7 +61,7 @@ export async function createVoiceLineResource(voiceLine: VoiceLineData): Promise
           }
         });
         request.on('error', reject);
-        request.setTimeout(10000, () => {
+        request.setTimeout(API_CONFIG.REQUEST_TIMEOUT, () => {
           request.destroy();
           reject(new Error('Request timeout'));
         });

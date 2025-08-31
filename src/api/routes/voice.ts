@@ -1,39 +1,24 @@
 import { FastifyInstance } from "fastify";
-import { Client, VoiceChannel, GuildMember } from "discord.js";
+import { Client, VoiceChannel } from "discord.js";
 import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
-import { createTTSStream } from "../../voice/tts";
-import PlayResourceInVoiceChannel from "../../voice/playInVoiceChannel";
+import { VoiceService } from "../../services/voiceService";
+import { GuildService } from "../../services/guildService";
 import { logger } from "../../utils/logger";
+import { CHANNEL_TYPES } from "../../config";
 
 export default async function voiceRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   
-  // Voice Channel Discovery
-  // List all voice channels in guild
+  // Voice Channel Discovery - List all voice channels in guild
   fastify.get("/guilds/:guildId/voice-channels", async function handler(request: any, reply) {
     const { guildId } = request.params;
     
-    const guild = discordClient.guilds.cache.get(guildId);
+    const guild = GuildService.findGuild(discordClient, guildId);
     if (!guild) {
       reply.code(404).send({ error: "Guild not found" });
       return;
     }
     
-    const voiceChannels = guild.channels.cache
-      .filter(channel => channel.type === 2) // GUILD_VOICE = 2
-      .map(channel => {
-        const voiceChannel = channel as VoiceChannel;
-        return {
-          id: voiceChannel.id,
-          name: voiceChannel.name,
-          memberCount: voiceChannel.members.size,
-          members: voiceChannel.members.map((member: GuildMember) => ({
-            id: member.id,
-            username: member.user.username,
-            displayName: member.displayName
-          }))
-        };
-      });
-    
+    const voiceChannels = GuildService.getVoiceChannels(guild);
     reply.send({ voiceChannels });
   });
 
@@ -41,27 +26,13 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
   fastify.get("/guilds/:guildId/voice-channels/active", async function handler(request: any, reply) {
     const { guildId } = request.params;
     
-    const guild = discordClient.guilds.cache.get(guildId);
+    const guild = GuildService.findGuild(discordClient, guildId);
     if (!guild) {
       reply.code(404).send({ error: "Guild not found" });
       return;
     }
     
-    const activeChannels = guild.channels.cache
-      .filter(channel => channel.type === 2)
-      .map(channel => channel as VoiceChannel)
-      .filter(voiceChannel => voiceChannel.members.size > 0)
-      .map(voiceChannel => ({
-        id: voiceChannel.id,
-        name: voiceChannel.name,
-        memberCount: voiceChannel.members.size,
-        members: voiceChannel.members.map((member: GuildMember) => ({
-          id: member.id,
-          username: member.user.username,
-          displayName: member.displayName
-        }))
-      }));
-    
+    const activeChannels = GuildService.getActiveVoiceChannels(guild);
     reply.send({ activeChannels });
   });
 
@@ -69,28 +40,19 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
   fastify.get("/guilds/:guildId/voice-channels/:channelId/members", async function handler(request: any, reply) {
     const { guildId, channelId } = request.params;
     
-    const guild = discordClient.guilds.cache.get(guildId);
+    const guild = GuildService.findGuild(discordClient, guildId);
     if (!guild) {
       reply.code(404).send({ error: "Guild not found" });
       return;
     }
     
-    const channel = guild.channels.cache.get(channelId);
-    if (!channel || channel.type !== 2) {
+    const members = GuildService.getVoiceChannelMembers(guild, channelId);
+    if (members === null) {
       reply.code(404).send({ error: "Voice channel not found" });
       return;
     }
     
-    const voiceChannel = channel as VoiceChannel;
-    const members = voiceChannel.members.map((member: GuildMember) => ({
-      id: member.id,
-      username: member.user.username,
-      displayName: member.displayName,
-      isDeafened: member.voice.deaf,
-      isMuted: member.voice.mute,
-      isSelfDeafened: member.voice.selfDeaf,
-      isSelfMuted: member.voice.selfMute
-    })) || [];
+    const voiceChannel = GuildService.findVoiceChannel(guild, channelId)!;
     
     reply.send({ 
       channel: {
@@ -114,7 +76,7 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
     }
     
     const channel = guild.channels.cache.get(channelId);
-    if (!channel || channel.type !== 2) {
+    if (!channel || channel.type !== CHANNEL_TYPES.GUILD_VOICE) {
       reply.code(404).send({ error: "Voice channel not found" });
       return;
     }
@@ -230,17 +192,14 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
     }
     
     const channel = guild.channels.cache.get(channelId);
-    if (!channel || channel.type !== 2) {
+    if (!channel || channel.type !== CHANNEL_TYPES.GUILD_VOICE) {
       reply.code(404).send({ error: "Voice channel not found" });
       return;
     }
     
     try {
-      // Create TTS audio resource
-      const resource = await createTTSStream(text);
-      
-      // Play in the specified voice channel
-      await PlayResourceInVoiceChannel(channel as any, resource);
+      // Play TTS directly in voice channel
+      await VoiceService.playTTSInChannel(channel as VoiceChannel, text);
       
       logger.info(`API: TTS played in ${channel.name}: "${text}"`);
       
@@ -291,11 +250,8 @@ export default async function voiceRoutes(fastify: FastifyInstance, { discordCli
     }
     
     try {
-      // Create TTS audio resource
-      const resource = await createTTSStream(text);
-      
-      // Play in the current voice channel
-      await PlayResourceInVoiceChannel(currentChannel as any, resource);
+      // Play TTS directly in current voice channel
+      await VoiceService.playTTSInChannel(currentChannel as VoiceChannel, text);
       
       logger.info(`API: TTS played in current channel ${currentChannel.name}: "${text}"`);
       

@@ -7,13 +7,7 @@ import {
   VoiceState,
 } from "discord.js";
 import { logger } from "../utils/logger";
-
-const EXCLUDE_VOICE_CHANNEL_IDS = [
-  "1146803612492777",
-  "1146803612492775517",
-  "1226931698336534652",
-  "1163888773617176646",
-];
+import { EXCLUDED_VOICE_CHANNELS } from "../config";
 
 export default (client: Client): void => {
   client.on(
@@ -41,7 +35,7 @@ export default (client: Client): void => {
         return;
       }
 
-      if (EXCLUDE_VOICE_CHANNEL_IDS.includes(channel.id!)) {
+      if ((EXCLUDED_VOICE_CHANNELS as readonly string[]).includes(channel.id!)) {
         logger.debug(`Ignoring channel ${channel.id} - excluded channel`);
         return;
       }

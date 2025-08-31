@@ -1,26 +1,13 @@
 import { FastifyInstance } from "fastify";
 import { Client, TextChannel } from "discord.js";
+import { GuildService } from "../../services/guildService";
+import { CHANNEL_TYPES } from "../../config";
 
 export default async function guildsRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   // Get bot status and guild info
   fastify.get("/status", async function handler(request, reply) {
-    const guilds = discordClient.guilds.cache.map(guild => ({
-      id: guild.id,
-      name: guild.name,
-      memberCount: guild.memberCount,
-      voiceConnections: 0
-    }));
-    
-    reply.send({
-      bot: {
-        username: discordClient.user?.username,
-        id: discordClient.user?.id,
-        uptime: discordClient.uptime,
-        ping: discordClient.ws.ping
-      },
-      guilds,
-      totalGuilds: discordClient.guilds.cache.size
-    });
+    const status = GuildService.getBotStatus(discordClient);
+    reply.send(status);
   });
 
   // Get available commands
@@ -45,7 +32,7 @@ export default async function guildsRoutes(fastify: FastifyInstance, { discordCl
     }
     
     const textChannels = guild.channels.cache
-      .filter(channel => channel.type === 0) // GUILD_TEXT = 0
+      .filter(channel => channel.type === CHANNEL_TYPES.GUILD_TEXT)
       .map(channel => {
         const textChannel = channel as TextChannel;
         return {

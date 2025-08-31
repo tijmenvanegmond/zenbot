@@ -1,15 +1,14 @@
 import {
   CommandInteraction,
   Client,
-  GuildMember,
   VoiceChannel,
   SlashCommandBuilder,
-  CommandInteractionOptionResolver,
 } from "discord.js";
 import { Command } from "./command";
 import { joinVoiceChannel } from "@discordjs/voice";
 import * as fs from "fs";
 import { logger } from "../utils/logger";
+import { validateVoiceChannel, createSuccessResponse } from "../utils/commandHelpers";
 
 const OUTPUT_FILE = "listen-test.opus";
 
@@ -19,26 +18,20 @@ export const Listen: Command = {
     .setDescription("listens to a voice channel"),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
-
-    if (!member?.voice?.channelId) {
-      logger.info("Replying in text - user not in voice channel");
-      return await interaction.followUp({
-        content: "You have to be in voice to use this",
-        ephemeral: true,
-      });
+    const validation = validateVoiceChannel(interaction);
+    if (!validation.isValid) {
+      return await interaction.followUp(validation.response!);
     }
 
-    let options = interaction.options as CommandInteractionOptionResolver;
+    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
 
-    logger.info(`Joining voice channel ${member.voice.channel?.name} to listen`);
+    logger.info(`Joining voice channel ${voiceChannel.name} to listen`);
 
-    ListenToVoiceChannel(client, member.voice.channel as VoiceChannel);
+    ListenToVoiceChannel(client, voiceChannel);
 
-    await interaction.followUp({
-      ephemeral: true,
-      content: `Attemting to Listen to Voice Channel ${member.voice.channel?.name}`,
-    });
+    await interaction.followUp(
+      createSuccessResponse(`Listening to voice channel ${voiceChannel.name}`)
+    );
   },
 };
 

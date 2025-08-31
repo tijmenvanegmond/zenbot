@@ -1,18 +1,14 @@
 import {
   CommandInteraction,
   Client,
-  GuildMember,
   VoiceChannel,
   SlashCommandBuilder,
-  CommandInteractionOptionResolver,
 } from "discord.js";
 import { Command } from "./command";
-import { StreamType, createAudioResource } from "@discordjs/voice";
-import { turnTextIntoSpeechBuffer } from "../voice/tts";
-import { getInsult, getPraise } from "../voice/remark";
-import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
-import path from "node:path";
+import { RemarkService } from "../services/remarkService";
 import { logger } from "../utils/logger";
+import { validateVoiceChannel, getInteractionOptions, createErrorResponse } from "../utils/commandHelpers";
+import { playTTSInChannel } from "../utils/voiceHelpers";
 
 export const Remark: Command = {
   data: new SlashCommandBuilder()
@@ -28,39 +24,36 @@ export const Remark: Command = {
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
-
-    if (!member?.voice?.channelId) {
-      logger.info("Replying in text - user not in voice channel");
-      return await interaction.followUp({
-        content: "You have to be in voice to use this",
-        ephemeral: true,
-      });
+    const validation = validateVoiceChannel(interaction);
+    if (!validation.isValid) {
+      return await interaction.followUp(validation.response!);
     }
 
-    let options = interaction.options as CommandInteractionOptionResolver;
-    let text = "";
-    if (options.getBoolean("positive")) {
-      text = await getPraise(options.getUser("subject")?.username);
+    const options = getInteractionOptions(interaction);
+    const isPositive = options.getBoolean("positive");
+    const targetUser = options.getUser("subject");
+    
+    let text: string;
+    if (isPositive) {
+      text = await RemarkService.generatePraise(targetUser?.username);
     } else {
-      text = await getInsult(options.getUser("subject")?.username);
+      text = await RemarkService.generateInsult(targetUser?.username);
     }
 
-    const outputFilePath = "./output.opus";
-    const filepath = path.resolve(outputFilePath);
-    await turnTextIntoSpeechBuffer(text, filepath);
-    const resource = createAudioResource(filepath, {
-      inputType: StreamType.Opus,
-    });
+    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
 
-    await PlayResourceInVoiceChannel(
-      member.voice.channel as VoiceChannel,
-      resource,
-    );
+    try {
+      await playTTSInChannel(voiceChannel, text);
 
-    await interaction.followUp({
-      ephemeral: true,
-      content: text,
-    });
+      await interaction.followUp({
+        ephemeral: true,
+        content: `🎭 **Remark delivered:** ${text}`,
+      });
+    } catch (error) {
+      logger.error("Error during remark execution:", error);
+      await interaction.followUp(
+        createErrorResponse("An error occurred while delivering the remark.")
+      );
+    }
   },
 };
