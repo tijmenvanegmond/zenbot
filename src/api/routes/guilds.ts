@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { Client, TextChannel } from "discord.js";
 import { GuildService } from "../../services/guildService";
 import { CHANNEL_TYPES } from "../../config";
+import { CommandCollection } from "../../commands/commandCollection";
 
 export default async function guildsRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   // Get bot status and guild info
@@ -12,13 +13,12 @@ export default async function guildsRoutes(fastify: FastifyInstance, { discordCl
 
   // Get available commands
   fastify.get("/commands", async function handler(request, reply) {
-    const { CommandCollection } = await import("../../commands/commandCollection.js");
-    const commands = CommandCollection.map((cmd: any) => ({
-      name: cmd.data.name,
-      description: cmd.data.description,
-      options: cmd.data.options
-    }));
-    reply.send({ commands });
+      const commands = CommandCollection.map((cmd: any) => ({
+        name: cmd.data.name,
+        description: cmd.data.description,
+        options: cmd.data.options
+      }));
+      reply.send({ commands });
   });
 
   // List all text channels in guild - discover channels of wisdom

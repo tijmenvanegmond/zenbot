@@ -76,6 +76,62 @@ export class OpenAIService {
     }
   }
 
+  // ===== SPEECH TRANSCRIPTION METHODS =====
+
+  /**
+   * Transcribes audio file to text using Whisper
+   */
+  static async transcribeAudio(audioFilePath: string): Promise<string> {
+    const client = this.getClient();
+    const fs = await import('fs');
+    
+    try {
+      logger.info(`Transcribing audio file: ${audioFilePath}`);
+      
+      // Create a File object from the file path - use OGG since Whisper doesn't support OPUS
+      const audioBuffer = fs.readFileSync(audioFilePath);
+      const audioFile = new File([audioBuffer], 'audio.ogg', { type: 'audio/ogg' });
+      
+      const transcription = await client.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+        language: "en", // Can be made configurable
+      });
+
+      logger.info(`Transcription successful: "${transcription.text}"`);
+      return transcription.text.trim();
+    } catch (error) {
+      logger.error('Error transcribing audio:', error);
+      throw new Error(`Failed to transcribe audio: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Transcribes audio buffer to text (for in-memory processing)
+   */
+  static async transcribeAudioBuffer(audioBuffer: Buffer, filename: string = "audio.wav"): Promise<string> {
+    const client = this.getClient();
+    
+    try {
+      logger.info(`Transcribing audio buffer: ${audioBuffer.length} bytes`);
+      
+      // Create a File object directly from the WAV buffer
+      const audioFile = new File([audioBuffer], filename, { type: 'audio/wav' });
+      
+      const transcription = await client.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-1",
+        language: "en", // Can be made configurable
+      });
+
+      logger.info(`Buffer transcription successful: "${transcription.text}"`);
+      return transcription.text.trim();
+    } catch (error) {
+      logger.error('Error transcribing audio buffer:', error);
+      throw new Error(`Failed to transcribe audio buffer: ${(error as Error).message}`);
+    }
+  }
+
   // ===== CHAT COMPLETION METHODS =====
 
   /**
@@ -146,7 +202,7 @@ export class OpenAIService {
 
       const result = await this.generateChatCompletion(messages, {
         temperature: 0.9, // Higher creativity
-        maxTokens: 150
+        maxTokens: 100 // Keep it snappy
       });
       logger.info(`Generated compliment: "${result}"`);
       return result;
@@ -194,7 +250,7 @@ export class OpenAIService {
 
       const result = await this.generateChatCompletion(messages, {
         temperature: 1.0, // Maximum creativity for insults
-        maxTokens: 150
+        maxTokens: 100 // Keep it snappy
       });
       logger.info(`Generated insult: "${result}"`);
       return result;
@@ -257,6 +313,8 @@ export const {
   getClient,
   createTTSStream,
   createLegacyTTS,
+  transcribeAudio,
+  transcribeAudioBuffer,
   generateChatCompletion,
   generateCompliment,
   generateInsult,
