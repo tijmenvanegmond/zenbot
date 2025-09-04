@@ -1,6 +1,6 @@
 import { VoiceChannel } from "discord.js";
 import { AudioResource } from "@discordjs/voice";
-import { VoiceService } from "../services/voiceService";
+import { VoiceService } from "../infrastructure/services/voiceService";
 import { logger } from "./logger";
 
 /**

@@ -59,6 +59,15 @@ The bot requires:
   - `voiceLineData.ts` - Voice line management
   - `zenVoiceLines.json` - Audio file mappings
 
+### Voice Command System - Real-time Transcription and Response
+- `src/commands/listen.ts` - Complete voice command implementation
+  - Real-time Discord Opus audio capture and decoding using prism-media
+  - OpenAI Whisper speech-to-text transcription with WAV format conversion
+  - Intelligent voice command pattern matching with Zenyatta personality responses
+  - Configurable listen duration (1-60 minutes) via slash command option
+  - Proper resource management, memory leak prevention, and stream cleanup
+  - Duration filtering to avoid transcribing background noise or short sounds
+
 ### REST API
 - `src/api/` - Comprehensive REST API for programmatic bot control
   - `index.ts` - Main API router registration
@@ -73,6 +82,8 @@ The bot requires:
 ### Key Dependencies
 - Discord.js v14 with voice support (@discordjs/voice)
 - OpenAI API for text-to-speech (gpt-4o-mini-tts model, "echo" voice, MP3 format)
+- OpenAI Whisper API for speech-to-text transcription
+- prism-media with opusscript for Discord Opus audio decoding
 - Fastify for REST API server
 - FFmpeg for audio processing
 
@@ -122,6 +133,15 @@ The bot uses a modular command system where each command implements the `Command
 - TTS uses OpenAI's gpt-4o-mini-tts model with "echo" voice and MP3 format for Discord.js compatibility
 - Audio resources use `StreamType.Arbitrary` for proper playback
 - Voice character instructions help maintain Zenyatta's calm, wise, and serene tone
+
+### Voice Command Implementation - Critical Lessons
+- **Discord Opus Decoding**: Discord.js receiver.subscribe() provides raw Opus streams, not PCM
+- **prism-media Solution**: Use `opus.Decoder` with proper settings (frameSize: 960, channels: 2, rate: 48000)
+- **WAV Format Requirements**: OpenAI Whisper requires proper WAV headers with correct format specifications
+- **Audio Quality Thresholds**: Filter audio by duration (500ms minimum) and size (2KB minimum)
+- **Resource Management**: Always destroy streams and clear buffers to prevent memory leaks
+- **Real-time Processing**: Process audio in speaking 'end' events for immediate transcription
+- **Command Pattern Matching**: Use inclusive pattern matching for flexible voice command recognition
 
 ### Quote System Architecture
 - Enhanced quote parsing distinguishes between message poster and actual speaker
@@ -198,4 +218,43 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:3001/guilds/123/voice-channels/789/tts
 ```
 
-*"True self is without form... but proper error handling helps."*
+## Voice Command Usage Examples
+
+```bash
+# Start listening in voice channel for 5 minutes
+/listen time:5
+
+# Voice commands that trigger responses:
+# "Hello Zenbot" -> "Greetings, my friend. Experience tranquility..."
+# "Give me wisdom" -> Random Zenyatta quote with TTS
+# "Help" -> Explanation of available voice commands
+# "Goodbye" -> Farewell message and bot leaves after 3 seconds
+# "How are you" -> Status inquiry response
+# "Thank you" -> Gratitude acknowledgment
+```
+
+## Voice Command Architecture Deep Dive
+
+```typescript
+// Critical implementation pattern for Discord Opus decoding
+const opusStream = receiver.subscribe(userId);
+const decoder = new opus.Decoder({ frameSize: 960, channels: 2, rate: 48000 });
+const pcmStream = opusStream.pipe(decoder);
+
+// Proper WAV header generation for Whisper API
+function createWAVBuffer(pcmBuffers: Buffer[]): Buffer {
+  const pcmData = Buffer.concat(pcmBuffers);
+  const header = Buffer.alloc(44);
+  // ... WAV header construction with proper format specifications
+  return Buffer.concat([header, pcmData]);
+}
+
+// Real-time transcription and response pipeline
+reciever.speaking.on("end", async (userId) => {
+  const wavBuffer = createWAVBuffer(userPcmBuffers);
+  const transcription = await OpenAIService.transcribeAudioBuffer(wavBuffer);
+  await processVoiceCommand(userId, transcription, voiceChannel);
+});
+```
+
+*"True self is without form... but proper Opus decoding brings harmony to all voice interactions."*

@@ -8,7 +8,11 @@
       "Bash(docker logs:*)",
       "Bash(docker run:*)",
       "WebSearch",
-      "WebFetch(domain:openai.com)"
+      "WebFetch(domain:openai.com)",
+      "Bash(docker stop:*)",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_evaluate"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,5 @@
-import { getInsult } from "./voice/remark";
-import { turnTextIntoSpeechBuffer } from "./voice/tts";
+import { getInsult } from "./infrastructure/voice/remark";
+import { turnTextIntoSpeechBuffer } from "./infrastructure/voice/tts";
 import { logger } from "./utils/logger";
 
 (async () => {

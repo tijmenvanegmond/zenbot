@@ -1,12 +1,17 @@
 import "dotenv/config";
 import { Client, GatewayIntentBits } from "discord.js";
-import onReady from "./listeners/onReady";
-import onInteractionCreate from "./listeners/onInteractionCreate";
-import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
+import onReady from "./infrastructure/listeners/onReady";
+import onInteraction from "./infrastructure/listeners/onInteraction";
+import onVoiceChannelUpdate from "./infrastructure/listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
-import onPlayerUpdate from "./listeners/onPlayerUpdate";
-import { registerApiRoutes } from "./api";
+import onPlayerUpdate from "./infrastructure/listeners/onPlayerUpdate";
+import { registerApiRoutes } from "./infrastructure/api";
 import { logger } from "./utils/logger";
+
+import { ModernCommandCollection as SlashCommandCollection } from './infrastructure/slashCommands/ModernCommandCollection'
+
+// Import new hybrid system
+import { ZenbotOrchestrator } from "./application/ZenbotOrchestrator";
 
 // Allow overriding via command line arguments
 const DISCORD_API_TOKEN = process.argv[2] || process.env.DISCORD_API_TOKEN;
@@ -26,9 +31,16 @@ const discordClient = new Client({
   ],
 });
 
+// Initialize the hybrid command/event system
+logger.info("🧘 Initializing Zenbot Orchestrator - The path to harmony begins");
+const orchestrator = new ZenbotOrchestrator(discordClient);
+
 // Embrace the harmony of listeners - each one a pillar of enlightenment
-onReady(discordClient);
-onInteractionCreate(discordClient);
+
+const slashCommands = new SlashCommandCollection(orchestrator.getEventBus());
+
+onReady(discordClient, slashCommands);
+onInteraction(discordClient, slashCommands);
 onVoiceChannelUpdate(discordClient);
 onPlayerUpdate(discordClient);
 discordClient.login(DISCORD_API_TOKEN);
@@ -39,6 +51,6 @@ const fastify = Fastify({
 });
 
 // Register all API routes - true self flows through many forms
-registerApiRoutes(fastify, discordClient);
+registerApiRoutes(fastify, discordClient, orchestrator, slashCommands);
 
 fastify.listen({ host: "0.0.0.0", port: Number(PORT) });
