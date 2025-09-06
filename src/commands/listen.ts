@@ -11,6 +11,7 @@ import { validateVoiceChannel, createSuccessResponse } from "../utils/commandHel
 import { OpenAIService } from "../services/openaiService";
 import { playInVoiceChannel } from "../voice/playInVoiceChannel";
 import { opus } from "prism-media";
+import { Zenbot } from "src/domain/session/Zenbot";
 
 const OUTPUT_FILE = "listen-test.opus";
 
@@ -67,89 +68,6 @@ function createWAVBuffer(pcmBuffers: Buffer[]): Buffer {
   return Buffer.concat([header, pcmData]);
 }
 
-/**
- * Process voice commands from transcribed speech
- */
-async function processVoiceCommand(userId: string, transcription: string, voiceChannel: VoiceChannel): Promise<void> {
-  try {
-    const command = transcription.toLowerCase().trim();
-    
-    // Enhanced voice command patterns with Zenyatta responses
-    if (command.includes("hello") || command.includes("hi zenbot") || command.includes("hey zenbot") || command.includes("greetings")) {
-      logger.info(`🎤 Voice command detected: greeting from user ${userId}`);
-      await respondWithTTS("Greetings, my friend. Experience tranquility. How may I guide you on the path to enlightenment?", voiceChannel);
-      
-    } else if (command.includes("quote") || command.includes("give me a quote") || command.includes("wisdom") || command.includes("advice")) {
-      logger.info(`🎤 Voice command detected: wisdom request from user ${userId}`);
-      const wisdomQuotes = [
-        "True self is without form.",
-        "Peace be upon you.",
-        "The iris embraces you.",
-        "Experience nothingness.",
-        "Walk in harmony.",
-        "The payload moves like a stone through water.",
-        "Adversity is an opportunity for change.",
-        "I dreamt I was a butterfly.",
-        "Death is whimsical today.",
-        "Existence is mysterious."
-      ];
-      const randomQuote = wisdomQuotes[Math.floor(Math.random() * wisdomQuotes.length)];
-      await respondWithTTS(`From the depths of meditation... ${randomQuote} May these words bring you peace.`, voiceChannel);
-      
-    } else if (command.includes("stop") || command.includes("leave") || command.includes("goodbye") || command.includes("bye")) {
-      logger.info(`🎤 Voice command detected: farewell from user ${userId}`);
-      await respondWithTTS("May you find your path to enlightenment. Until we meet again... experience tranquility.", voiceChannel);
-      // Leave after response
-      setTimeout(() => {
-        logger.info(`🎤 Leaving voice channel as requested by user ${userId}`);
-      }, 3000); // Give time for TTS to finish
-      
-    } else if (command.includes("help") || command.includes("commands")) {
-      logger.info(`🎤 Voice command detected: help request from user ${userId}`);
-      await respondWithTTS("I can respond to greetings, share wisdom and quotes, or leave when you say goodbye. What guidance do you seek?", voiceChannel);
-      
-    } else if (command.includes("how are you") || command.includes("how do you feel")) {
-      logger.info(`🎤 Voice command detected: status inquiry from user ${userId}`);
-      await respondWithTTS("I am in harmony with the Iris. My circuits flow with digital tranquility. How do you find yourself today?", voiceChannel);
-      
-    } else if (command.includes("thank you") || command.includes("thanks")) {
-      logger.info(`🎤 Voice command detected: gratitude from user ${userId}`);
-      await respondWithTTS("Your gratitude honors me. We are all connected through the Iris.", voiceChannel);
-      
-    } else {
-      logger.info(`🎤 Speech transcribed but no command recognized: "${transcription}"`);
-      
-      // For debugging - repeat back what was heard
-      await respondWithTTS(`I heard you say: ${transcription}`, voiceChannel);
-      
-      // Occasionally respond to unrecognized speech with gentle guidance
-      // if (Math.random() < 0.3) { // 30% chance to respond
-      //   await respondWithTTS("I sense your words, but do not understand. Perhaps try saying hello, asking for wisdom, or requesting help?", voiceChannel);
-      // }
-    }
-  } catch (error) {
-    logger.error(`Error processing voice command from user ${userId}:`, error);
-  }
-}
-
-/**
- * Respond to voice commands with Zenyatta's TTS
- */
-async function respondWithTTS(message: string, voiceChannel: VoiceChannel): Promise<void> {
-  try {
-    logger.info(`🎤 Responding with TTS: "${message}"`);
-    
-    // Use existing TTS functionality - need to import and use OpenAI TTS
-    const audioBuffer = await OpenAIService.createTTSStream(message);
-    
-    // Play the TTS in the voice channel (similar to existing voice functionality)
-    await playInVoiceChannel(voiceChannel, audioBuffer);
-    
-  } catch (error) {
-    logger.error('Failed to respond with TTS:', error);
-  }
-}
-
 export const Listen: Command = {
   data: new SlashCommandBuilder()
     .setName("listen")
@@ -162,7 +80,7 @@ export const Listen: Command = {
         .setRequired(false)
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => {
     const validation = validateVoiceChannel(interaction);
     if (!validation.isValid) {
       return await interaction.followUp(validation.response!);
@@ -176,7 +94,7 @@ export const Listen: Command = {
 
     logger.info(`Joining voice channel ${voiceChannel.name} to listen for ${timeoutMinutes} minutes`);
 
-    ListenToVoiceChannel(client, voiceChannel, timeoutMs, OUTPUT_FILE);
+    ListenToVoiceChannel(client, zenbot, voiceChannel, timeoutMs, OUTPUT_FILE);
 
     await interaction.followUp(
       createSuccessResponse(`Listening to voice channel ${voiceChannel.name} for ${timeoutMinutes} minute${timeoutMinutes === 1 ? '' : 's'}`)
@@ -186,6 +104,7 @@ export const Listen: Command = {
 
 async function ListenToVoiceChannel(
   client: Client,
+  zenbot: Zenbot,
   voiceChannel: VoiceChannel,
   timeoutMs: number = DEFAULT_LISTEN_TIMEOUT_MS,
   fileName = OUTPUT_FILE,
@@ -290,7 +209,12 @@ async function ListenToVoiceChannel(
               logger.info(`🎤 Transcription from user ${userId}: "${transcription}"`);
               
               // Process voice commands
-              await processVoiceCommand(userId, transcription, voiceChannel);
+              const user = client.users.cache.get(userId);
+              if(!user) {
+                throw new Error(`User not found in cache: ${userId}`);
+              };
+              const session = zenbot.getSession(user); // Ensure session exists
+              session.converse(transcription, JSON.stringify({ voiceChannel , user}));
             } else {
               logger.info(`No speech detected in audio from user ${userId}`);
             }

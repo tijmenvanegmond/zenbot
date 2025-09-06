@@ -9,6 +9,7 @@ import { RemarkService } from "../services/remarkService";
 import { logger } from "../utils/logger";
 import { validateVoiceChannel, getInteractionOptions, createErrorResponse } from "../utils/commandHelpers";
 import { playTTSInChannel } from "../utils/voiceHelpers";
+import { Zenbot } from "../domain/session/Zenbot";
 
 export const Remark: Command = {
   data: new SlashCommandBuilder()
@@ -31,7 +32,7 @@ export const Remark: Command = {
         .setRequired(false),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => {
     const validation = validateVoiceChannel(interaction);
     if (!validation.isValid) {
       return await interaction.followUp(validation.response!);

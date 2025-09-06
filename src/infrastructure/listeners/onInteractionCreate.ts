@@ -1,17 +1,19 @@
 import { CommandInteraction, Client, BaseInteraction } from "discord.js";
-import { CommandCollection } from "../commands/commandCollection";
-import { logger } from "../utils/logger";
+import { CommandCollection } from "../../commands/commandCollection";
+import { logger } from "../../utils/logger";
+import { Zenbot } from "src/domain/session/Zenbot";
 
-export default (client: Client): void => {
+export default (client: Client, zenbot: Zenbot): void => {
   client.on("interactionCreate", async (interaction: BaseInteraction) => {
     if (interaction.isCommand() || interaction.isAnySelectMenu()) {
-      await handleSlashCommand(client, interaction as CommandInteraction);
+      await handleSlashCommand(client, zenbot, interaction as CommandInteraction);
     }
   });
 };
 
 const handleSlashCommand = async (
   client: Client,
+  zenbot: Zenbot,
   interaction: CommandInteraction,
 ): Promise<void> => {
   logger.info(
@@ -26,5 +28,6 @@ const handleSlashCommand = async (
   }
 
   await interaction.deferReply();
-  slashCommand.execute(client, interaction);
+
+  await slashCommand.execute(client, zenbot, interaction);
 };

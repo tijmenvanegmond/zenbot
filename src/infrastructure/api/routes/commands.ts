@@ -1,9 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { Client } from "discord.js";
-import { CommandCollection } from "../../commands/commandCollection";
-import { logger } from "../../utils/logger";
+import { CommandCollection } from "../../../commands/commandCollection";
+import { Zenbot } from "../../../domain/session/Zenbot";
+import { logger } from "../../../utils/logger";
 
 export default async function commandsRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
+  const zenbot = Zenbot.getInstance();
   
   // Execute a command programmatically (requires guild and channel context)
   fastify.post("/execute/:commandName", async function handler(request: any, reply) {
@@ -76,7 +78,7 @@ export default async function commandsRoutes(fastify: FastifyInstance, { discord
     
     try {
       logger.info(`API triggered command: ${commandName} in guild: ${guild.name}`);
-      await command.execute(discordClient, mockInteraction as any);
+      await command.execute(discordClient, zenbot, mockInteraction as any);
       reply.send({ 
         success: true, 
         message: `Command '${commandName}' executed successfully`,

@@ -1,6 +1,6 @@
 import { Client, Events } from "discord.js";
-import { CommandCollection } from "../commands/commandCollection";
-import { logger } from "../utils/logger";
+import { CommandCollection } from "../../commands/commandCollection";
+import { logger } from "../../utils/logger";
 
 export default (client: Client): void => {
   client.on(Events.ClientReady, async () => {

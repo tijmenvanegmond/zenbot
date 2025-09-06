@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
+import { Zenbot } from "src/domain/session/Zenbot";
 
 export const Rename: Command = {
   data: new SlashCommandBuilder()
@@ -23,7 +24,7 @@ export const Rename: Command = {
         .setDescription("The new name for said user"),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => {
     let options = interaction.options as CommandInteractionOptionResolver;
     let member = options.getMember("user_to_rename") as GuildMember;
     const newNickname = options.getString("new_nickname");

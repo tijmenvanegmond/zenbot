@@ -8,6 +8,7 @@ import { Command } from "./command";
 import { logger } from "../utils/logger";
 import { validateVoiceChannel, getInteractionOptions, createErrorResponse, createSuccessResponse } from "../utils/commandHelpers";
 import { playTTSInChannel } from "../utils/voiceHelpers";
+import { Zenbot } from "src/domain/session/Zenbot";
 
 export const TTS: Command = {
   data: new SlashCommandBuilder()
@@ -17,22 +18,33 @@ export const TTS: Command = {
       option.setName("tts_text").setDescription("The text to TTS"),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => {
     const validation = validateVoiceChannel(interaction);
     if (!validation.isValid) {
       return await interaction.followUp(validation.response!);
     }
 
     const options = getInteractionOptions(interaction);
-    const text = options.getString("tts_text") || "no text provided";
-    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
+    const text = options.getString("tts_text") || "Experience tranquility";
 
     try {
-      await playTTSInChannel(voiceChannel, text);
-      
-      await interaction.followUp(
-        createSuccessResponse(`TTS delivered in voice channel ${voiceChannel.name}`)
+      // Get Zenbot AI session for this user
+      const session = zenbot.getSession(interaction.user);
+
+      logger.info(`${interaction.user.username} requesting TTS: "${text}"`);
+
+      // Execute command through unified session system
+      const response = await session.executeCommand(
+        'tts', 
+        { text }, 
+        interaction
       );
+      
+      // TTS action is handled automatically, just confirm
+      await interaction.followUp(
+        createSuccessResponse(`🧘 "${text}" - spoken with tranquility`)
+      );
+      
     } catch (error) {
       logger.error("Error during TTS execution:", error);
       await interaction.followUp(

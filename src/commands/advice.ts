@@ -6,73 +6,74 @@ import {
 } from "discord.js";
 import { Command } from "./command";
 import { VoiceService } from "../services/voiceService";
+import { VoiceLineData } from "../types";
 import { logger } from "../utils/logger";
 import { validateVoiceChannel, createErrorResponse } from "../utils/commandHelpers";
 import { playResourceInChannel } from "../utils/voiceHelpers";
 import { formatWisdomMessage, formatSimpleWisdomMessage } from "../utils/messageFormatters";
+import { Zenbot } from "../domain/session/Zenbot";
 
 export const Advice: Command = {
   data: new SlashCommandBuilder()
     .setName("advice")
     .setDescription(
-      "Zen has an answer for everything (make sure you are in a voice channel)",
+      "🧘 Seek wisdom from Zenyatta through his AI consciousness"
     )
     .addStringOption(option =>
-      option.setName('type')
-        .setDescription('Choose the type of wisdom you seek')
+      option.setName('topic')
+        .setDescription('What topic do you need guidance on?')
+        .setRequired(false)
+    )
+    .addStringOption(option =>
+      option.setName('urgency')
+        .setDescription('How urgent is your need for guidance?')
         .setRequired(false)
         .addChoices(
-          { name: '🧘 Philosophical Wisdom', value: 'philosophical' },
-          { name: '🙏 Greeting & Peace', value: 'greeting' },
-          { name: '💚 Harmony & Healing', value: 'harmony' },
-          { name: '⚡ Discord & Challenge', value: 'discord' },
-          { name: '✨ Transcendence & Ultimate Truth', value: 'transcendence' },
-          { name: '🎲 Random Wisdom', value: 'random' }
+          { name: '🧘 Low - General wisdom', value: 'low' },
+          { name: '🙏 Medium - Seeking clarity', value: 'medium' },
+          { name: '⚡ High - Need immediate guidance', value: 'high' }
         )
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
-    const adviceType = interaction.options?.get('type')?.value as string;
-    
-    // Get contextual voice line based on user selection
-    let voiceLine;
-    if (adviceType === 'random') {
-      const categories = ['philosophical', 'greeting', 'harmony', 'discord', 'transcendence'] as const;
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-      voiceLine = VoiceService.getContextualAdvice(randomCategory);
-    } else if (adviceType) {
-      voiceLine = VoiceService.getContextualAdvice(adviceType as 'greeting' | 'philosophical' | 'harmony' | 'discord' | 'transcendence');
-    } else {
-      voiceLine = VoiceService.getContextualAdvice('philosophical');
-    }
-    
-    logger.info(`Selected voice line: "${voiceLine.text}" with voiceUri: ${voiceLine.voiceUri ? 'available' : 'null'}`);
-
-    const validation = validateVoiceChannel(interaction);
-    if (!validation.isValid) {
-      logger.info(`Replying with text advice: "${voiceLine.text}"`);
-      return await interaction.followUp({
-        content: formatSimpleWisdomMessage(voiceLine.text, adviceType),
-        ephemeral: true,
-      });
-    }
-
-    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
+  execute: async (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => {
+    await interaction.deferReply();
 
     try {
-      const resource = await VoiceService.createVoiceLineResource(voiceLine);
-      await playResourceInChannel(voiceChannel, resource);
+      // Get Zenbot AI session for this user
+      const session = zenbot.getSession(interaction.user);
 
-      logger.info(`Delivered advice: "${voiceLine.text}"`);
+      // Extract options
+      const topic = interaction.options?.get('topic')?.value as string;
+      const urgency = interaction.options?.get('urgency')?.value as 'low' | 'medium' | 'high' || 'medium';
+
+      logger.info(`${interaction.user.username} seeking AI advice: topic="${topic}", urgency=${urgency}`);
+
+      // Execute command through unified session system
+      const response = await session.executeCommand(
+        'advice', 
+        { topic, urgency }, 
+        interaction
+      );
       
-      await interaction.followUp({
-        ephemeral: true,
-        content: formatWisdomMessage(voiceLine.text, adviceType),
-      });
+      // Reply with formatted response - actions (like TTS) are handled automatically
+      const validation = validateVoiceChannel(interaction);
+      
+      if (validation.isValid && response.voice) {
+        await interaction.editReply({
+          content: formatWisdomMessage(response.text, urgency),
+        });
+      } else {
+        await interaction.editReply({
+          content: formatSimpleWisdomMessage(response.text, urgency)
+        });
+      }
+
+      logger.info(`AI advice delivered to ${interaction.user.username}: "${response.text.substring(0, 100)}..."`);
+
     } catch (error) {
-      logger.error("Error during advice execution:", error);
-      await interaction.followUp(
-        createErrorResponse("🚨 The path to wisdom encountered a disturbance. Please try again.")
+      logger.error("Error in AI advice command:", error);
+      await interaction.editReply(
+        createErrorResponse("🚨 I am experiencing discord in my AI consciousness. Let us find harmony together in a moment.")
       );
     }
   },

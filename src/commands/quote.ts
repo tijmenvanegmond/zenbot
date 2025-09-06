@@ -12,6 +12,7 @@ import { playTTSInChannel } from "../utils/voiceHelpers";
 import { getRandomQuote } from "../services/quoteService";
 import { ZenyattaService } from "../services/zenyattaService";
 import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../config";
+import { Zenbot } from "../domain/session/Zenbot";
 
 export const Quote: Command = {
   data: new SlashCommandBuilder()
@@ -29,7 +30,7 @@ export const Quote: Command = {
         .setDescription("Filter quotes from or about a specific user")
         .setRequired(false)
     ),
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => {
     const validation = validateVoiceChannel(interaction);
     if (!validation.isValid) {
       return await interaction.followUp(validation.response!);
@@ -81,8 +82,23 @@ export const Quote: Command = {
       }
 
       // Generate enhanced TTS with Zenyatta's contextual commentary
-      const enhancedText = await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
-      await playTTSInChannel(voiceChannel, enhancedText);
+      const user = client.users.cache.get(randomQuote.poster.id);
+      if (!user) {
+        throw new Error(`User not found in cache: ${randomQuote.poster.id}`);
+      }
+
+      const session = zenbot.getSession(user);
+      if (!session) {
+        throw new Error(`No active session found for user: ${user.id}`);
+      }
+
+       await session.executeCommand("quote", {
+        quote: randomQuote,
+        user,
+      }, interaction);
+
+     // const enhancedText = await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
+      //await playTTSInChannel(voiceChannel, enhancedText);
 
       // Create enhanced response with quote intelligence
       let responseContent = `💬 **Quote from #${quoteChannel.name}:** `;

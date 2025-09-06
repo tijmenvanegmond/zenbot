@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { Client, TextChannel } from "discord.js";
-import { GuildService } from "../../services/guildService";
-import { CHANNEL_TYPES } from "../../config";
-import { CommandCollection } from "../../commands/commandCollection";
+import { GuildService } from "../../../services/guildService";
+import { CHANNEL_TYPES } from "../../../config";
+import { CommandCollection } from "../../../commands/commandCollection";
 
 export default async function guildsRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   // Get bot status and guild info

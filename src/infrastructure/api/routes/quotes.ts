@@ -1,11 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { Client, VoiceChannel, TextChannel } from "discord.js";
-import { VoiceService } from "../../services/voiceService";
-import { GuildService } from "../../services/guildService";
-import { logger } from "../../utils/logger";
-import { fetchAndParseQuotes, getRandomQuote } from "../../services/quoteService";
-import { ZenyattaService } from "../../services/zenyattaService";
-import { CHANNEL_TYPES } from "../../config";
+import { VoiceService } from "../../../services/voiceService";
+import { GuildService } from "../../../services/guildService";
+import { logger } from "../../../utils/logger";
+import { fetchAndParseQuotes, getRandomQuote } from "../../../services/quoteService";
+import { ZenyattaService } from "../../../services/zenyattaService";
+import { CHANNEL_TYPES } from "../../../config";
 
 export default async function quotesRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   

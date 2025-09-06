@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { Client, VoiceChannel } from "discord.js";
 import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
-import { VoiceService } from "../../services/voiceService";
-import { GuildService } from "../../services/guildService";
-import { logger } from "../../utils/logger";
-import { CHANNEL_TYPES } from "../../config";
+import { VoiceService } from "../../../services/voiceService";
+import { GuildService } from "../../../services/guildService";
+import { logger } from "../../../utils/logger";
+import { CHANNEL_TYPES } from "../../../config";
 
 export default async function voiceRoutes(fastify: FastifyInstance, { discordClient }: { discordClient: Client }) {
   

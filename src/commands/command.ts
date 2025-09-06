@@ -3,6 +3,7 @@ import {
   ChatInputApplicationCommandData,
   Client,
 } from "discord.js";
+import { Zenbot } from "src/domain/session/Zenbot";
 
 export interface Command {
   data: {
@@ -10,5 +11,5 @@ export interface Command {
     description: string;
     options: any;
   };
-  execute: (client: Client, interaction: CommandInteraction) => void;
+  execute: (client: Client, zenbot: Zenbot, interaction: CommandInteraction) => void;
 }
