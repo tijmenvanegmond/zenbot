@@ -19,5 +19,12 @@
   },
   "files": ["src/app.ts"],
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "vitest.config.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }

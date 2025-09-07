@@ -19,10 +19,11 @@ export class ChannelManagementAction implements ZenAction {
   name = "channel_management";
   description = "Manage voice channels with creative naming and operations";
   category = "utility" as const;
+  aiEnabled = true;
 
   permissions = {
     requiresVoiceChannel: false,
-    allowedSources: ["command", "voice", "api", "event"],
+    allowedSources: ["command", "voice", "api", "ai"],
   };
 
   schema = {

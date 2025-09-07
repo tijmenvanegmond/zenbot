@@ -8,7 +8,8 @@
       "Bash(docker run:*)",
       "WebSearch",
       "Bash(PORT=8080 npm run dev)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npm run test:run:*)"
     ],
     "deny": [],
     "ask": []

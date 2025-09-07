@@ -107,3 +107,11 @@ dist
 tmp/test
 output.*
 *.ssh
+
+# Build artifacts for config files
+vitest.config.js
+*.config.js
+
+# Test coverage
+coverage/
+html-coverage/
