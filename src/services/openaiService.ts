@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { Config, OPENAI_API_KEY, AI_CONFIG, VOICE_CONFIG } from "../config";
 import { logger } from "../utils/logger";
+import { ZenyattaAssistantService } from "./zenyattaAssistantService";
 
 /**
  * Centralized OpenAI service to eliminate duplicate client creation
@@ -37,7 +38,7 @@ export class OpenAIService {
         model: VOICE_CONFIG.TTS_MODEL,
         voice: VOICE_CONFIG.TTS_VOICE,
         input: text,
-        instructions: VOICE_CONFIG.ZENYATTA_INSTRUCTIONS,
+        instructions: ZenyattaAssistantService.getTTSInstructions(),
         response_format: VOICE_CONFIG.TTS_FORMAT,
       });
 
@@ -183,103 +184,6 @@ export class OpenAIService {
   }
 
   /**
-   * Generates a compliment about a subject
-   */
-  static async generateCompliment(
-    subject: string = "a discord user",
-  ): Promise<string> {
-    try {
-      logger.info(`Generating compliment for: ${subject}`);
-
-      // Random compliment styles for variety
-      const styles = [
-        "Write a wholesome compliment comparing them to something awesome",
-        "Write a compliment about their gaming skills or Discord presence",
-        "Write a compliment using food/cooking metaphors",
-        "Write a compliment comparing them to a superhero or fictional character",
-        "Write a compliment about their personality or vibe",
-        "Write a compliment using nature or animal metaphors",
-        "Write a compliment about how they make others feel",
-        "Write a nerdy/geeky compliment with pop culture references",
-      ];
-
-      const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-
-      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        {
-          role: "system",
-          content: `You are a creative AI that generates unique, funny compliments. Be original and avoid overused internet memes. 
-                   Make each compliment feel personal and fresh. Keep it wholesome but creative.`,
-        },
-        {
-          role: "user",
-          content: `${randomStyle} about ${subject}. Be creative and original, avoid cliché phrases.`,
-        },
-      ];
-
-      const result = await this.generateChatCompletion(messages, {
-        temperature: 0.9, // Higher creativity
-        maxTokens: 100, // Keep it snappy
-      });
-      logger.info(`Generated compliment: "${result}"`);
-      return result;
-    } catch (error) {
-      logger.error("Error generating compliment:", error);
-      return `${subject} is absolutely wonderful!`;
-    }
-  }
-
-  /**
-   * Generates a lighthearted insult about a subject
-   */
-  static async generateInsult(
-    subject: string = "a discord user",
-  ): Promise<string> {
-    try {
-      logger.info(`Generating insult for: ${subject}`);
-
-      // Random insult styles for maximum creativity
-      const styles = [
-        "Write a playful insult comparing them to a silly animal or creature",
-        "Write a roast about their gaming skills or Discord habits (keep it friendly)",
-        "Write a lighthearted insult using food or cooking comparisons",
-        "Write a mock-dramatic insult like they're a villain in a comedy movie",
-        "Write a nerdy insult with video game or tech references",
-        "Write a silly insult about their imaginary superpowers being useless",
-        "Write a playful insult comparing them to an inanimate object",
-        "Write a roast in the style of a nature documentary narrator",
-        "Write an insult like they're a malfunctioning robot or AI",
-        "Write a medieval-style insult but keep it silly and harmless",
-      ];
-
-      const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-
-      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        {
-          role: "system",
-          content: `You are a master of creative, harmless roasting. Generate original, playful insults that are funny without being mean.
-                   Avoid overused internet memes like "you're like a cloud" or generic put-downs. Be creative and unique!
-                   Keep it silly and lighthearted - think playground teasing, not actually hurtful.`,
-        },
-        {
-          role: "user",
-          content: `${randomStyle} about ${subject}. Be original, creative, and avoid cliché insults.`,
-        },
-      ];
-
-      const result = await this.generateChatCompletion(messages, {
-        temperature: 1.0, // Maximum creativity for insults
-        maxTokens: 100, // Keep it snappy
-      });
-      logger.info(`Generated insult: "${result}"`);
-      return result;
-    } catch (error) {
-      logger.error("Error generating insult:", error);
-      return `${subject} is being a silly goose!`;
-    }
-  }
-
-  /**
    * Batch processes quotes with AI (used sparingly)
    */
   static async batchParseQuotes(contents: string[]): Promise<any[]> {
@@ -337,8 +241,6 @@ export const {
   transcribeAudio,
   transcribeAudioBuffer,
   generateChatCompletion,
-  generateCompliment,
-  generateInsult,
   batchParseQuotes,
   healthCheck,
 } = OpenAIService;

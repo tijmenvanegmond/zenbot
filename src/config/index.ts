@@ -29,8 +29,6 @@ export class Config {
     LEGACY_TTS_MODEL: "tts-1",
     LEGACY_TTS_VOICE: "nova",
     LEGACY_TTS_FORMAT: "opus" as const,
-    ZENYATTA_INSTRUCTIONS:
-      "Speak in a calm, wise, and serene tone like Zenyatta from Overwatch - an omnic monk with a deep, resonant, slightly robotic voice. Add subtle pauses between phrases for contemplation. Be philosophical and peaceful.",
   } as const;
 
   // AI Configuration

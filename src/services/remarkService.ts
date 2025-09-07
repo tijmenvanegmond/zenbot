@@ -1,43 +1,41 @@
 import { logger } from "../utils/logger";
-import { OpenAIService } from "./openaiService";
+import { ZenyattaAssistantService } from "./zenyattaAssistantService";
 import { RemarkResult, RemarkOptions } from "../types";
 
 /**
  * Service for generating AI-powered remarks (compliments and insults)
- * Handles both positive and negative remarks with humor and personality
+ * Now uses the consolidated Zenyatta Agent for consistent personality
  */
 export class RemarkService {
   /**
-   * Generates a funny, lighthearted compliment about a subject
+   * Generates a funny, lighthearted compliment about a subject using Zenyatta's personality
    */
   static async generatePraise(
     subject: string = "a discord user",
   ): Promise<string> {
-    return OpenAIService.generateCompliment(subject);
+    const zenyatta = ZenyattaAssistantService.getInstance();
+    return zenyatta.generateCompliment(subject);
   }
 
   /**
-   * Generates a funny, lighthearted insult about a subject
+   * Generates a funny, lighthearted insult about a subject using Zenyatta's personality
    */
   static async generateInsult(
     subject: string = "a discord user",
   ): Promise<string> {
-    return OpenAIService.generateInsult(subject);
+    const zenyatta = ZenyattaAssistantService.getInstance();
+    return zenyatta.generateInsult(subject);
   }
 
   /**
-   * Generates a contextual remark based on positivity flag
+   * Generates a contextual remark based on positivity flag using Zenyatta's personality
    */
   static async generateRemark(
     subject?: string,
     isPositive: boolean = Math.random() > 0.5,
   ): Promise<RemarkResult> {
-    const targetSubject = subject || "someone";
-    const text = isPositive
-      ? await this.generatePraise(targetSubject)
-      : await this.generateInsult(targetSubject);
-
-    return { text, isPositive };
+    const zenyatta = ZenyattaAssistantService.getInstance();
+    return zenyatta.generateRemark(subject, isPositive);
   }
 }
 

@@ -23,10 +23,16 @@ describe("ActionService", () => {
       const stats = registry.getStats();
 
       // Should have multiple categories
-      const expectedCategories = ["voice", "information", "utility", "admin", "entertainment"];
+      const expectedCategories = [
+        "voice",
+        "information",
+        "utility",
+        "admin",
+        "entertainment",
+      ];
       const actualCategories = Object.keys(stats.byCategory);
 
-      expectedCategories.forEach(category => {
+      expectedCategories.forEach((category) => {
         expect(actualCategories).toContain(category);
       });
     });
@@ -46,24 +52,30 @@ describe("ActionService", () => {
       const aiActions = registry.getForAI();
 
       expect(aiActions.length).toBeGreaterThan(0);
-      
+
       // Channel management should be AI-enabled
-      const channelSchema = aiActions.find(schema => schema.name === "channel_management");
+      const channelSchema = aiActions.find(
+        (schema) => schema.name === "channel_management",
+      );
       expect(channelSchema).toBeDefined();
     });
 
     it("should list actions by category correctly", () => {
       const registry = actionService.getRegistry();
-      
+
       // Voice actions
       const voiceActions = registry.getByCategory("voice");
       expect(voiceActions.length).toBeGreaterThan(0);
-      expect(voiceActions.every(action => action.category === "voice")).toBe(true);
-      
+      expect(voiceActions.every((action) => action.category === "voice")).toBe(
+        true,
+      );
+
       // Information actions
       const infoActions = registry.getByCategory("information");
       expect(infoActions.length).toBeGreaterThan(0);
-      expect(infoActions.every(action => action.category === "information")).toBe(true);
+      expect(
+        infoActions.every((action) => action.category === "information"),
+      ).toBe(true);
     });
 
     it("should provide function schemas for OpenAI", () => {
@@ -71,9 +83,9 @@ describe("ActionService", () => {
 
       expect(Array.isArray(schemas)).toBe(true);
       expect(schemas.length).toBeGreaterThan(0);
-      
+
       // Each schema should have correct structure
-      schemas.forEach(schema => {
+      schemas.forEach((schema) => {
         expect(schema).toHaveProperty("type", "function");
         expect(schema.function).toHaveProperty("name");
         expect(schema.function).toHaveProperty("description");
@@ -89,18 +101,18 @@ describe("ActionService", () => {
       expect(stats).toHaveProperty("total");
       expect(stats).toHaveProperty("byCategory");
       expect(stats).toHaveProperty("aiEnabled");
-      
+
       expect(typeof stats.total).toBe("number");
       expect(typeof stats.byCategory).toBe("object");
       expect(typeof stats.aiEnabled).toBe("number");
-      
+
       expect(stats.total).toBeGreaterThan(0);
       expect(stats.aiEnabled).toBeGreaterThan(0);
     });
 
     it("should have expected minimum number of actions", () => {
       const stats = actionService.getStats();
-      
+
       // Should have at least the core actions we know about
       expect(stats.total).toBeGreaterThanOrEqual(10);
       expect(stats.aiEnabled).toBeGreaterThanOrEqual(9);

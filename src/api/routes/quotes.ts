@@ -7,7 +7,7 @@ import {
   fetchAndParseQuotes,
   getRandomQuote,
 } from "../../services/quoteService";
-import { ZenyattaService } from "../../services/zenyattaService";
+import { ZenyattaAssistantService } from "../../services/zenyattaAssistantService";
 import { CHANNEL_TYPES } from "../../config";
 
 export default async function quotesRoutes(
@@ -153,7 +153,9 @@ export default async function quotesRoutes(
 
         // Generate enhanced TTS with Zenyatta's contextual commentary
         const enhancedText =
-          await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
+          await ZenyattaAssistantService.getInstance().createEnhancedQuoteTTS(
+            randomQuote,
+          );
 
         // Play enhanced TTS in the specified voice channel
         await VoiceService.playTTSInChannel(

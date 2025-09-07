@@ -13,7 +13,7 @@ describe("Discord Voice Dependencies", () => {
   it("should have @discordjs/voice available", async () => {
     // This tests that the voice dependency is properly installed and can be imported
     const voiceModule = await import("@discordjs/voice");
-    
+
     expect(voiceModule).toBeDefined();
     expect(voiceModule.generateDependencyReport).toBeDefined();
     expect(typeof voiceModule.generateDependencyReport).toBe("function");
@@ -21,7 +21,7 @@ describe("Discord Voice Dependencies", () => {
 
   it("should generate dependency report without errors", async () => {
     const { generateDependencyReport } = await import("@discordjs/voice");
-    
+
     expect(() => {
       const report = generateDependencyReport();
       expect(typeof report).toBe("string");
@@ -31,7 +31,7 @@ describe("Discord Voice Dependencies", () => {
 
   it("should have required voice components available", async () => {
     const voiceModule = await import("@discordjs/voice");
-    
+
     // Check for essential voice components
     expect(voiceModule.joinVoiceChannel).toBeDefined();
     expect(voiceModule.createAudioPlayer).toBeDefined();
@@ -42,12 +42,12 @@ describe("Discord Voice Dependencies", () => {
 
   it("should have proper type definitions", async () => {
     const voiceModule = await import("@discordjs/voice");
-    
+
     // These should be function constructors
     expect(typeof voiceModule.joinVoiceChannel).toBe("function");
     expect(typeof voiceModule.createAudioPlayer).toBe("function");
     expect(typeof voiceModule.createAudioResource).toBe("function");
-    
+
     // These should be enum objects
     expect(typeof voiceModule.AudioPlayerStatus).toBe("object");
     expect(typeof voiceModule.VoiceConnectionStatus).toBe("object");

@@ -8,7 +8,6 @@ import { Quote } from "./quote";
 
 // New AI Assistant commands
 import { AdviceAssistant } from "./advice_assistant";
-import { Converse } from "./converse";
 
 export const CommandCollectionWithAssistant: Command[] = [
   // Original commands (unchanged)
@@ -19,7 +18,6 @@ export const CommandCollectionWithAssistant: Command[] = [
   Remark,
   Quote,
 
-  // New AI Assistant commands
+  // AI Assistant commands
   AdviceAssistant,
-  Converse,
 ];

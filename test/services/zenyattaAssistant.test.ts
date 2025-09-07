@@ -8,33 +8,50 @@ vi.mock("../../src/services/openaiService", () => ({
       beta: {
         assistants: {
           list: vi.fn(() => Promise.resolve({ data: [] })),
-          create: vi.fn(() => Promise.resolve({
-            id: "mock-assistant-id",
-            name: "Zenyatta-v3",
-          })),
+          create: vi.fn(() =>
+            Promise.resolve({
+              id: "mock-assistant-id",
+              name: "Zenyatta-v3",
+            }),
+          ),
         },
         threads: {
-          create: vi.fn(() => Promise.resolve({
-            id: "mock-thread-id"
-          })),
+          create: vi.fn(() =>
+            Promise.resolve({
+              id: "mock-thread-id",
+            }),
+          ),
           messages: {
             create: vi.fn(() => Promise.resolve({})),
-            list: vi.fn(() => Promise.resolve({
-              data: [{
-                role: "assistant",
-                content: [{ type: "text", text: { value: "Mock response from Zenyatta" } }],
-                run_id: "mock-run-id"
-              }]
-            })),
+            list: vi.fn(() =>
+              Promise.resolve({
+                data: [
+                  {
+                    role: "assistant",
+                    content: [
+                      {
+                        type: "text",
+                        text: { value: "Mock response from Zenyatta" },
+                      },
+                    ],
+                    run_id: "mock-run-id",
+                  },
+                ],
+              }),
+            ),
           },
           runs: {
-            create: vi.fn(() => Promise.resolve({
-              id: "mock-run-id",
-              status: "completed"
-            })),
-            retrieve: vi.fn(() => Promise.resolve({
-              status: "completed"
-            })),
+            create: vi.fn(() =>
+              Promise.resolve({
+                id: "mock-run-id",
+                status: "completed",
+              }),
+            ),
+            retrieve: vi.fn(() =>
+              Promise.resolve({
+                status: "completed",
+              }),
+            ),
             list: vi.fn(() => Promise.resolve({ data: [] })),
           },
         },
@@ -54,7 +71,7 @@ describe("ZenyattaAssistantService", () => {
     it("should be a singleton", () => {
       const instance1 = ZenyattaAssistantService.getInstance();
       const instance2 = ZenyattaAssistantService.getInstance();
-      
+
       expect(instance1).toBe(instance2);
     });
 
@@ -64,7 +81,7 @@ describe("ZenyattaAssistantService", () => {
 
     it("should return valid stats structure", () => {
       const stats = assistantService.getStats();
-      
+
       expect(stats).toHaveProperty("activeThreads");
       expect(stats).toHaveProperty("assistantId");
       expect(typeof stats.activeThreads).toBe("number");
@@ -84,10 +101,12 @@ describe("ZenyattaAssistantService", () => {
         },
         client: {
           users: {
-            fetch: vi.fn(() => Promise.resolve({
-              id: "test_user_123",
-              username: "TestUser"
-            })),
+            fetch: vi.fn(() =>
+              Promise.resolve({
+                id: "test_user_123",
+                username: "TestUser",
+              }),
+            ),
           },
         },
       };
@@ -115,19 +134,21 @@ describe("ZenyattaAssistantService", () => {
 
       expect(mockResponse.text).toBeDefined();
       expect(typeof mockResponse.shouldUseVoice).toBe("boolean");
-      expect(["zen", "wise", "playful", "mysterious"]).toContain(mockResponse.mood);
+      expect(["zen", "wise", "playful", "mysterious"]).toContain(
+        mockResponse.mood,
+      );
     });
 
     it("should handle different mood types", () => {
       const validMoods = ["zen", "wise", "playful", "mysterious"];
-      
-      validMoods.forEach(mood => {
+
+      validMoods.forEach((mood) => {
         const mockResponse = {
           text: "Test response",
           shouldUseVoice: false,
           mood: mood as any,
         };
-        
+
         expect(validMoods).toContain(mockResponse.mood);
       });
     });

@@ -6,7 +6,7 @@ import {
 } from "../actionTypes";
 import { TextChannel } from "discord.js";
 import { getRandomQuote } from "../../services/quoteService";
-import { ZenyattaService } from "../../services/zenyattaService";
+import { ZenyattaAssistantService } from "../../services/zenyattaAssistantService";
 import { playTTSInChannel } from "../../utils/voiceHelpers";
 import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../../config";
 import { logger } from "../../utils/logger";
@@ -127,7 +127,9 @@ export class ChannelQuoteAction implements ZenAction {
 
       // Generate enhanced TTS with Zenyatta's contextual commentary
       const enhancedText =
-        await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
+        await ZenyattaAssistantService.getInstance().createEnhancedQuoteTTS(
+          randomQuote,
+        );
 
       // Create response content
       let responseContent = `💬 **Quote from #${quoteChannel.name}:** `;
