@@ -5,7 +5,10 @@ import voiceRoutes from "./routes/voice";
 import commandsRoutes from "./routes/commands";
 import quotesRoutes from "./routes/quotes";
 
-export async function registerApiRoutes(fastify: FastifyInstance, discordClient: Client) {
+export async function registerApiRoutes(
+  fastify: FastifyInstance,
+  discordClient: Client,
+) {
   // Health check endpoint - the pulse of the Iris
   fastify.get("/", async function handler(request, reply) {
     reply
@@ -20,7 +23,7 @@ export async function registerApiRoutes(fastify: FastifyInstance, discordClient:
 
   // Register route modules - like orbs of harmony, each serves its purpose
   await fastify.register(guildsRoutes, { discordClient });
-  await fastify.register(voiceRoutes, { discordClient });  
+  await fastify.register(voiceRoutes, { discordClient });
   await fastify.register(commandsRoutes, { discordClient });
   await fastify.register(quotesRoutes, { discordClient });
 }

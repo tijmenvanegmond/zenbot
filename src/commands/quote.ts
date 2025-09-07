@@ -1,108 +1,77 @@
 import {
   CommandInteraction,
   Client,
-  VoiceChannel,
   SlashCommandBuilder,
   TextChannel,
 } from "discord.js";
 import { Command } from "./command";
+import { ActionService } from "../services/actionService";
 import { logger } from "../utils/logger";
-import { validateVoiceChannel, getInteractionOptions, createErrorResponse } from "../utils/commandHelpers";
-import { playTTSInChannel } from "../utils/voiceHelpers";
-import { getRandomQuote } from "../services/quoteService";
-import { ZenyattaService } from "../services/zenyattaService";
-import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../config";
+import {
+  getInteractionOptions,
+  createErrorResponse,
+} from "../utils/commandHelpers";
 
 export const Quote: Command = {
   data: new SlashCommandBuilder()
     .setName("quote")
-    .setDescription("Reads a random quote from the quotes channel with intelligent parsing")
+    .setDescription(
+      "Reads a random quote from the quotes channel with intelligent parsing",
+    )
     .addChannelOption((option) =>
       option
         .setName("quote_channel")
-        .setDescription("The channel to pull quotes from (defaults to quotes channel)")
-        .setRequired(false)
+        .setDescription(
+          "The channel to pull quotes from (defaults to quotes channel)",
+        )
+        .setRequired(false),
     )
     .addUserOption((option) =>
       option
         .setName("user")
         .setDescription("Filter quotes from or about a specific user")
-        .setRequired(false)
+        .setRequired(false),
     ),
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const validation = validateVoiceChannel(interaction);
-    if (!validation.isValid) {
-      return await interaction.followUp(validation.response!);
-    }
-
-    const options = getInteractionOptions(interaction);
-    let quoteChannel = options.getChannel("quote_channel") as TextChannel;
-    const targetUser = options.getUser("user");
-    
-    // If no channel specified, try to find the default quotes channel
-    if (!quoteChannel) {
-      const guild = interaction.guild!;
-      // Look for common quote channel names
-      for (const name of QUOTE_CHANNEL_NAMES) {
-        const foundChannel = guild.channels.cache.find(
-          channel => channel.name.toLowerCase().includes(name.toLowerCase()) && channel.type === CHANNEL_TYPES.GUILD_TEXT
-        );
-        if (foundChannel) {
-          quoteChannel = foundChannel as TextChannel;
-          break;
-        }
-      }
-      
-      if (!quoteChannel) {
-        return await interaction.followUp(
-          createErrorResponse("No quotes channel found. Please specify a channel or create a channel with 'quotes' in the name.")
-        );
-      }
-    } else if (quoteChannel.type !== CHANNEL_TYPES.GUILD_TEXT) {
-      return await interaction.followUp(
-        createErrorResponse("Please provide a valid text channel")
-      );
-    }
-
-    const voiceChannel = validation.member!.voice.channel as VoiceChannel;
-
     try {
-      // Use enhanced quote parsing logic
-      const randomQuote = await getRandomQuote(quoteChannel, {
-        userId: targetUser?.id,
-        username: targetUser?.username,
-      });
+      const options = getInteractionOptions(interaction);
+      const quoteChannel = options.getChannel("quote_channel") as TextChannel;
+      const targetUser = options.getUser("user");
 
-      if (!randomQuote) {
-        const userFilter = targetUser ? ` from or about ${targetUser.username}` : "";
-        return await interaction.followUp(
-          createErrorResponse(`No quotes found${userFilter} in the quote channel`)
+      const actionService = ActionService.getInstance();
+
+      // Execute the channel quote action
+      const result = await actionService.executeFromCommand(
+        interaction,
+        "read_channel_quote",
+        {
+          channel_id: quoteChannel?.id,
+          user_id: targetUser?.id,
+          username: targetUser?.username,
+          use_voice: true,
+        },
+      );
+
+      if (result.success) {
+        await interaction.followUp({
+          ephemeral: true,
+          content: result.responseText,
+        });
+      } else {
+        await interaction.followUp(
+          createErrorResponse(
+            result.responseText ||
+              result.error ||
+              "An error occurred while retrieving the quote.",
+          ),
         );
       }
-
-      // Generate enhanced TTS with Zenyatta's contextual commentary
-      const enhancedText = await ZenyattaService.createEnhancedQuoteTTS(randomQuote);
-      await playTTSInChannel(voiceChannel, enhancedText);
-
-      // Create enhanced response with quote intelligence
-      let responseContent = `💬 **Quote from #${quoteChannel.name}:** `;
-      if (randomQuote.isQuoted && randomQuote.speaker) {
-        responseContent += `${randomQuote.speaker} said: "${randomQuote.parsedQuote}"`;
-        if (randomQuote.poster.username !== randomQuote.speaker) {
-          responseContent += ` (shared by ${randomQuote.poster.displayName})`;
-        }
-      } else {
-        responseContent += `"${randomQuote.content}" (by ${randomQuote.poster.displayName})`;
-      }
-
-      await interaction.followUp({
-        ephemeral: true,
-        content: responseContent,
-      });
     } catch (error) {
       logger.error("Error during quote command execution:", error);
       await interaction.followUp(
-        createErrorResponse("An error occurred while trying to play the quote.")
+        createErrorResponse(
+          "An error occurred while trying to play the quote.",
+        ),
       );
     }
   },

@@ -3,17 +3,16 @@
  */
 
 // Re-export Discord.js types that we commonly use
-export { 
-  Client, 
-  Guild, 
-  TextChannel, 
-  VoiceChannel, 
-  GuildMember, 
+export {
+  Client,
+  Guild,
+  TextChannel,
+  VoiceChannel,
+  GuildMember,
   Message,
   CommandInteraction,
-  SlashCommandBuilder 
+  SlashCommandBuilder,
 } from "discord.js";
-
 
 // Re-export config constants
 export { API_CONFIG } from "../config";
@@ -117,7 +116,12 @@ export interface VoiceLineCategories {
   special: VoiceLineData[];
 }
 
-export type AdviceContext = 'greeting' | 'philosophical' | 'harmony' | 'discord' | 'transcendence';
+export type AdviceContext =
+  | "greeting"
+  | "philosophical"
+  | "harmony"
+  | "discord"
+  | "transcendence";
 
 // ===== REMARK TYPES =====
 export interface RemarkResult {
@@ -178,18 +182,20 @@ export type Awaitable<T> = T | Promise<T>;
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
-  Pick<T, Exclude<keyof T, Keys>> 
-  & {
-      [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-    }[Keys];
+export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
+  T,
+  Exclude<keyof T, Keys>
+> &
+  {
+    [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
+  }[Keys];
 
 // ===== LOG TYPES =====
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
-  ERROR = 3
+  ERROR = 3,
 }
 
 export interface LogEntry {

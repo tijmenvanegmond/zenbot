@@ -20,7 +20,10 @@ export class ZenyattaService {
     }
 
     try {
-      const guidePath = path.resolve(__dirname, "../../ZENYATTA_PERSONALITY.md");
+      const guidePath = path.resolve(
+        __dirname,
+        "../../ZENYATTA_PERSONALITY.md",
+      );
       this.personalityGuide = await fs.promises.readFile(guidePath, "utf-8");
       logger.info("Zenyatta personality guide loaded successfully");
       return this.personalityGuide;
@@ -42,8 +45,10 @@ export class ZenyattaService {
   static async generateQuoteCommentary(quote: EnrichedQuote): Promise<string> {
     try {
       const personalityGuide = await this.loadPersonalityGuide();
-      
-      logger.info(`Generating Zenyatta commentary for quote: "${quote.parsedQuote.substring(0, 50)}..."`);
+
+      logger.info(
+        `Generating Zenyatta commentary for quote: "${quote.parsedQuote.substring(0, 50)}..."`,
+      );
 
       const systemPrompt = `You are Zenyatta, the omnic monk from Overwatch. Use this personality guide:
 
@@ -68,17 +73,24 @@ Original message: "${quote.content}"
 
 Generate Zenyatta's contextual introduction:`;
 
-      const commentary = await OpenAIService.generateChatCompletion([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ], {
-        temperature: 0.6,
-        maxTokens: 30,
-      });
+      const commentary = await OpenAIService.generateChatCompletion(
+        [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        {
+          temperature: 0.6,
+          maxTokens: 30,
+        },
+      );
 
       // Clean up the response and ensure it doesn't end with punctuation that would clash
       let cleanCommentary = commentary.trim();
-      if (cleanCommentary.endsWith('.') || cleanCommentary.endsWith('!') || cleanCommentary.endsWith('?')) {
+      if (
+        cleanCommentary.endsWith(".") ||
+        cleanCommentary.endsWith("!") ||
+        cleanCommentary.endsWith("?")
+      ) {
         cleanCommentary = cleanCommentary.slice(0, -1);
       }
 
@@ -86,16 +98,16 @@ Generate Zenyatta's contextual introduction:`;
       return cleanCommentary;
     } catch (error) {
       logger.error("Error generating Zenyatta commentary:", error);
-      
+
       // Fallback to simple contextual introductions if AI fails
       const fallbacks = [
         "Wisdom flows",
-        "Truth emerges",  
+        "Truth emerges",
         "The heart speaks",
         "From silence",
-        "Light reveals"
+        "Light reveals",
       ];
-      
+
       const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
       logger.info(`Using fallback commentary: "${fallback}"`);
       return fallback;
@@ -109,11 +121,13 @@ Generate Zenyatta's contextual introduction:`;
     try {
       const commentary = await this.generateQuoteCommentary(quote);
       const quoteText = quote.isQuoted ? quote.parsedQuote : quote.content;
-      
+
       // Create natural flow between commentary and quote
       const enhancedText = `${commentary}... ${quoteText}`;
-      
-      logger.info(`Enhanced quote TTS created: "${enhancedText.substring(0, 100)}..."`);
+
+      logger.info(
+        `Enhanced quote TTS created: "${enhancedText.substring(0, 100)}..."`,
+      );
       return enhancedText;
     } catch (error) {
       logger.error("Error creating enhanced quote TTS:", error);
@@ -128,7 +142,7 @@ Generate Zenyatta's contextual introduction:`;
   static async generatePhilosophicalResponse(topic: string): Promise<string> {
     try {
       const personalityGuide = await this.loadPersonalityGuide();
-      
+
       const systemPrompt = `You are Zenyatta, the omnic monk. Use this personality guide:
 
 ${personalityGuide}
@@ -139,13 +153,16 @@ Respond to topics with Zenyatta's wisdom and philosophy. Keep responses concise 
 
 How would Zenyatta respond?`;
 
-      const response = await OpenAIService.generateChatCompletion([
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ], {
-        temperature: 0.8,
-        maxTokens: 200,
-      });
+      const response = await OpenAIService.generateChatCompletion(
+        [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        {
+          temperature: 0.8,
+          maxTokens: 200,
+        },
+      );
 
       return response.trim();
     } catch (error) {
@@ -173,5 +190,5 @@ export const {
   generateQuoteCommentary,
   createEnhancedQuoteTTS,
   generatePhilosophicalResponse,
-  healthCheck: zenyattaHealthCheck
+  healthCheck: zenyattaHealthCheck,
 } = ZenyattaService;

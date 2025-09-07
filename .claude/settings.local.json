@@ -4,11 +4,11 @@
       "Bash(npm run dev:*)",
       "Bash(npm run build:*)",
       "Bash(docker build:*)",
-      "Bash(docker rm:*)",
       "Bash(docker logs:*)",
       "Bash(docker run:*)",
       "WebSearch",
-      "WebFetch(domain:openai.com)"
+      "Bash(PORT=8080 npm run dev)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

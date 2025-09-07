@@ -4,10 +4,13 @@ import {
   Events,
   GuildMember,
   VoiceBasedChannel,
+  VoiceChannel,
   VoiceState,
 } from "discord.js";
 import { logger } from "../utils/logger";
 import { EXCLUDED_VOICE_CHANNELS } from "../config";
+import { ActionService } from "../services/actionService";
+import { ActionContext } from "../actions/actionTypes";
 
 export default (client: Client): void => {
   client.on(
@@ -21,7 +24,9 @@ export default (client: Client): void => {
         return; //ignore if no change (it happens)
       }
 
-      logger.info(`User ${member?.displayName} moved from ${oldState.channel?.name} to ${newState.channel?.name}`);
+      logger.info(
+        `User ${member?.displayName} moved from ${oldState.channel?.name} to ${newState.channel?.name}`,
+      );
 
       channel = newState.channel ?? oldState.channel;
 
@@ -31,11 +36,15 @@ export default (client: Client): void => {
       }
 
       if (botUser) {
-        logger.debug(`Ignoring channel change: user ${member?.displayName} is a bot`);
+        logger.debug(
+          `Ignoring channel change: user ${member?.displayName} is a bot`,
+        );
         return;
       }
 
-      if ((EXCLUDED_VOICE_CHANNELS as readonly string[]).includes(channel.id!)) {
+      if (
+        (EXCLUDED_VOICE_CHANNELS as readonly string[]).includes(channel.id!)
+      ) {
         logger.debug(`Ignoring channel ${channel.id} - excluded channel`);
         return;
       }
@@ -45,138 +54,52 @@ export default (client: Client): void => {
   );
 };
 
-async function updateChannel(
-  channel: VoiceBasedChannel,
-  member: GuildMember,
-  left = false,
-) {
-  let newChannelName = getNewChannelName(channel, member);
-
-  if (channel.name == newChannelName) {
-    logger.debug("Channel name unchanged");
-    return;
-  }
-
+async function updateChannel(channel: VoiceBasedChannel, member: GuildMember) {
   try {
-    logger.info(`Updating channel ${channel.id} name to "${newChannelName}"`);
-    await channel.setName(newChannelName);
-  } catch (error) {
-    logger.error(`Failed to update channel name`, error);
-  }
-}
+    logger.info(
+      `🏷️ Auto-renaming channel ${channel.id} after voice state change`,
+    );
 
-function getNewChannelName(channel: VoiceBasedChannel, member: GuildMember) {
-  let possibleNames: string[] = [];
+    // Create action context for the channel management action
+    // We need to create a mock interaction-like object to provide guild access
+    const mockContext: ActionContext = {
+      guild: {
+        id: channel.guild.id,
+        name: channel.guild.name,
+      },
+      user: {
+        id: member.user.id,
+        username: member.user.username,
+      },
+      voiceChannel: channel.type === 2 ? (channel as VoiceChannel) : undefined,
+      isVoiceInteraction: true,
+      source: "voice",
+      // Provide access to the full guild through a mock interaction
+      interaction: {
+        guild: channel.guild,
+        user: member.user,
+      } as any,
+    };
 
-  let memberNames = channel.members
-    .filter((member) => !member.user.bot)
-    .map((member) => member.displayName)
-    .sort((a, b) => compareStrings(a, b));
+    // Use the Channel Management Action to rename the channel
+    const actionService = ActionService.getInstance();
+    const result = await actionService
+      .getRegistry()
+      .execute("channel_management", mockContext, {
+        action: "rename",
+        channel_id: channel.id,
+        name_style: "creative", // Use creative style for auto-renaming
+        force_update: false,
+      });
 
-  //is Timbo there?
-  if (channel.members.some((m) => m.user.id === "299595170767306752"))
-    possibleNames.push("Discord Jerkoff Session");
-
-  let numMembers = memberNames.length;
-  logger.debug(`${numMembers} members in voice channel`);
-
-  //wild cards
-  possibleNames.push("Pixel Purgatory");
-  possibleNames.push("Rage Quit Retreat");
-  switch (numMembers) {
-    case 0:
-      possibleNames.push("Empty Lounge");
-      possibleNames.push("No one here but us chickens");
-      possibleNames.push("Ghost Town");
-      possibleNames.push("The Void");
-      possibleNames.push("The Abyss");
-      possibleNames.push("Empty Space");
-      possibleNames.push("Pending Removal");
-      possibleNames.push("Server cost");
-      possibleNames.push("404 Lounge");
-      break;
-    case 1:
-      possibleNames.push("👉👈");
-      possibleNames.push("Lounge 2: Electric Boogaloo");
-      possibleNames.push("Fire starter");
-      possibleNames.push("Solo Lounge");
-      possibleNames.push("Lone Lounge");
-      possibleNames.push("Army of One");
-      possibleNames.push("One-Man Lounge");
-      possibleNames.push(`Only 1?, Lamesauce`);
-      possibleNames.push(`Omg you reading this?`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      possibleNames.push(`${memberNames[0]}'s Lounge`);
-      break;
-    case 2:
-      possibleNames.push("Dynamic Duo");
-      possibleNames.push("Power Pair");
-      possibleNames.push("Dual Warriors");
-      possibleNames.push("Twin Titans");
-      possibleNames.push("Double Trouble");
-      possibleNames.push("Pair of Legends");
-      possibleNames.push("Dynamic Dorks");
-      possibleNames.push("The Dual Delinquents");
-      possibleNames.push(`${memberNames[0]} & ${memberNames[1]}`);
-      possibleNames.push(
-        `${memberNames[0]} & ${memberNames[1]}'s Get Together`,
+    if (result.success) {
+      logger.info(
+        `🏷️ Channel auto-renamed successfully: ${result.data?.new_name}`,
       );
-      break;
-    case 3:
-      possibleNames.push("Trio of Trolls");
-      possibleNames.push("Triple Threat");
-      possibleNames.push("Triforce Warriors");
-      possibleNames.push("Three Musketeers");
-      possibleNames.push("Tactical Trinity");
-      possibleNames.push("Triumphant Triad");
-      break;
-    case 4:
-      possibleNames.push("The Four Horseman");
-      possibleNames.push("Quad Squad");
-      possibleNames.push("Fantastic Four");
-      possibleNames.push("Elite Ensemble");
-      possibleNames.push("Quartet of Chaos");
-      possibleNames.push("The Fabulous Four");
-      break;
-    case 5:
-      possibleNames.push("Pentaforce");
-      possibleNames.push("Quintessential Warriors");
-      possibleNames.push("Fivefold Fury");
-      possibleNames.push("The Fabulous Five");
-      break;
-    case 6:
-      possibleNames.push("Team Hexagon");
-      possibleNames.push("Six-Pack Power");
-      possibleNames.push("Epic Gamer Lounge");
-      possibleNames.push("The Savage Six");
-      break;
-    default:
-      possibleNames.push("Overcrowded");
-      possibleNames.push("The Grand Assembly");
-      possibleNames.push("Discord Overflow");
-      break;
+    } else {
+      logger.warn(`🏷️ Channel auto-rename failed: ${result.error}`);
+    }
+  } catch (error) {
+    logger.error(`🏷️ Failed to auto-rename channel via action`, error);
   }
-
-  return (
-    possibleNames[Math.floor(Math.random() * possibleNames.length)] ?? "Lounge"
-  );
-}
-
-function compareStrings(a: string, b: string) {
-  const stringA = a.toUpperCase();
-  const stringB = b.toUpperCase();
-  if (stringA < stringB) {
-    return -1;
-  }
-  if (stringA > stringB) {
-    return 1;
-  }
-  // strings must be equal
-  return 0;
 }

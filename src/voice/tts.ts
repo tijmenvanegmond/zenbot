@@ -33,20 +33,21 @@ export async function createTTSStream(input: string) {
   try {
     const response = await client.audio.speech.create({
       model: "gpt-4o-mini-tts",
-      voice: "echo", 
+      voice: "echo",
       input,
-      instructions: "Speak in a calm, wise, and serene tone like Zenyatta from Overwatch - an omnic monk with a deep, resonant, slightly robotic voice. Add subtle pauses between phrases for contemplation. Be philosophical and peaceful.",
+      instructions:
+        "Speak in a calm, wise, and serene tone like Zenyatta from Overwatch - an omnic monk with a deep, resonant, slightly robotic voice. Add subtle pauses between phrases for contemplation. Be philosophical and peaceful.",
       response_format: "mp3",
     });
 
     // Convert the response to a Buffer and then to a proper Readable stream
     const buffer = Buffer.from(await response.arrayBuffer());
     logger.info(`TTS buffer size: ${buffer.length} bytes`);
-    
+
     if (buffer.length === 0) {
       throw new Error("TTS response buffer is empty");
     }
-    
+
     const stream = new Readable();
     stream.push(buffer);
     stream.push(null); // Signals the end of the stream
@@ -55,7 +56,7 @@ export async function createTTSStream(input: string) {
     const resource = createAudioResource(stream, {
       inputType: StreamType.Arbitrary,
     });
-    
+
     logger.info(`Created audio resource successfully`);
     return resource;
   } catch (error) {

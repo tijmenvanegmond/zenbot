@@ -1,7 +1,7 @@
-import { 
-  CommandInteraction, 
-  CommandInteractionOptionResolver, 
-  GuildMember 
+import {
+  CommandInteraction,
+  CommandInteractionOptionResolver,
+  GuildMember,
 } from "discord.js";
 import { logger } from "./logger";
 
@@ -14,7 +14,7 @@ export function validateVoiceChannel(interaction: CommandInteraction): {
   response?: any;
 } {
   const member = interaction?.member as GuildMember;
-  
+
   if (!member?.voice?.channelId) {
     logger.info("User not in voice channel - replying with text");
     return {
@@ -23,10 +23,10 @@ export function validateVoiceChannel(interaction: CommandInteraction): {
       response: {
         content: "You have to be in voice to use this",
         ephemeral: true,
-      }
+      },
     };
   }
-  
+
   return {
     isValid: true,
     member,
@@ -36,14 +36,18 @@ export function validateVoiceChannel(interaction: CommandInteraction): {
 /**
  * Safely gets typed interaction options
  */
-export function getInteractionOptions(interaction: CommandInteraction): CommandInteractionOptionResolver {
+export function getInteractionOptions(
+  interaction: CommandInteraction,
+): CommandInteractionOptionResolver {
   return interaction.options as CommandInteractionOptionResolver;
 }
 
 /**
  * Common error response for command failures
  */
-export function createErrorResponse(message: string = "An error occurred while executing this command."): any {
+export function createErrorResponse(
+  message: string = "An error occurred while executing this command.",
+): any {
   return {
     ephemeral: true,
     content: message,

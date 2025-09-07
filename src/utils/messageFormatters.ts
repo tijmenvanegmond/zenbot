@@ -2,26 +2,26 @@
  * Common emoji mappings for different advice/message types
  */
 export const ADVICE_EMOJIS = {
-  philosophical: '🧘',
-  greeting: '🙏',
-  harmony: '💚',
-  discord: '⚡',
-  transcendence: '✨',
-  random: '🎲',
-  default: '🧘'
+  philosophical: "🧘",
+  greeting: "🙏",
+  harmony: "💚",
+  discord: "⚡",
+  transcendence: "✨",
+  random: "🎲",
+  default: "🧘",
 } as const;
 
 /**
  * Common message prefixes for different advice types
  */
 export const ADVICE_PREFIXES = {
-  philosophical: 'Walk in wisdom...',
-  greeting: 'Peace be upon you...',
-  harmony: 'Embrace harmony...',
-  discord: 'Face your challenges...',
-  transcendence: 'Experience tranquility...',
-  random: 'The iris reveals...',
-  default: 'Walk in wisdom...'
+  philosophical: "Walk in wisdom...",
+  greeting: "Peace be upon you...",
+  harmony: "Embrace harmony...",
+  discord: "Face your challenges...",
+  transcendence: "Experience tranquility...",
+  random: "The iris reveals...",
+  default: "Walk in wisdom...",
 } as const;
 
 export type AdviceType = keyof typeof ADVICE_EMOJIS;

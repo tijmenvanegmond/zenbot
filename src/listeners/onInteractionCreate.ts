@@ -1,5 +1,5 @@
 import { CommandInteraction, Client, BaseInteraction } from "discord.js";
-import { CommandCollection } from "../commands/commandCollection";
+import { CommandCollectionWithAssistant } from "../commands/commandCollection_with_assistant";
 import { logger } from "../utils/logger";
 
 export default (client: Client): void => {
@@ -17,7 +17,7 @@ const handleSlashCommand = async (
   logger.info(
     `${interaction.member?.user.username} triggered command: ${interaction.commandName}`,
   );
-  const slashCommand = CommandCollection.find(
+  const slashCommand = CommandCollectionWithAssistant.find(
     (c) => c.data.name === interaction.commandName,
   );
   if (!slashCommand) {
@@ -26,5 +26,5 @@ const handleSlashCommand = async (
   }
 
   await interaction.deferReply();
-  slashCommand.execute(client, interaction);
+  await slashCommand.execute(client, interaction);
 };

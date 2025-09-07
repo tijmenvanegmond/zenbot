@@ -29,7 +29,7 @@ export default async function PlayResourceInVoiceChannel(
     logger.info(`Starting audio playback`);
     audioPlayer.play(resource);
     const subscription = connection.subscribe(audioPlayer);
-    
+
     logger.info(`Audio player state: ${audioPlayer.state.status}`);
 
     // Cleanup function to prevent resource leaks
@@ -49,7 +49,9 @@ export default async function PlayResourceInVoiceChannel(
     };
 
     audioPlayer.on("stateChange", (oldState, newState) => {
-      logger.info(`Audio player state changed: ${oldState.status} -> ${newState.status}`);
+      logger.info(
+        `Audio player state changed: ${oldState.status} -> ${newState.status}`,
+      );
       // Handle all terminal states properly
       if (newState.status === "idle" || newState.status === "autopaused") {
         cleanupPlayer();
@@ -60,16 +62,17 @@ export default async function PlayResourceInVoiceChannel(
       logger.error(`Error in audio player:`, error);
       cleanupPlayer();
     });
-    
+
     // Log connection state changes
     connection.on("stateChange", (oldState, newState) => {
-      logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
+      logger.info(
+        `Voice connection state: ${oldState.status} -> ${newState.status}`,
+      );
     });
-    
+
     connection.on("error", (error) => {
       logger.error(`Voice connection error:`, error);
     });
-    
   } catch (error) {
     logger.error("Error in PlayResourceInVoiceChannel function:", error);
   }
@@ -84,18 +87,17 @@ export async function playInVoiceChannel(
 ) {
   try {
     logger.info(`🎤 Playing TTS audio in voice channel: ${voiceChannel.name}`);
-    
+
     // Create a readable stream from the buffer
     const stream = Readable.from(audioBuffer);
-    
+
     // Create audio resource for Discord.js voice
     const resource = createAudioResource(stream, {
       inputType: StreamType.Arbitrary,
     });
-    
+
     // Use the existing play function
     await PlayResourceInVoiceChannel(voiceChannel, resource);
-    
   } catch (error) {
     logger.error("Error playing audio buffer in voice channel:", error);
     throw error;

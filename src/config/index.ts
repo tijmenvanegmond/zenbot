@@ -10,10 +10,10 @@ dotenv.config();
  */
 export class Config {
   // Environment Variables
-  static readonly DISCORD_TOKEN = Config.getRequiredEnv('DISCORD_API_TOKEN');
-  static readonly OPENAI_API_KEY = Config.getRequiredEnv('OPENAI_API_KEY');
-  static readonly PORT = parseInt(Config.getEnv('PORT', '3001'));
-  static readonly LOG_LEVEL = Config.getEnv('LOG_LEVEL', 'INFO');
+  static readonly DISCORD_TOKEN = Config.getRequiredEnv("DISCORD_API_TOKEN");
+  static readonly OPENAI_API_KEY = Config.getRequiredEnv("OPENAI_API_KEY");
+  static readonly PORT = parseInt(Config.getEnv("PORT", "3001"));
+  static readonly LOG_LEVEL = Config.getEnv("LOG_LEVEL", "INFO");
 
   // Discord Channel Types (avoiding magic numbers)
   static readonly CHANNEL_TYPES = {
@@ -23,36 +23,37 @@ export class Config {
 
   // Voice Configuration
   static readonly VOICE_CONFIG = {
-    TTS_MODEL: 'gpt-4o-mini-tts',
-    TTS_VOICE: 'echo',
-    TTS_FORMAT: 'mp3' as const,
-    LEGACY_TTS_MODEL: 'tts-1',
-    LEGACY_TTS_VOICE: 'nova',
-    LEGACY_TTS_FORMAT: 'opus' as const,
-    ZENYATTA_INSTRUCTIONS: 'Speak in a calm, wise, and serene tone like Zenyatta from Overwatch - an omnic monk with a deep, resonant, slightly robotic voice. Add subtle pauses between phrases for contemplation. Be philosophical and peaceful.',
+    TTS_MODEL: "gpt-4o-mini-tts",
+    TTS_VOICE: "echo",
+    TTS_FORMAT: "mp3" as const,
+    LEGACY_TTS_MODEL: "tts-1",
+    LEGACY_TTS_VOICE: "nova",
+    LEGACY_TTS_FORMAT: "opus" as const,
+    ZENYATTA_INSTRUCTIONS:
+      "Speak in a calm, wise, and serene tone like Zenyatta from Overwatch - an omnic monk with a deep, resonant, slightly robotic voice. Add subtle pauses between phrases for contemplation. Be philosophical and peaceful.",
   } as const;
 
   // AI Configuration
   static readonly AI_CONFIG = {
-    CHAT_MODEL: 'gpt-4o-mini',
+    CHAT_MODEL: "gpt-4o-mini",
     DEFAULT_TEMPERATURE: 0.8,
     DEFAULT_MAX_TOKENS: 100,
   } as const;
 
   // Voice Channel Exclusions
   static readonly EXCLUDED_VOICE_CHANNELS = [
-    '1146803612492777',
-    '1146803612492775517',
-    '1226931698336534652',
-    '1163888773617176646',
+    "1146803612492777",
+    "1146803612492775517",
+    "1226931698336534652",
+    "1163888773617176646",
   ] as const;
 
   // Quote Channel Detection
   static readonly QUOTE_CHANNEL_NAMES = [
-    '🌸quotes',
-    'quotes',
-    'quote', 
-    'memes'
+    "🌸quotes",
+    "quotes",
+    "quote",
+    "memes",
   ] as const;
 
   // API Configuration
@@ -90,12 +91,12 @@ export class Config {
       // Test required variables by accessing them
       Config.DISCORD_TOKEN;
       Config.OPENAI_API_KEY;
-      
-      logger.info('Configuration validation successful');
+
+      logger.info("Configuration validation successful");
       logger.info(`Server configured for port: ${Config.PORT}`);
       logger.info(`Log level: ${Config.LOG_LEVEL}`);
     } catch (error) {
-      logger.error('Configuration validation failed:', error);
+      logger.error("Configuration validation failed:", error);
       throw error;
     }
   }
@@ -105,7 +106,7 @@ export class Config {
    */
   static getEnvironmentInfo() {
     return {
-      nodeEnv: process.env.NODE_ENV || 'development',
+      nodeEnv: process.env.NODE_ENV || "development",
       port: Config.PORT,
       logLevel: Config.LOG_LEVEL,
       hasDiscordToken: !!Config.DISCORD_TOKEN,
@@ -128,5 +129,5 @@ export const {
   AI_CONFIG,
   EXCLUDED_VOICE_CHANNELS,
   QUOTE_CHANNEL_NAMES,
-  API_CONFIG
+  API_CONFIG,
 } = Config;
