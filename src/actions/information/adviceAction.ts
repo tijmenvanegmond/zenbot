@@ -67,7 +67,7 @@ export class AdviceAction implements ZenAction {
         source: context.source,
         hasInteraction: !!context.interaction,
         user: context.user.username,
-        parametersReceived: Object.keys(parameters)
+        parametersReceived: Object.keys(parameters),
       });
 
       const {
@@ -78,11 +78,11 @@ export class AdviceAction implements ZenAction {
       } = parameters;
 
       logger.debug(`🎭 Parsed advice parameters:`, {
-        topic: topic || 'none',
+        topic: topic || "none",
         advice_type,
         urgency,
         use_voice,
-        willUseAI: advice_type === "ai_contextual" && !!context.interaction
+        willUseAI: advice_type === "ai_contextual" && !!context.interaction,
       });
 
       logger.info(
@@ -93,15 +93,15 @@ export class AdviceAction implements ZenAction {
       let isAIGenerated = false;
 
       if (advice_type === "ai_contextual" && context.interaction) {
-  logger.debug(`🎭 Using AI contextual advice via ZenbotService`);
-        
+        logger.debug(`🎭 Using AI contextual advice via ZenbotService`);
+
         // Use unified Zenyatta service for contextual advice with conversation memory
         try {
           const zenyatta = ZenbotService.getInstance();
-          
+
           logger.debug(`🎭 Calling zenyatta.getAdvice()`, {
             hasTopic: !!topic,
-            urgency
+            urgency,
           });
 
           const response = await zenyatta.getAdvice(
@@ -109,15 +109,15 @@ export class AdviceAction implements ZenAction {
             topic,
             urgency as any,
           );
-          
+
           adviceText = response.text;
           isAIGenerated = true;
-          
+
           logger.debug(`🎭 AI advice generated successfully`, {
             responseLength: response.text.length,
             mood: response.mood,
             shouldUseVoice: response.shouldUseVoice,
-            sessionId: response.sessionId
+            sessionId: response.sessionId,
           });
         } catch (error) {
           logger.warn(
@@ -125,7 +125,7 @@ export class AdviceAction implements ZenAction {
             error,
           );
           logger.debug(`🎭 Falling back to predefined wisdom`);
-          
+
           // Fall back to predefined advice
           const voiceLine = VoiceService.getContextualAdvice("philosophical");
           adviceText = voiceLine.text;
@@ -133,9 +133,9 @@ export class AdviceAction implements ZenAction {
       } else {
         logger.debug(`🎭 Using predefined wisdom`, {
           advice_type,
-          randomCategory: advice_type === "random"
+          randomCategory: advice_type === "random",
         });
-        
+
         // Use predefined wisdom
         const adviceCategory =
           advice_type === "random" ? this.getRandomCategory() : advice_type;

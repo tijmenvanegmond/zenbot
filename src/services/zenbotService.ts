@@ -8,7 +8,7 @@ import { CommandInteraction } from "discord.js";
 import { RemarkType } from "../actions/entertainment/remarkAction";
 
 // Interface for minimal interaction context needed by API calls
-interface MinimalInteractionContext {
+export interface MinimalInteractionContext {
   user: { id: string; username: string; displayName: string };
   guildId: string;
   channelId: string;
@@ -41,8 +41,8 @@ export interface UnifiedZenyattaResponse {
 }
 
 /**
- * Unified Zenyatta Service that uses the AI abstraction layer
- * Provides consistent Zenyatta personality across all AI providers with conversation memory
+ * Zenbot Service that uses the AI abstraction layer
+ * Provides consistent Zenbot personality across all AI providers with conversation memory
  * Now supports multiple instances for chorus conversations
  */
 export class ZenbotService {
@@ -114,7 +114,7 @@ export class ZenbotService {
 
     if (!session) {
       // Create new Zenyatta session
-  const context = this.buildZenbotContext(interaction);
+      const context = this.buildZenbotContext(interaction);
 
       session = await this.aiManager.createSession("Zenbot", {
         userId,
@@ -199,11 +199,88 @@ export class ZenbotService {
     );
 
     try {
-      // Use AI manager to continue conversation
-      const responseText = await this.aiManager.chat(
-        session.id,
-        contextualMessage,
-      );
+      // Decide whether to attempt function calling
+      const provider = this.aiManager.getProvider();
+      let responseText: string;
+
+      if (provider.supportsFunctions) {
+        try {
+          // Build available function definitions from actions
+          const functions = this.actionService
+            .getFunctionDefinitions()
+            .map((fn) => ({
+              name: fn.name,
+              description: fn.description,
+              parameters: fn.parameters,
+            }));
+
+          // Ask provider to attempt function calling; if it returns calls we execute them
+          const functionCapable =
+            (provider as any).callFunctions && functions.length > 0;
+
+          if (functionCapable) {
+            const { response, functionCalls } = await (
+              provider as any
+            ).callFunctions(session.id, contextualMessage, functions, {});
+
+            // Execute any function calls sequentially
+            if (Array.isArray(functionCalls) && functionCalls.length > 0) {
+              for (const call of functionCalls) {
+                try {
+                  // Only allow registered actions
+                  const actionResult =
+                    await this.actionService.processAIFunctionCall(
+                      interaction as any,
+                      call.name,
+                      call.arguments || {},
+                    );
+                  // Append a short summary of result back into session for follow-up
+                  const summary = actionResult.success
+                    ? `${call.name} success${actionResult.responseText ? `: ${actionResult.responseText.substring(0, 140)}` : ""}`
+                    : `${call.name} failed: ${actionResult.error}`;
+                  await this.aiManager.getProvider().addToHistory(session.id, [
+                    {
+                      role: "function",
+                      content: summary,
+                      metadata: { functionName: call.name },
+                    } as any,
+                  ]);
+                } catch (fnErr) {
+                  logger.error(
+                    `⚠️ Function '${call.name}' execution failed:`,
+                    fnErr,
+                  );
+                }
+              }
+              // After executing functions, get a follow-up assistant reply
+              responseText = await this.aiManager.chat(
+                session.id,
+                "Provide a concise follow-up response reflecting the executed actions.",
+              );
+            } else {
+              responseText = response;
+            }
+          } else {
+            // Fall back to normal chat if no functions available
+            responseText = await this.aiManager.chat(
+              session.id,
+              contextualMessage,
+            );
+          }
+        } catch (fcError) {
+          logger.warn(
+            "⚠️ Function calling path failed; falling back to standard chat:",
+            fcError instanceof Error ? fcError.message : fcError,
+          );
+          responseText = await this.aiManager.chat(
+            session.id,
+            contextualMessage,
+          );
+        }
+      } else {
+        // Provider does not support functions
+        responseText = await this.aiManager.chat(session.id, contextualMessage);
+      }
 
       const response: UnifiedZenyattaResponse = {
         text: responseText,
@@ -273,7 +350,7 @@ export class ZenbotService {
         yield { event, sessionId: session.id };
       }
     } catch (error) {
-  logger.error("⚠️ Zenbot streaming failed:", error);
+      logger.error("⚠️ Zenbot streaming failed:", error);
       yield {
         event: {
           type: "error",
@@ -359,12 +436,10 @@ export class ZenbotService {
       });
       return { text: response.text };
     } catch (error) {
-  logger.error("⚠️ Remark generation failed:", error);
+      logger.error("⚠️ Remark generation failed:", error);
       // Fallback: use simpler remark generation (ignores typed nuance)
       return {
         text: "Failed to generate remark. Please try again.",
-
-        
       };
     }
   }
@@ -377,7 +452,7 @@ export class ZenbotService {
     interaction: CommandInteraction | MinimalInteractionContext,
     quote: EnrichedQuote,
   ): Promise<string> {
-  const message = `Generate a SHORT setup phrase before reading this quote aloud.
+    const message = `Generate a SHORT setup phrase before reading this quote aloud.
 
 Quote: "${quote.parsedQuote}"
 Speaker: ${quote.speaker || quote.poster.displayName}
@@ -409,7 +484,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
 
       return commentary;
     } catch (error) {
-  logger.error("⚠️ Quote commentary generation failed:", error);
+      logger.error("⚠️ Quote commentary generation failed:", error);
 
       // Fallback commentaries with more personality
       const fallbacks = [
@@ -440,7 +515,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
 
       return `${commentary}... ${quoteText}`;
     } catch (error) {
-  logger.error("⚠️ Enhanced quote TTS creation failed:", error);
+      logger.error("⚠️ Enhanced quote TTS creation failed:", error);
       return quote.isQuoted ? quote.parsedQuote : quote.content;
     }
   }
@@ -537,7 +612,7 @@ Execute now with this persona.`;
     userMessage: string,
     commandContext?: { commandName: string; options?: Record<string, any> },
   ): string {
-  const context = this.buildZenbotContext(interaction);
+    const context = this.buildZenbotContext(interaction);
     const timeOfDay = this.getTimeOfDay();
 
     const contextInfo = [];
@@ -560,7 +635,7 @@ Execute now with this persona.`;
     } else {
       // If not in voice, we're in Discord text - enforce brevity
       contextInfo.push(
-  `[Discord Text: Keep response ≤240 chars unless user explicitly asks for expansion]`,
+        `[Discord Text: Keep response ≤240 chars unless user explicitly asks for expansion]`,
       );
     }
 

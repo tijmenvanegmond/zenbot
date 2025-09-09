@@ -903,7 +903,7 @@ Generate a gentle, philosophical critique of ${subject}:`;
       return fallback;
     }
   }
-  
+
   /**
    * Get TTS voice instructions for consistent Zenyatta personality across all voice generation
    */

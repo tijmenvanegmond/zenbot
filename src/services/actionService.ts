@@ -70,28 +70,28 @@ export class ActionService {
   ): Promise<ActionResult> {
     logger.debug(`🎭 ActionService.executeFromCommand: ${actionName}`, {
       user: interaction.user.username,
-      guild: interaction.guild?.name || 'DM',
+      guild: interaction.guild?.name || "DM",
       parameters: Object.keys(parameters),
-      source: 'command'
+      source: "command",
     });
 
     const context = this.createContextFromInteraction(interaction, "command");
-    
+
     logger.debug(`🎭 Created command context:`, {
       hasGuild: !!context.guild,
       hasVoiceChannel: !!context.voiceChannel,
       userId: context.user.id,
-      source: context.source
+      source: context.source,
     });
 
     const result = await this.registry.execute(actionName, context, parameters);
-    
+
     logger.debug(`🎭 Action execution result:`, {
       action: actionName,
       success: result.success,
       hasResponseText: !!result.responseText,
       shouldRespond: result.shouldRespond,
-      useVoice: result.useVoice
+      useVoice: result.useVoice,
     });
 
     return result;
@@ -135,7 +135,7 @@ export class ActionService {
     logger.debug(`🎭 ActionService.executeFromAI: ${actionName}`, {
       user: interaction.user.username,
       parameters: Object.keys(parameters),
-      source: 'ai'
+      source: "ai",
     });
 
     const context = this.createContextFromInteraction(interaction, "ai");
@@ -153,6 +153,17 @@ export class ActionService {
         description: schema.description,
         parameters: schema.parameters,
       },
+    }));
+  }
+
+  /**
+   * Get raw function definitions compatible with AI provider function calling
+   */
+  getFunctionDefinitions() {
+    return this.registry.getForAI().map((schema) => ({
+      name: schema.name,
+      description: schema.description,
+      parameters: schema.parameters,
     }));
   }
 

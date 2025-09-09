@@ -16,7 +16,7 @@ export enum RemarkType {
   ENCOURAGING = "encouraging",
   MYSTERIOUS = "mysterious",
   WISE = "wise",
-  HUMOROUS = "humorous"
+  HUMOROUS = "humorous",
 }
 
 export class RemarkAction implements ZenAction {
@@ -146,7 +146,7 @@ export class RemarkAction implements ZenAction {
         [RemarkType.ENCOURAGING]: "💪",
         [RemarkType.MYSTERIOUS]: "🔮",
         [RemarkType.WISE]: "🦉",
-        [RemarkType.HUMOROUS]: "😄"
+        [RemarkType.HUMOROUS]: "😄",
       };
       const emoji = emojiMap[type as RemarkType] || "🤔";
       const responseText = `${emoji} **Remark about ${subjectName}:** ${remarkText}`;

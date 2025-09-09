@@ -11,6 +11,8 @@ import {
   Message,
   SessionStorage,
   AIServiceError,
+  FunctionDefinition,
+  FunctionCall,
 } from "../types";
 import { logger } from "../../../utils/logger";
 
@@ -429,17 +431,129 @@ export class GeminiProvider extends BaseAIProvider {
   async callFunctions(
     sessionId: string,
     userMessage: string,
-    functions: any[],
+    functions: FunctionDefinition[],
     options: GenerationOptions = {},
-  ): Promise<{ response: string; functionCalls: any[] }> {
-    // Gemini function calling is more complex - for now, fall back to conversation
-    // TODO: Implement proper Gemini function calling when needed
-    const response = await this.continueConversation(
-      sessionId,
-      userMessage,
-      options,
-    );
-    return { response, functionCalls: [] };
+  ): Promise<{ response: string; functionCalls: FunctionCall[] }> {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new AIServiceError(
+        `Session ${sessionId} not found`,
+        this.name,
+        "SESSION_NOT_FOUND",
+      );
+    }
+
+    // Record user message
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: userMessage,
+      timestamp: new Date(),
+    };
+    session.messages.push(userMsg);
+
+    // Format existing history for Gemini
+    const geminiMessages = this.formatMessagesForProvider(session.messages);
+
+    // Build Gemini function declarations
+    const functionDeclarations = functions.map((fn) => ({
+      name: fn.name,
+      description: fn.description,
+      parameters: fn.parameters, // Assumes already JSON schema style
+    }));
+
+    try {
+      const model = this.getModel(options.model);
+      const generationConfig = {
+        temperature: options.temperature || session.metadata.temperature || 0.7,
+        maxOutputTokens: options.maxTokens || 1000,
+        topP: options.topP || 0.95,
+        stopSequences: options.stopSequences,
+      };
+
+      const result = await model.generateContent({
+        contents: geminiMessages,
+        tools: functionDeclarations.length
+          ? [
+              {
+                functionDeclarations: functionDeclarations as any,
+              },
+            ]
+          : undefined,
+        generationConfig,
+      });
+
+      const response = await result.response;
+      if (!response) {
+        throw new AIServiceError(
+          "No response received from Gemini",
+          this.name,
+          "EMPTY_RESPONSE",
+        );
+      }
+
+      const candidate = response.candidates?.[0];
+      const parts: any[] = candidate?.content?.parts || [];
+
+      const functionCalls: FunctionCall[] = [];
+      const textParts: string[] = [];
+
+      for (const part of parts) {
+        if (part.functionCall) {
+          try {
+            const fc = part.functionCall;
+            functionCalls.push({
+              id: fc.id || crypto.randomUUID(),
+              name: fc.name,
+              arguments:
+                typeof fc.args === "string"
+                  ? JSON.parse(fc.args || "{}")
+                  : fc.args || {},
+            });
+          } catch (err) {
+            logger.warn("⚠️ Failed to parse Gemini function call args:", err);
+          }
+        } else if (part.text) {
+          textParts.push(part.text);
+        }
+      }
+
+      const responseText = textParts.join("\n").trim();
+
+      // Store assistant message (even if only function calls)
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: responseText || (functionCalls.length ? "" : "(no response)"),
+        timestamp: new Date(),
+        metadata: functionCalls.length
+          ? { functionCalls: functionCalls.map((f) => ({ name: f.name })) }
+          : undefined,
+      };
+      session.messages.push(assistantMsg);
+
+      await this.trimSessionHistory(session);
+      session.updatedAt = new Date();
+      await this.sessionStorage.update(sessionId, {
+        messages: session.messages,
+        updatedAt: session.updatedAt,
+      });
+
+      logger.debug(
+        `🔧 Gemini function calling produced ${functionCalls.length} call(s) and ${responseText.length} text chars`,
+      );
+
+      return { response: responseText, functionCalls };
+    } catch (error) {
+      logger.error("Gemini function calling failed, falling back:", error);
+      // Fallback: behave like normal conversation
+      const fallback = await this.continueConversation(
+        sessionId,
+        userMessage,
+        options,
+      );
+      return { response: fallback, functionCalls: [] };
+    }
   }
 
   // ===== HEALTH CHECK =====

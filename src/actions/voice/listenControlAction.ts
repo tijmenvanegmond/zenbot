@@ -7,10 +7,14 @@ import {
 import { VoiceSessionManager } from "../../services/voiceSessionManager";
 import { joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
 import { logger } from "../../utils/logger";
-import { ZenbotService } from "../../services/zenbotService";
+import {
+  MinimalInteractionContext,
+  ZenbotService,
+} from "../../services/zenbotService";
 import { ActionService } from "../../services/actionService";
 import { OpenAIService } from "../../services/openaiService";
 import { opus } from "prism-media";
+import { channel } from "diagnostics_channel";
 
 // Audio processing constants - Adjusted for real speech patterns
 const MIN_AUDIO_DURATION_MS = 500; // Minimum 500ms - realistic for short speech
@@ -108,8 +112,10 @@ async function processVoiceCommand(
         username: `VoiceUser_${userId.slice(-4)}`, // Use last 4 chars for readable username
         displayName: `Voice User ${userId.slice(-4)}`,
       },
+      guild: context.guild,
       guildId: context.guild?.id,
-      channelId: context.voiceChannel?.id,
+      channelId: context.voiceChannel.id,
+      channel: context.voiceChannel, // Use voice channel as context
       client: {
         users: {
           fetch: async () => ({
@@ -118,7 +124,7 @@ async function processVoiceCommand(
           }),
         },
       },
-    } as any;
+    } as MinimalInteractionContext;
 
     // Use the assistant to have a natural conversation with the voice input
     const response = await zenyatta.converse(mockInteraction, transcription);

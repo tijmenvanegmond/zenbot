@@ -4,15 +4,15 @@
  * ⚠️  MOSTLY DEPRECATED - Most functionality moved to unified AI system
  *
  * The unified AI system (AIServiceManager + providers) now handles:
-* ❌ TTS generation → Use ZenbotService or AI providers directly
-* ❌ Chat completions → Use ZenbotService.converse()
+ * ❌ TTS generation → Use ZenbotService or AI providers directly
+ * ❌ Chat completions → Use ZenbotService.converse()
  * ❌ Streaming responses → Use AIServiceManager.chatStream()
  *
  * Only keeping essential utilities that haven't been migrated yet:
  * ✅ Audio transcription (transcribeAudioBuffer) - needed for voice processing
  * ✅ Batch quote parsing (batchParseQuotes) - used by quote service
  *
-* @deprecated Use ZenbotService (formerly UnifiedZenyattaService) and AIServiceManager for new functionality
+ * @deprecated Use ZenbotService (formerly UnifiedZenyattaService) and AIServiceManager for new functionality
  */
 
 import OpenAI from "openai";
@@ -37,15 +37,15 @@ export class OpenAIService {
   // ===== DEPRECATED TTS METHODS =====
 
   /**
-  * Creates TTS audio stream with legacy Zenyatta-style personality (deprecated)
-  * @deprecated Use ZenbotService or AI providers directly for TTS
+   * Creates TTS audio stream with legacy Zenyatta-style personality (deprecated)
+   * @deprecated Use ZenbotService or AI providers directly for TTS
    */
   static async createTTSStream(text: string): Promise<Buffer> {
     logger.warn(
-  "⚠️ createTTSStream is deprecated. Use ZenbotService for TTS generation.",
+      "⚠️ createTTSStream is deprecated. Use ZenbotService for TTS generation.",
     );
     console.warn(
-  "⚠️ createTTSStream is deprecated. Use ZenbotService for TTS generation.",
+      "⚠️ createTTSStream is deprecated. Use ZenbotService for TTS generation.",
     );
     const client = this.getClient();
 
@@ -76,15 +76,15 @@ export class OpenAIService {
   }
 
   /**
-  * Creates legacy TTS file (for backward compatibility)
-  * @deprecated Use ZenbotService or AI providers directly for TTS
+   * Creates legacy TTS file (for backward compatibility)
+   * @deprecated Use ZenbotService or AI providers directly for TTS
    */
   static async createLegacyTTS(text: string): Promise<Buffer> {
     logger.warn(
-  "⚠️ createLegacyTTS is deprecated. Use ZenbotService for TTS generation.",
+      "⚠️ createLegacyTTS is deprecated. Use ZenbotService for TTS generation.",
     );
     console.warn(
-  "⚠️ createLegacyTTS is deprecated. Use ZenbotService for TTS generation.",
+      "⚠️ createLegacyTTS is deprecated. Use ZenbotService for TTS generation.",
     );
     const client = this.getClient();
 
@@ -182,7 +182,7 @@ export class OpenAIService {
 
   /**
    * Generates AI chat completion with standard configuration
-  * @deprecated Use ZenbotService.converse() instead
+   * @deprecated Use ZenbotService.converse() instead
    */
   static async generateChatCompletion(
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],

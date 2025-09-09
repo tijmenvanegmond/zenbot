@@ -1,8 +1,4 @@
-import {
-  CommandInteraction,
-  Client,
-  SlashCommandBuilder,
-} from "discord.js";
+import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
 import {
@@ -44,9 +40,9 @@ export const Advice: Command = {
           | "medium"
           | "high") || "medium";
 
-        logger.info(
-          `${interaction.user.username} requesting Zenbot advice: topic="${topic}", urgency=${urgency}`,
-        );
+      logger.info(
+        `${interaction.user.username} requesting Zenbot advice: topic="${topic}", urgency=${urgency}`,
+      );
 
       // Use the action system for proper architecture flow
       const actionService = ActionService.getInstance();
@@ -63,16 +59,16 @@ export const Advice: Command = {
 
       // Handle the result
       if (result.success) {
-          const responseMessage =
-            result.data?.source === "ai"
-              ? `� **Zenbot (AI):** ${result.responseText}`
-              : `� **Zenbot:** ${result.responseText}`;
+        const responseMessage =
+          result.data?.source === "ai"
+            ? `� **Zenbot (AI):** ${result.responseText}`
+            : `� **Zenbot:** ${result.responseText}`;
 
         await interaction.editReply(createSuccessResponse(responseMessage));
       } else {
         await interaction.editReply(
           createErrorResponse(
-              result.error || "Zenbot refused to elaborate. Try again.",
+            result.error || "Zenbot refused to elaborate. Try again.",
           ),
         );
       }
@@ -80,7 +76,7 @@ export const Advice: Command = {
       logger.error("Error in advice command:", error);
       await interaction.editReply(
         createErrorResponse(
-            "⚠️ Zenbot experienced a brain cramp. Ask again in a moment.",
+          "⚠️ Zenbot experienced a brain cramp. Ask again in a moment.",
         ),
       );
     }
