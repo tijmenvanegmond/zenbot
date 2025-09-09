@@ -11,7 +11,7 @@ import {
   createErrorResponse,
 } from "../utils/commandHelpers";
 import { playTTSInChannel } from "../utils/voiceHelpers";
-import { ZenyattaAssistantService } from "../services/zenyattaAssistantService";
+import { UnifiedZenyattaService } from "../services/unifiedZenyattaService";
 
 export const AdviceAssistant: Command = {
   data: new SlashCommandBuilder()
@@ -53,7 +53,7 @@ export const AdviceAssistant: Command = {
       );
 
       // Get the Zenyatta assistant
-      const zenyatta = ZenyattaAssistantService.getInstance();
+      const zenyatta = UnifiedZenyattaService.getInstance();
 
       // Get advice with conversation context
       const response = await zenyatta.getAdvice(interaction, topic, urgency);

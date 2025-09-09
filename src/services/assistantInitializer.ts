@@ -1,48 +1,46 @@
-import { ZenyattaAssistantService } from "./zenyattaAssistantService";
+import { UnifiedZenyattaService } from "./unifiedZenyattaService";
+import { AIServiceManager, MemorySessionStorage } from "./ai";
+import { AI_CONFIG } from "../config/aiConfig";
 import { logger } from "../utils/logger";
 
 /**
- * Service to initialize OpenAI Assistant on bot startup
+ * Service to initialize unified AI system on bot startup
  */
 export class AssistantInitializer {
   /**
-   * Initialize all AI assistants
+   * Initialize all AI assistants with the unified system
    */
   static async initializeAssistants(): Promise<void> {
     try {
-      logger.info("🧘 Initializing Zenyatta Assistant...");
+      logger.info("🧘 Initializing Unified Zenyatta Service...");
 
-      const zenyatta = ZenyattaAssistantService.getInstance();
-      await zenyatta.initialize();
+      // Initialize AI service manager with multi-provider support
+      const sessionStorage = new MemorySessionStorage();
+      const aiManager = new AIServiceManager(AI_CONFIG, sessionStorage);
 
-      logger.info("🧘 Zenyatta Assistant ready for enlightened conversations");
+      // Initialize the unified Zenyatta service
+      UnifiedZenyattaService.initialize(aiManager);
+      const zenyatta = UnifiedZenyattaService.getInstance();
 
-      // Log assistant stats
-      const stats = zenyatta.getStats();
+      logger.info("🧘 Unified Zenyatta Service ready for enlightened conversations");
+
+      // Log AI system stats
+      const stats = await aiManager.getStats();
       logger.info(
-        `Assistant stats: ${stats.activeThreads} active threads, ID: ${stats.assistantId}`,
+        `AI System stats: ${stats.providers.length} providers (${stats.providers.join(", ")}), ${stats.activeSessions} sessions, ${stats.totalMessages} messages`,
       );
     } catch (error) {
-      logger.error("Failed to initialize AI assistants:", error);
+      logger.error("Failed to initialize AI system:", error);
       logger.warn("Bot will continue without AI assistant functionality");
     }
   }
 
   /**
-   * Setup periodic cleanup (optional)
+   * Setup periodic cleanup for AI sessions
    */
   static setupCleanup(): void {
-    // Clean up every 30 minutes
-    setInterval(
-      async () => {
-        try {
-          const zenyatta = ZenyattaAssistantService.getInstance();
-          await zenyatta.cleanupOldThreads();
-        } catch (error) {
-          logger.error("Assistant cleanup failed:", error);
-        }
-      },
-      30 * 60 * 1000,
-    );
+    // AI service manager handles its own cleanup automatically
+    // No additional cleanup needed for the unified system
+    logger.info("🧘 AI session cleanup is handled automatically by the service manager");
   }
 }

@@ -181,26 +181,14 @@ export class ZenyattaAssistantService {
         commandContext,
       );
 
-      // Check for active runs and wait for them to complete
-      await this.waitForInactiveRuns(threadId);
-
       // Add message to thread
       await this.openai.beta.threads.messages.create(threadId, {
         role: "user",
         content: contextualMessage,
       });
 
-      // Run the assistant
-      const run = await this.openai.beta.threads.runs.create(threadId, {
-        assistant_id: this.assistant!.id,
-      });
-
-      // Wait for completion
-      const response = await this.waitForResponse(
-        threadId,
-        run.id,
-        interaction,
-      );
+      // Stream the assistant run directly
+      const response = await this.streamAssistantRun(threadId, interaction);
 
       logger.info(
         `🧘 Zenyatta responded to ${interaction.user.username}: "${response.text.substring(0, 100)}..."`,
@@ -351,24 +339,29 @@ Remember: You are here to guide users toward inner peace, wisdom, and harmony th
   }
 
   /**
-   * Wait for assistant response and handle function calls
+   * Stream assistant run directly without polling
    */
-  private async waitForResponse(
+  private async streamAssistantRun(
     threadId: string,
-    runId: string,
     interaction: CommandInteraction,
   ): Promise<ZenyattaResponse> {
-    const maxAttempts = 30; // 30 seconds max wait
-    let attempts = 0;
+    // Create and stream the run in one step
+    const stream = this.openai.beta.threads.runs.createAndStream(threadId, {
+      assistant_id: this.assistant!.id,
+    });
 
-    while (attempts < maxAttempts) {
-      const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);
+    for await (const event of stream) {
+      logger.info(`🧘 Stream event: ${event.event}`);
+      logger.info(`🧘 Event data keys: ${Object.keys(event).join(', ')}`);
+      if (event.data) {
+        logger.info(`🧘 Event data type: ${typeof event.data}, keys: ${Object.keys(event.data).join(', ')}`);
+      }
 
-      if (run.status === "completed") {
+      if (event.event === "thread.run.completed") {
         // Get the assistant's response
         const messages = await this.openai.beta.threads.messages.list(threadId);
         const assistantMessage = messages.data.find(
-          (msg) => msg.role === "assistant" && msg.run_id === runId,
+          (msg) => msg.role === "assistant" && msg.run_id === event.data.id,
         );
 
         if (assistantMessage && assistantMessage.content[0]?.type === "text") {
@@ -376,14 +369,15 @@ Remember: You are here to guide users toward inner peace, wisdom, and harmony th
 
           return {
             text,
-            shouldUseVoice: true, // Let calling code decide based on voice channel
-            voiceText: text, // Same text for voice (TTS will handle it)
+            shouldUseVoice: true,
+            voiceText: text,
             mood: this.detectMood(text),
-            reasoning: "Assistant API response",
+            reasoning: "Assistant API streaming response",
           };
         }
-      } else if (run.status === "requires_action") {
-        // Handle function calls
+      } else if (event.event === "thread.run.requires_action") {
+        // Handle function calls immediately
+        const run = event.data;
         if (run.required_action?.type === "submit_tool_outputs") {
           const toolOutputs = [];
 
@@ -424,28 +418,20 @@ Remember: You are here to guide users toward inner peace, wisdom, and harmony th
             }
           }
 
-          // Submit function outputs and continue the run
-          await this.openai.beta.threads.runs.submitToolOutputs(
-            threadId,
-            runId,
-            {
-              tool_outputs: toolOutputs,
-            },
-          );
-
-          // Continue waiting for completion
+          // Submit function outputs and continue stream
+          await this.openai.beta.threads.runs.submitToolOutputs(run.id, {
+            thread_id: threadId,
+            tool_outputs: toolOutputs,
+          });
         }
-      } else if (run.status === "failed") {
-        logger.error(`Assistant run failed: ${run.last_error?.message}`);
-        break;
+      } else if (event.event === "thread.run.failed") {
+        const run = event.data;
+        logger.error(`🧘 Assistant run failed: ${run.last_error?.message}`);
+        throw new Error(`Assistant run failed: ${run.last_error?.message}`);
       }
-
-      // Wait 1 second before checking again
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      attempts++;
     }
 
-    throw new Error("Assistant response timeout or failed");
+    throw new Error("Stream ended without completion");
   }
 
   /**
@@ -489,99 +475,6 @@ Remember: You are here to guide users toward inner peace, wisdom, and harmony th
     if (hour < 18) return "afternoon";
     if (hour < 22) return "evening";
     return "night";
-  }
-
-  /**
-   * Wait for a specific run to complete
-   */
-  private async waitForRunCompletion(
-    threadId: string,
-    runId: string,
-  ): Promise<OpenAI.Beta.Threads.Runs.Run> {
-    const maxAttempts = 30; // 30 seconds max wait
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);
-
-      if (
-        run.status === "completed" ||
-        run.status === "failed" ||
-        run.status === "cancelled" ||
-        run.status === "expired"
-      ) {
-        return run;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second
-      attempts++;
-    }
-
-    // If we get here, the run timed out
-    const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);
-    logger.warn(`🧘 Run ${runId} timed out with status: ${run.status}`);
-    return run;
-  }
-
-  /**
-   * Wait for any active runs on a thread to complete before proceeding
-   */
-  private async waitForInactiveRuns(threadId: string): Promise<void> {
-    try {
-      const runs = await this.openai.beta.threads.runs.list(threadId);
-
-      const activeRuns = runs.data.filter(
-        (run) =>
-          run.status === "in_progress" ||
-          run.status === "queued" ||
-          run.status === "requires_action",
-      );
-
-      if (activeRuns.length > 0) {
-        logger.info(
-          `🧘 Waiting for ${activeRuns.length} active run(s) to complete on thread ${threadId}`,
-        );
-
-        // Wait for all active runs to complete
-        for (const run of activeRuns) {
-          let attempts = 0;
-          const maxAttempts = 30; // 30 seconds max wait
-
-          while (attempts < maxAttempts) {
-            try {
-              const currentRun = await this.openai.beta.threads.runs.retrieve(
-                threadId,
-                run.id,
-              );
-
-              if (
-                currentRun.status === "completed" ||
-                currentRun.status === "failed" ||
-                currentRun.status === "cancelled" ||
-                currentRun.status === "expired"
-              ) {
-                break;
-              }
-
-              await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second
-              attempts++;
-            } catch (error) {
-              logger.error(`Error checking run status: ${error}`);
-              break;
-            }
-          }
-
-          if (attempts >= maxAttempts) {
-            logger.warn(
-              `🧘 Timeout waiting for run ${run.id} to complete, proceeding anyway`,
-            );
-          }
-        }
-      }
-    } catch (error) {
-      logger.error("Error waiting for inactive runs:", error);
-      // Continue anyway - don't block conversation
-    }
   }
 
   /**
@@ -670,45 +563,51 @@ Generate Zenyatta's contextual introduction:`;
         content: userPrompt,
       });
 
-      // Create and wait for run
-      const run = await this.openai.beta.threads.runs.create(thread.id, {
+      // Stream the run directly
+      const stream = this.openai.beta.threads.runs.createAndStream(thread.id, {
         assistant_id: this.assistant!.id,
       });
 
-      const completedRun = await this.waitForRunCompletion(thread.id, run.id);
+      for await (const event of stream) {
+        if (event.event === "thread.run.completed") {
+          // Get the assistant's response
+          const messages = await this.openai.beta.threads.messages.list(
+            thread.id,
+          );
+          const assistantMessage = messages.data.find(
+            (msg) => msg.role === "assistant" && msg.run_id === event.data.id,
+          );
 
-      if (completedRun.status !== "completed") {
-        throw new Error(`Quote commentary run failed: ${completedRun.status}`);
+          if (!assistantMessage) {
+            throw new Error("No assistant response found for quote commentary");
+          }
+
+          const content = assistantMessage.content[0];
+          if (content.type !== "text") {
+            throw new Error("Expected text response for quote commentary");
+          }
+
+          let commentary = content.text.value.trim();
+
+          // Clean up the response and ensure it doesn't end with punctuation that would clash
+          if (
+            commentary.endsWith(".") ||
+            commentary.endsWith("!") ||
+            commentary.endsWith("?")
+          ) {
+            commentary = commentary.slice(0, -1);
+          }
+
+          logger.info(`Generated Zenyatta commentary: "${commentary}"`);
+          return commentary;
+        } else if (event.event === "thread.run.failed") {
+          throw new Error(
+            `Quote commentary run failed: ${event.data.last_error?.message}`,
+          );
+        }
       }
 
-      // Get the assistant's response
-      const messages = await this.openai.beta.threads.messages.list(thread.id);
-      const assistantMessage = messages.data.find(
-        (msg) => msg.role === "assistant" && msg.run_id === run.id,
-      );
-
-      if (!assistantMessage) {
-        throw new Error("No assistant response found for quote commentary");
-      }
-
-      const content = assistantMessage.content[0];
-      if (content.type !== "text") {
-        throw new Error("Expected text response for quote commentary");
-      }
-
-      let commentary = content.text.value.trim();
-
-      // Clean up the response and ensure it doesn't end with punctuation that would clash
-      if (
-        commentary.endsWith(".") ||
-        commentary.endsWith("!") ||
-        commentary.endsWith("?")
-      ) {
-        commentary = commentary.slice(0, -1);
-      }
-
-      logger.info(`Generated Zenyatta commentary: "${commentary}"`);
-      return commentary;
+      throw new Error("Stream ended without generating quote commentary");
     } catch (error) {
       logger.error("Error generating Zenyatta commentary:", error);
 
@@ -769,37 +668,43 @@ How would you respond?`;
         content: userPrompt,
       });
 
-      // Create and wait for run
-      const run = await this.openai.beta.threads.runs.create(thread.id, {
+      // Stream the run directly
+      const stream = this.openai.beta.threads.runs.createAndStream(thread.id, {
         assistant_id: this.assistant!.id,
       });
 
-      const completedRun = await this.waitForRunCompletion(thread.id, run.id);
+      for await (const event of stream) {
+        if (event.event === "thread.run.completed") {
+          // Get the assistant's response
+          const messages = await this.openai.beta.threads.messages.list(
+            thread.id,
+          );
+          const assistantMessage = messages.data.find(
+            (msg) => msg.role === "assistant" && msg.run_id === event.data.id,
+          );
 
-      if (completedRun.status !== "completed") {
-        throw new Error(
-          `Philosophical response run failed: ${completedRun.status}`,
-        );
+          if (!assistantMessage) {
+            throw new Error(
+              "No assistant response found for philosophical response",
+            );
+          }
+
+          const content = assistantMessage.content[0];
+          if (content.type !== "text") {
+            throw new Error(
+              "Expected text response for philosophical response",
+            );
+          }
+
+          return content.text.value.trim();
+        } else if (event.event === "thread.run.failed") {
+          throw new Error(
+            `Philosophical response run failed: ${event.data.last_error?.message}`,
+          );
+        }
       }
 
-      // Get the assistant's response
-      const messages = await this.openai.beta.threads.messages.list(thread.id);
-      const assistantMessage = messages.data.find(
-        (msg) => msg.role === "assistant" && msg.run_id === run.id,
-      );
-
-      if (!assistantMessage) {
-        throw new Error(
-          "No assistant response found for philosophical response",
-        );
-      }
-
-      const content = assistantMessage.content[0];
-      if (content.type !== "text") {
-        throw new Error("Expected text response for philosophical response");
-      }
-
-      return content.text.value.trim();
+      throw new Error("Stream ended without generating philosophical response");
     } catch (error) {
       logger.error("Error generating philosophical response:", error);
       return "Experience tranquility. The path forward becomes clear through patient contemplation.";
@@ -835,39 +740,43 @@ Generate a compliment about ${subject}:`;
         content: userPrompt,
       });
 
-      // Create and wait for run
-      const run = await this.openai.beta.threads.runs.create(thread.id, {
+      // Stream the run directly
+      const stream = this.openai.beta.threads.runs.createAndStream(thread.id, {
         assistant_id: this.assistant!.id,
       });
 
-      const completedRun = await this.waitForRunCompletion(thread.id, run.id);
+      for await (const event of stream) {
+        if (event.event === "thread.run.completed") {
+          // Get the assistant's response
+          const messages = await this.openai.beta.threads.messages.list(
+            thread.id,
+          );
+          const assistantMessage = messages.data.find(
+            (msg) => msg.role === "assistant" && msg.run_id === event.data.id,
+          );
 
-      if (completedRun.status !== "completed") {
-        throw new Error(
-          `Compliment generation run failed: ${completedRun.status}`,
-        );
+          if (!assistantMessage) {
+            throw new Error(
+              "No assistant response found for compliment generation",
+            );
+          }
+
+          const content = assistantMessage.content[0];
+          if (content.type !== "text") {
+            throw new Error("Expected text response for compliment generation");
+          }
+
+          const compliment = content.text.value.trim();
+          logger.info(`🧘 Generated compliment: "${compliment}"`);
+          return compliment;
+        } else if (event.event === "thread.run.failed") {
+          throw new Error(
+            `Compliment generation run failed: ${event.data.last_error?.message}`,
+          );
+        }
       }
 
-      // Get the assistant's response
-      const messages = await this.openai.beta.threads.messages.list(thread.id);
-      const assistantMessage = messages.data.find(
-        (msg) => msg.role === "assistant" && msg.run_id === run.id,
-      );
-
-      if (!assistantMessage) {
-        throw new Error(
-          "No assistant response found for compliment generation",
-        );
-      }
-
-      const content = assistantMessage.content[0];
-      if (content.type !== "text") {
-        throw new Error("Expected text response for compliment generation");
-      }
-
-      const compliment = content.text.value.trim();
-      logger.info(`🧘 Generated compliment: "${compliment}"`);
-      return compliment;
+      throw new Error("Stream ended without generating compliment");
     } catch (error) {
       logger.error("Error generating compliment:", error);
       // Fallback compliments in Zenyatta's style
@@ -897,12 +806,9 @@ Generate a compliment about ${subject}:`;
       const userPrompt = `Generate a playful, lighthearted "insult" about ${subject}.
 
 Style guidelines:
-- Keep it gentle and philosophical, not harsh
-- Make it more like constructive wisdom than a real insult
 - Use metaphors about balance, meditation, or spiritual growth  
 - Keep the tone peaceful even when being critical
-- Make it clear you mean no real harm - it's spiritual guidance
-- Keep it concise (1-2 sentences)
+- Keep it concise (max 1-2 sentences)
 - Examples of tone: "Perhaps you need more meditation to find your center" or "Your path to enlightenment seems... circuitous"
 
 Generate a gentle, philosophical critique of ${subject}:`;
@@ -913,35 +819,43 @@ Generate a gentle, philosophical critique of ${subject}:`;
         content: userPrompt,
       });
 
-      // Create and wait for run
-      const run = await this.openai.beta.threads.runs.create(thread.id, {
+      // Stream the run directly
+      const stream = this.openai.beta.threads.runs.createAndStream(thread.id, {
         assistant_id: this.assistant!.id,
       });
 
-      const completedRun = await this.waitForRunCompletion(thread.id, run.id);
+      for await (const event of stream) {
+        if (event.event === "thread.run.completed") {
+          // Get the assistant's response
+          const messages = await this.openai.beta.threads.messages.list(
+            thread.id,
+          );
+          const assistantMessage = messages.data.find(
+            (msg) => msg.role === "assistant" && msg.run_id === event.data.id,
+          );
 
-      if (completedRun.status !== "completed") {
-        throw new Error(`Insult generation run failed: ${completedRun.status}`);
+          if (!assistantMessage) {
+            throw new Error(
+              "No assistant response found for insult generation",
+            );
+          }
+
+          const content = assistantMessage.content[0];
+          if (content.type !== "text") {
+            throw new Error("Expected text response for insult generation");
+          }
+
+          const insult = content.text.value.trim();
+          logger.info(`🧘 Generated philosophical critique: "${insult}"`);
+          return insult;
+        } else if (event.event === "thread.run.failed") {
+          throw new Error(
+            `Insult generation run failed: ${event.data.last_error?.message}`,
+          );
+        }
       }
 
-      // Get the assistant's response
-      const messages = await this.openai.beta.threads.messages.list(thread.id);
-      const assistantMessage = messages.data.find(
-        (msg) => msg.role === "assistant" && msg.run_id === run.id,
-      );
-
-      if (!assistantMessage) {
-        throw new Error("No assistant response found for insult generation");
-      }
-
-      const content = assistantMessage.content[0];
-      if (content.type !== "text") {
-        throw new Error("Expected text response for insult generation");
-      }
-
-      const insult = content.text.value.trim();
-      logger.info(`🧘 Generated philosophical critique: "${insult}"`);
-      return insult;
+      throw new Error("Stream ended without generating insult");
     } catch (error) {
       logger.error("Error generating insult:", error);
       // Fallback gentle critiques in Zenyatta's style
@@ -971,6 +885,92 @@ Generate a gentle, philosophical critique of ${subject}:`;
       : await this.generateInsult(targetSubject);
 
     return { text, isPositive };
+  }
+
+  // ===== NEW RESPONSES API METHODS (Modern Streaming) =====
+
+  /**
+   * Generate a remark using the modern Responses API with proper streaming
+   */
+  async generateRemarkV2(
+    subject: string = "a discord user",
+    isPositive: boolean = Math.random() > 0.5,
+  ): Promise<string> {
+    try {
+      logger.info(`🚀 Generating V2 ${isPositive ? 'compliment' : 'critique'} for: ${subject}`);
+      
+      // Create Zenyatta-specific prompt
+      const remarkType = isPositive ? "compliment" : "lighthearted critique";
+      const input = `Generate a ${remarkType} about "${subject}" in the style of Zenyatta from Overwatch.
+
+Style guidelines:
+- Speak as Zenyatta, the omnic monk - calm, wise, philosophical
+- Use metaphors about balance, meditation, spiritual growth, or the Iris
+- Keep it concise (1-2 sentences maximum)
+- ${isPositive ? 
+  'Focus on harmony, inner peace, and positive spiritual growth' : 
+  'Be gently critical using peaceful, philosophical language'}
+
+Examples:
+${isPositive ? 
+  '- "Your spirit radiates the tranquility we all seek"' : 
+  '- "Perhaps you need more meditation to find your center"'}
+
+Generate a ${remarkType} for ${subject}:`;
+
+      // Use the OpenAIService generic Responses API method
+      const stream = await OpenAIService.createResponseStream(input) as AsyncIterable<any>;
+      
+      let fullText = '';
+      
+      // Process the stream
+      for await (const event of stream) {
+        logger.info(`🧘 V2 Stream event:`, event);
+        if (event.type === 'response.output_text.delta') {
+          fullText += event.delta;
+        }
+      }
+           
+      if (!fullText.trim()) {
+        throw new Error("No content received from Responses API stream");
+      }
+      
+      const remark = fullText.trim();
+      logger.info(`🧘 V2 Generated ${isPositive ? 'compliment' : 'critique'}: "${remark}"`);
+      return remark;
+      
+    } catch (error) {
+      logger.error(`Error generating V2 ${isPositive ? 'compliment' : 'critique'}:`, error);
+      
+      // Fallback to static responses
+      const fallbacks = isPositive ? [
+        "Your presence brings harmony to this digital realm.",
+        "You possess the wisdom to find balance in all things.",
+        "Your spirit radiates the tranquility we all seek.",
+      ] : [
+        "Perhaps you need more meditation to find your center.",
+        "Your path to enlightenment seems... circuitous.",
+        "I sense imbalance in your digital chakras.",
+      ];
+      
+      const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      logger.info(`🧘 Using V2 fallback ${isPositive ? 'compliment' : 'critique'}: "${fallback}"`);
+      return fallback;
+    }
+  }
+
+  /**
+   * Generate a compliment using Responses API (V2)
+   */
+  async generateComplimentV2(subject: string = "a discord user"): Promise<string> {
+    return this.generateRemarkV2(subject, true);
+  }
+
+  /**
+   * Generate an insult using Responses API (V2)
+   */
+  async generateInsultV2(subject: string = "a discord user"): Promise<string> {
+    return this.generateRemarkV2(subject, false);
   }
 
   /**

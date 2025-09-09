@@ -4,7 +4,7 @@ import {
   ActionParameters,
   ActionResult,
 } from "../actionTypes";
-import { ZenyattaAssistantService } from "../../services/zenyattaAssistantService";
+import { UnifiedZenyattaService } from "../../services/unifiedZenyattaService";
 import { VoiceService } from "../../services/voiceService";
 import { SmartTtsService } from "../../services/smartTtsService";
 import { logger } from "../../utils/logger";
@@ -78,12 +78,9 @@ export class AdviceAction implements ZenAction {
       let isAIGenerated = false;
 
       if (advice_type === "ai_contextual" && context.interaction) {
-        // Use AI for contextual advice
+        // Use unified Zenyatta service for contextual advice with conversation memory
         try {
-          const zenyatta = ZenyattaAssistantService.getInstance();
-          const message = topic
-            ? `I seek guidance about ${topic}. My urgency level is ${urgency}.`
-            : `I seek general wisdom and guidance. My urgency level is ${urgency}.`;
+          const zenyatta = UnifiedZenyattaService.getInstance();
 
           const response = await zenyatta.getAdvice(
             context.interaction,
@@ -94,7 +91,7 @@ export class AdviceAction implements ZenAction {
           isAIGenerated = true;
         } catch (error) {
           logger.warn(
-            "🎭 AI advice failed, falling back to predefined wisdom:",
+            "🧘 AI advice failed, falling back to predefined wisdom:",
             error,
           );
           // Fall back to predefined advice

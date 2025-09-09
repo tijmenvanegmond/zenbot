@@ -4,7 +4,7 @@ import {
   ActionParameters,
   ActionResult,
 } from "../actionTypes";
-import { RemarkService } from "../../services/remarkService";
+import { UnifiedZenyattaService } from "../../services/unifiedZenyattaService";
 import { playTTSInChannel } from "../../utils/voiceHelpers";
 import { logger } from "../../utils/logger";
 
@@ -86,14 +86,17 @@ export class RemarkAction implements ZenAction {
         }
       }
 
-      // Generate remark
+      // Generate remark using unified Zenyatta service
       let remarkText: string;
       try {
-        if (type === "positive") {
-          remarkText = await RemarkService.generatePraise(subjectName);
-        } else {
-          remarkText = await RemarkService.generateInsult(subjectName);
+        if (!context.interaction) {
+          throw new Error("Interaction context required for unified remark generation");
         }
+
+        const zenyatta = UnifiedZenyattaService.getInstance();
+        const isPositive = type === "positive";
+        const result = await zenyatta.generateRemark(context.interaction, subjectName, isPositive);
+        remarkText = result.text;
       } catch (remarkError) {
         logger.error(`🎭 Failed to generate ${type} remark:`, remarkError);
         return {

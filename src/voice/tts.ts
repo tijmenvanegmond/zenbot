@@ -5,7 +5,7 @@ import path from "node:path";
 import { Readable } from "stream";
 import { createAudioResource, StreamType } from "@discordjs/voice";
 import { logger } from "../utils/logger";
-import { ZenyattaAssistantService } from "../services/zenyattaAssistantService";
+import { UnifiedZenyattaService } from "../services/unifiedZenyattaService";
 dotenv.config();
 
 export async function turnTextIntoSpeechBuffer(
@@ -36,7 +36,7 @@ export async function createTTSStream(input: string) {
       model: "gpt-4o-mini-tts",
       voice: "echo",
       input,
-      instructions: ZenyattaAssistantService.getTTSInstructions(),
+      instructions: "Speak as Zenyatta, the wise omnic monk. Be calm, serene, and philosophical. Use natural pauses and speak with tranquil wisdom.",
       response_format: "mp3",
     });
 

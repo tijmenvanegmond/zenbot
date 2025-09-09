@@ -217,6 +217,66 @@ export class OpenAIService {
     }
   }
 
+  // ===== RESPONSES API METHODS (Modern Streaming) =====
+
+  /**
+   * Generate a response using the new Responses API with streaming
+   */
+  static async createResponseStream(
+    input: string,
+    options: {
+      model?: string;
+      stream?: boolean;
+    } = {},
+  ): Promise<AsyncIterable<any> | string> {
+    const client = this.getClient();
+
+    try {
+      logger.info(`🚀 Creating Responses API stream for input: "${input.substring(0, 100)}..."`);
+
+      const response = await client.responses.create({
+        model: options.model || AI_CONFIG.CHAT_MODEL,
+        input,
+        stream: options.stream !== false, // Default to streaming
+      });
+
+      if (options.stream === false) {
+        // Non-streaming response
+        return typeof response === 'string' ? response : response.toString();
+      }
+
+      // Return the stream for iteration
+      return response as AsyncIterable<any>;
+    } catch (error) {
+      logger.error("Error creating Responses API stream:", error);
+      throw new Error(
+        `Failed to create response stream: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Generate a simple text response using Responses API (non-streaming)
+   */
+  static async createResponse(
+    input: string,
+    options: {
+      model?: string;
+    } = {},
+  ): Promise<string> {
+    const stream = await this.createResponseStream(input, { 
+      ...options, 
+      stream: false 
+    });
+    
+    if (typeof stream === 'string') {
+      return stream;
+    }
+    
+    throw new Error("Expected string response but got stream");
+  }
+
+
   /**
    * Health check for OpenAI service
    */
@@ -242,5 +302,7 @@ export const {
   transcribeAudioBuffer,
   generateChatCompletion,
   batchParseQuotes,
+  createResponseStream,
+  createResponse,
   healthCheck,
 } = OpenAIService;

@@ -8,7 +8,7 @@ import { VoiceSessionManager } from "../../services/voiceSessionManager";
 import { joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
 import { logger } from "../../utils/logger";
 import { OpenAIService } from "../../services/openaiService";
-import { ZenyattaAssistantService } from "../../services/zenyattaAssistantService";
+import { UnifiedZenyattaService } from "../../services/unifiedZenyattaService";
 import { ActionService } from "../../services/actionService";
 import { opus } from "prism-media";
 
@@ -99,28 +99,24 @@ async function processVoiceCommand(
     }
 
     // Get the Zenyatta assistant for intelligent conversation
-    const zenyatta = ZenyattaAssistantService.getInstance();
+    const zenyatta = UnifiedZenyattaService.getInstance();
 
     // Create a mock interaction object for the assistant to use
     const mockInteraction = {
       user: {
         id: userId,
         username: `VoiceUser_${userId.slice(-4)}`, // Use last 4 chars for readable username
+        displayName: `Voice User ${userId.slice(-4)}`,
       },
-      guild: context.guild
-        ? {
-            name: context.guild.name,
-            id: context.guild.id,
-          }
-        : undefined,
       guildId: context.guild?.id,
-      member: {
-        voice: {
-          channel: context.voiceChannel, // User is in voice channel
+      channelId: context.voiceChannel?.id,
+      client: {
+        users: {
+          fetch: async () => ({
+            username: `VoiceUser_${userId.slice(-4)}`,
+            displayName: `Voice User ${userId.slice(-4)}`,
+          }),
         },
-      },
-      options: {
-        get: (key: string) => null,
       },
     } as any;
 

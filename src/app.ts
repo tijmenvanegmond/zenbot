@@ -8,12 +8,26 @@ import onPlayerUpdate from "./listeners/onPlayerUpdate";
 import { registerApiRoutes } from "./api";
 import { logger } from "./utils/logger";
 
+// Initialize AI Services
+import { AIServiceManager, MemorySessionStorage, OpenAIProvider, AnthropicProvider } from "./services/ai";
+import { AI_CONFIG } from "./config/aiConfig";
+import { UnifiedZenyattaService } from "./services/unifiedZenyattaService";
+
 // Allow overriding via command line arguments
 const DISCORD_API_TOKEN = process.argv[2] || process.env.DISCORD_API_TOKEN;
 const LOG_LEVEL = process.env.LOG_LEVEL;
 const PORT = process.argv[3] || process.env.PORT || 3001;
 
 logger.info("Zenbot awakens... Experience tranquility through code.");
+
+// Initialize AI Services - The Path of Unified Intelligence
+const sessionStorage = new MemorySessionStorage();
+const aiManager = new AIServiceManager(AI_CONFIG, sessionStorage);
+
+// Initialize Unified Zenyatta Service
+UnifiedZenyattaService.initialize(aiManager);
+
+logger.info("🧘 AI services initialized - The Iris connects all providers");
 
 const discordClient = new Client({
   intents: [

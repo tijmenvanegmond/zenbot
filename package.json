@@ -18,22 +18,24 @@
     "lint": "prettier --write ."
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.61.0",
     "@discordjs/voice": "^0.18.0",
+    "@google/generative-ai": "^0.24.1",
     "discord.js": "^14.17",
     "dotenv": "^16.0.3",
     "fastify": "^4.26.2",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
-    "openai": "^4.77.0",
+    "openai": "^5.19.1",
     "opusscript": "^0.0.8"
   },
   "devDependencies": {
     "@types/node": "^22",
+    "@vitest/ui": "^2.1.8",
     "nodemon": "^3.1.0",
     "prettier": "^3.5.3",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
-    "@vitest/ui": "^2.1.8"
+    "vitest": "^2.1.8"
   },
   "repository": {
     "type": "git",
