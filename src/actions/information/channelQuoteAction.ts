@@ -133,7 +133,7 @@ export class ChannelQuoteAction implements ZenAction {
       }
 
       const enhancedText =
-        await ZenbotService.getInstance().createEnhancedQuoteTTS(
+        await ZenbotService.getInstance().createEnhancedQuote(
           context.interaction,
           randomQuote,
         );

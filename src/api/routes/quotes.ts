@@ -165,7 +165,7 @@ export default async function quotesRoutes(
           channelId: voiceChannelId,
         };
 
-        const enhancedText = await zenyatta.createEnhancedQuoteTTS(
+        const enhancedText = await zenyatta.createEnhancedQuote(
           mockInteraction,
           randomQuote,
         );

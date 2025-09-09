@@ -377,18 +377,17 @@ export class ZenbotService {
     interaction: CommandInteraction | MinimalInteractionContext,
     quote: EnrichedQuote,
   ): Promise<string> {
-  const message = `Generate a SHORT (2-6 words) setup phrase before reading this quote aloud.
+  const message = `Generate a SHORT setup phrase before reading this quote aloud.
 
 Quote: "${quote.parsedQuote}"
 Speaker: ${quote.speaker || quote.poster.displayName}
 
-Style: Zenbot (concise, sharp, maybe wry). No fluff, no quotes around the line, no trailing punctuation unless part of a fragment. Avoid faux-profound filler.
-Examples: Core point | Focus up | Quick context | Watch this | Tiny signal | Reality check`;
+`;
 
     try {
       const response = await this.converse(interaction, message, {
         commandName: "quote_commentary",
-        options: { quote: quote.parsedQuote.substring(0, 50) },
+        options: { quote: quote.parsedQuote },
       });
 
       // Clean up response to ensure it's a brief introduction
@@ -431,7 +430,7 @@ Examples: Core point | Focus up | Quick context | Watch this | Tiny signal | Rea
   /**
    * Create enhanced quote TTS with commentary
    */
-  async createEnhancedQuoteTTS(
+  async createEnhancedQuote(
     interaction: CommandInteraction | MinimalInteractionContext,
     quote: EnrichedQuote,
   ): Promise<string> {

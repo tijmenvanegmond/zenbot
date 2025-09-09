@@ -7,7 +7,6 @@ import { validateVoiceChannel } from "../utils/commandHelpers";
 // Import core actions
 import { PlayTtsAction } from "../actions/voice/playTtsAction";
 import { VoiceChannelAction } from "../actions/voice/voiceChannelAction";
-import { QuotesAction } from "../actions/information/quotesAction";
 import { ListenControlAction } from "../actions/voice/listenControlAction";
 import { EnhancedTtsAction } from "../actions/voice/enhancedTtsAction";
 import { AdviceAction } from "../actions/information/adviceAction";
@@ -48,7 +47,6 @@ export class ActionService {
     this.registry.register(new StopAction());
 
     // Information actions
-    this.registry.register(new QuotesAction());
     this.registry.register(new AdviceAction());
     this.registry.register(new ChannelQuoteAction());
 
