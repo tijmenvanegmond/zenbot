@@ -1,4 +1,8 @@
-import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
+import {
+  CommandInteraction,
+  Client,
+  SlashCommandBuilder,
+} from "discord.js";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
 import {
@@ -11,56 +15,64 @@ export const Advice: Command = {
   data: new SlashCommandBuilder()
     .setName("advice")
     .setDescription(
-      "Zen has an answer for everything (make sure you are in a voice channel)",
+      "� Get blunt, spicy guidance from Zenbot (conversation-aware)",
     )
     .addStringOption((option) =>
       option
-        .setName("type")
-        .setDescription("Choose the type of wisdom you seek")
+        .setName("topic")
+        .setDescription("What do you need guidance on?")
+        .setRequired(false),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("urgency")
+        .setDescription("How urgent is your need for guidance?")
         .setRequired(false)
         .addChoices(
-          { name: "🧘 Philosophical Wisdom", value: "philosophical" },
-          { name: "🙏 Greeting & Peace", value: "greeting" },
-          { name: "💚 Harmony & Healing", value: "harmony" },
-          { name: "⚡ Discord & Challenge", value: "discord" },
-          { name: "✨ Transcendence & Ultimate Truth", value: "transcendence" },
-          { name: "🎲 Random Wisdom", value: "random" },
+          { name: "🧘 Low - General wisdom", value: "low" },
+          { name: "🙏 Medium - Seeking clarity", value: "medium" },
+          { name: "⚡ High - Need immediate guidance", value: "high" },
         ),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
     try {
-      const adviceType =
-        (interaction.options?.get("type")?.value as string) || "philosophical";
+      const topic = interaction.options?.get("topic")?.value as string;
+      const urgency =
+        (interaction.options?.get("urgency")?.value as
+          | "low"
+          | "medium"
+          | "high") || "medium";
 
-      logger.info(
-        `${interaction.user.username} requesting advice: type=${adviceType}`,
-      );
+        logger.info(
+          `${interaction.user.username} requesting Zenbot advice: topic="${topic}", urgency=${urgency}`,
+        );
 
-      // Use the action system
+      // Use the action system for proper architecture flow
       const actionService = ActionService.getInstance();
       const result = await actionService.executeFromCommand(
         interaction,
         "get_advice",
         {
-          advice_type: adviceType,
-          urgency: "medium",
+          topic,
+          urgency,
+          advice_type: "ai_contextual", // Use AI-powered advice
           use_voice: true, // Always attempt voice if user is in voice channel
         },
       );
 
       // Handle the result
       if (result.success) {
-        const responseMessage =
-          result.data?.source === "ai"
-            ? `🧘 **Zenyatta's AI Wisdom:** ${result.responseText}`
-            : `🧘 **Zenyatta's Wisdom:** ${result.responseText}`;
+          const responseMessage =
+            result.data?.source === "ai"
+              ? `� **Zenbot (AI):** ${result.responseText}`
+              : `� **Zenbot:** ${result.responseText}`;
 
         await interaction.editReply(createSuccessResponse(responseMessage));
       } else {
         await interaction.editReply(
           createErrorResponse(
-            result.error || "An error occurred while seeking wisdom.",
+              result.error || "Zenbot refused to elaborate. Try again.",
           ),
         );
       }
@@ -68,7 +80,7 @@ export const Advice: Command = {
       logger.error("Error in advice command:", error);
       await interaction.editReply(
         createErrorResponse(
-          "🚨 The path to wisdom encountered a disturbance. Please try again.",
+            "⚠️ Zenbot experienced a brain cramp. Ask again in a moment.",
         ),
       );
     }

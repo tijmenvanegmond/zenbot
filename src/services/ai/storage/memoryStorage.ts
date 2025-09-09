@@ -3,8 +3,8 @@
  * Fast storage for development and small deployments
  */
 
-import { AISession, SessionStorage } from '../types';
-import { logger } from '../../../utils/logger';
+import { AISession, SessionStorage } from "../types";
+import { logger } from "../../../utils/logger";
 
 export class MemorySessionStorage implements SessionStorage {
   private sessions = new Map<string, AISession>();
@@ -12,11 +12,14 @@ export class MemorySessionStorage implements SessionStorage {
 
   constructor(cleanupIntervalMinutes: number = 30) {
     // Start automatic cleanup
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup().catch(error => 
-        logger.error('Session cleanup failed:', error)
-      );
-    }, cleanupIntervalMinutes * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanup().catch((error) =>
+          logger.error("Session cleanup failed:", error),
+        );
+      },
+      cleanupIntervalMinutes * 60 * 1000,
+    );
   }
 
   async save(session: AISession): Promise<void> {
@@ -29,7 +32,10 @@ export class MemorySessionStorage implements SessionStorage {
     return session ? { ...session } : null;
   }
 
-  async update(sessionId: string, updates: Partial<AISession>): Promise<AISession | null> {
+  async update(
+    sessionId: string,
+    updates: Partial<AISession>,
+  ): Promise<AISession | null> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       return null;
@@ -58,11 +64,17 @@ export class MemorySessionStorage implements SessionStorage {
     const sessions = Array.from(this.sessions.values());
     const now = new Date();
 
-    return sessions.filter(session => {
+    return sessions.filter((session) => {
       if (criteria.userId && session.userId !== criteria.userId) return false;
-      if (criteria.contextId && session.contextId !== criteria.contextId) return false;
-      if (criteria.character && session.metadata.character !== criteria.character) return false;
-      if (criteria.createdAfter && session.createdAt < criteria.createdAfter) return false;
+      if (criteria.contextId && session.contextId !== criteria.contextId)
+        return false;
+      if (
+        criteria.character &&
+        session.metadata.character !== criteria.character
+      )
+        return false;
+      if (criteria.createdAfter && session.createdAt < criteria.createdAfter)
+        return false;
       if (criteria.expiredOnly) {
         const isExpired = session.expiresAt && session.expiresAt < now;
         if (!isExpired) return false;
@@ -83,7 +95,9 @@ export class MemorySessionStorage implements SessionStorage {
     }
 
     if (cleanedCount > 0) {
-      logger.info(`🧹 Memory storage cleaned up ${cleanedCount} expired sessions`);
+      logger.info(
+        `🧹 Memory storage cleaned up ${cleanedCount} expired sessions`,
+      );
     }
 
     return cleanedCount;
@@ -99,13 +113,13 @@ export class MemorySessionStorage implements SessionStorage {
   } {
     const total = this.sessions.size;
     const now = new Date();
-    const expired = Array.from(this.sessions.values())
-      .filter(s => s.expiresAt && s.expiresAt < now)
-      .length;
+    const expired = Array.from(this.sessions.values()).filter(
+      (s) => s.expiresAt && s.expiresAt < now,
+    ).length;
 
     // Rough memory usage estimate
     const avgSessionSize = 2000; // bytes per session (rough estimate)
-    const memoryUsage = `${Math.round(total * avgSessionSize / 1024)} KB`;
+    const memoryUsage = `${Math.round((total * avgSessionSize) / 1024)} KB`;
 
     return { totalSessions: total, expiredSessions: expired, memoryUsage };
   }
@@ -118,6 +132,6 @@ export class MemorySessionStorage implements SessionStorage {
       clearInterval(this.cleanupInterval);
     }
     this.sessions.clear();
-    logger.info('💾 Memory session storage destroyed');
+    logger.info("💾 Memory session storage destroyed");
   }
 }

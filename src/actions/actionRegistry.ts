@@ -91,14 +91,31 @@ export class ZenActionRegistry implements ActionRegistry {
     context: any,
     parameters: any,
   ): Promise<any> {
+    logger.debug(`🎭 ActionRegistry.execute: Looking up action '${actionName}'`);
+    
     const action = this.get(actionName);
     if (!action) {
+      logger.error(`🎭 Action '${actionName}' not found in registry`);
       throw new Error(`Action '${actionName}' not found`);
     }
 
+    logger.debug(`🎭 Found action '${actionName}' (${action.category})`, {
+      hasPermissions: !!action.permissions,
+      hasValidation: !!action.validate,
+      allowedSources: action.permissions?.allowedSources || 'any',
+      requiresVoice: !!action.permissions?.requiresVoiceChannel
+    });
+
     // Validate permissions
     if (action.permissions) {
+      logger.debug(`🎭 Validating permissions for '${actionName}'`, {
+        contextSource: context.source,
+        hasVoiceChannel: !!context.voiceChannel,
+        requiresVoice: !!action.permissions.requiresVoiceChannel
+      });
+
       if (action.permissions.requiresVoiceChannel && !context.voiceChannel) {
+        logger.error(`🎭 Permission denied: ${actionName} requires voice channel`);
         throw new Error(`Action '${actionName}' requires a voice channel`);
       }
 
@@ -106,6 +123,7 @@ export class ZenActionRegistry implements ActionRegistry {
         action.permissions.allowedSources &&
         !action.permissions.allowedSources.includes(context.source)
       ) {
+        logger.error(`🎭 Permission denied: ${actionName} not allowed from ${context.source}`);
         throw new Error(
           `Action '${actionName}' not allowed from source '${context.source}'`,
         );
@@ -113,12 +131,36 @@ export class ZenActionRegistry implements ActionRegistry {
     }
 
     // Validate parameters
-    if (action.validate && !action.validate(parameters)) {
-      throw new Error(`Invalid parameters for action '${actionName}'`);
+    if (action.validate) {
+      logger.debug(`🎭 Validating parameters for '${actionName}'`, {
+        parametersProvided: Object.keys(parameters)
+      });
+      
+      if (!action.validate(parameters)) {
+        logger.error(`🎭 Parameter validation failed for '${actionName}'`);
+        throw new Error(`Invalid parameters for action '${actionName}'`);
+      }
     }
 
-    logger.info(`🎭 Executing action: ${actionName} from ${context.source}`);
-    return await action.execute(context, parameters);
+    logger.debug(`🎭 All validations passed, executing action: ${actionName} from ${context.source}`);
+    
+    const startTime = Date.now();
+    try {
+      const result = await action.execute(context, parameters);
+      const executionTime = Date.now() - startTime;
+      
+      logger.debug(`🎭 Action '${actionName}' completed successfully`, {
+        executionTimeMs: executionTime,
+        resultSuccess: result?.success,
+        hasError: !!result?.error
+      });
+      
+      return result;
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      logger.error(`🎭 Action '${actionName}' failed after ${executionTime}ms:`, error);
+      throw error;
+    }
   }
 
   /**

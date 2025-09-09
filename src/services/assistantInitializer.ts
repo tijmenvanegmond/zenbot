@@ -1,4 +1,4 @@
-import { UnifiedZenyattaService } from "./unifiedZenyattaService";
+import { ZenbotService } from "./zenbotService";
 import { AIServiceManager, MemorySessionStorage } from "./ai";
 import { AI_CONFIG } from "../config/aiConfig";
 import { logger } from "../utils/logger";
@@ -19,10 +19,12 @@ export class AssistantInitializer {
       const aiManager = new AIServiceManager(AI_CONFIG, sessionStorage);
 
       // Initialize the unified Zenyatta service
-      UnifiedZenyattaService.initialize(aiManager);
-      const zenyatta = UnifiedZenyattaService.getInstance();
+      ZenbotService.initialize(aiManager);
+      const zenyatta = ZenbotService.getInstance();
 
-      logger.info("🧘 Unified Zenyatta Service ready for enlightened conversations");
+      logger.info(
+        "🧘 Unified Zenyatta Service ready for enlightened conversations",
+      );
 
       // Log AI system stats
       const stats = await aiManager.getStats();
@@ -41,6 +43,8 @@ export class AssistantInitializer {
   static setupCleanup(): void {
     // AI service manager handles its own cleanup automatically
     // No additional cleanup needed for the unified system
-    logger.info("🧘 AI session cleanup is handled automatically by the service manager");
+    logger.info(
+      "🧘 AI session cleanup is handled automatically by the service manager",
+    );
   }
 }

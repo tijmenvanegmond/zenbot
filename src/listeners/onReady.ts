@@ -1,5 +1,5 @@
 import { Client, Events } from "discord.js";
-import { CommandCollectionWithAssistant } from "../commands/commandCollection_with_assistant";
+import { CommandCollection } from "../commands/commandCollection";
 import { AssistantInitializer } from "../services/assistantInitializer";
 import { logger } from "../utils/logger";
 
@@ -12,7 +12,7 @@ export default (client: Client): void => {
     try {
       // Register Discord commands (including new assistant ones)
       await client.application.commands.set(
-        CommandCollectionWithAssistant.map((c) => c.data),
+        CommandCollection.map((c) => c.data),
       );
       logger.info(
         `Commands flow like the Iris... ${client.user.username} has achieved digital enlightenment`,

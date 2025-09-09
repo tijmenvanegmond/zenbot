@@ -126,7 +126,6 @@ export type AdviceContext =
 // ===== REMARK TYPES =====
 export interface RemarkResult {
   text: string;
-  isPositive: boolean;
 }
 
 export interface RemarkOptions {

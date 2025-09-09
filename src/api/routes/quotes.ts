@@ -7,7 +7,7 @@ import {
   fetchAndParseQuotes,
   getRandomQuote,
 } from "../../services/quoteService";
-import { UnifiedZenyattaService } from "../../services/unifiedZenyattaService";
+import { ZenbotService } from "../../services/zenbotService";
 import { CHANNEL_TYPES } from "../../config";
 
 export default async function quotesRoutes(
@@ -152,16 +152,23 @@ export default async function quotesRoutes(
         }
 
         // Generate enhanced TTS with Zenyatta's contextual commentary
-        const zenyatta = UnifiedZenyattaService.getInstance();
-        
+        const zenyatta = ZenbotService.getInstance();
+
         // Create minimal interaction context for the quote TTS generation
         const mockInteraction = {
-          user: { id: "api-quote-tts", username: "api", displayName: "API User" },
+          user: {
+            id: "api-quote-tts",
+            username: "api",
+            displayName: "API User",
+          },
           guildId,
           channelId: voiceChannelId,
         };
-        
-        const enhancedText = await zenyatta.createEnhancedQuoteTTS(mockInteraction, randomQuote);
+
+        const enhancedText = await zenyatta.createEnhancedQuoteTTS(
+          mockInteraction,
+          randomQuote,
+        );
 
         // Play enhanced TTS in the specified voice channel
         await VoiceService.playTTSInChannel(

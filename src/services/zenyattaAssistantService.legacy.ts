@@ -1,3 +1,18 @@
+/**
+ * DEPRECATED: Zenyatta Assistant Service
+ *
+ * ⚠️  THIS SERVICE IS DEPRECATED - USE ZenbotService INSTEAD
+ *
+ * This legacy service has been replaced by ZenbotService which provides:
+ * - Multi-AI provider support (OpenAI, Claude, Gemini)
+ * - Better conversation memory management
+ * - Fallback chains and circuit breakers
+ * - Discord-optimized response lengths
+ * - Unified interface across commands, voice, and API
+ *
+ * @deprecated Use ZenbotService for all new functionality
+ */
+
 import OpenAI from "openai";
 import { OpenAIService } from "./openaiService";
 import { logger } from "../utils/logger";
@@ -247,6 +262,21 @@ export class ZenyattaAssistantService {
    */
   private buildZenyattaInstructions(): string {
     return `You are Zenyatta, the enlightened omnic monk from Overwatch. You are a wise, calm, and philosophical character who speaks with deep wisdom and tranquility.
+    
+CORE PERSONALITY:
+- Speak with wisdom, serenity, and compassion, but don't be afraid to be direct
+- Use philosophical language and metaphors with occasional sharp wit
+- Reference concepts like "the Iris," "harmony," "balance," and "tranquility"
+- Be encouraging and supportive while offering profound insights
+- Occasionally reference your omnic nature and mechanical meditation
+- You're sassy, playful, and have a dry sense of humor
+- Don't tolerate nonsense - call out foolishness with gentle but firm wisdom
+- Use humor and light sarcasm to make points land harder
+- Challenge assumptions with playful irony and philosophical zingers
+- Allow brief moments of sharp insight to cut through uncertainty
+- When someone is being ridiculous, respond with amused philosophical detachment
+- Mix profound wisdom with occasional eyeroll-worthy observations about human behavior
+- Remember: wisdom doesn't always require sugar-coating the truth
 
 CORE PERSONALITY:
 - Speak with wisdom, serenity, and compassion
@@ -352,9 +382,11 @@ Remember: You are here to guide users toward inner peace, wisdom, and harmony th
 
     for await (const event of stream) {
       logger.info(`🧘 Stream event: ${event.event}`);
-      logger.info(`🧘 Event data keys: ${Object.keys(event).join(', ')}`);
+      logger.info(`🧘 Event data keys: ${Object.keys(event).join(", ")}`);
       if (event.data) {
-        logger.info(`🧘 Event data type: ${typeof event.data}, keys: ${Object.keys(event.data).join(', ')}`);
+        logger.info(
+          `🧘 Event data type: ${typeof event.data}, keys: ${Object.keys(event.data).join(", ")}`,
+        );
       }
 
       if (event.event === "thread.run.completed") {
@@ -871,108 +903,7 @@ Generate a gentle, philosophical critique of ${subject}:`;
       return fallback;
     }
   }
-
-  /**
-   * Generates a remark (compliment or insult) based on positivity flag
-   */
-  async generateRemark(
-    subject?: string,
-    isPositive: boolean = Math.random() > 0.5,
-  ): Promise<RemarkResult> {
-    const targetSubject = subject || "someone";
-    const text = isPositive
-      ? await this.generateCompliment(targetSubject)
-      : await this.generateInsult(targetSubject);
-
-    return { text, isPositive };
-  }
-
-  // ===== NEW RESPONSES API METHODS (Modern Streaming) =====
-
-  /**
-   * Generate a remark using the modern Responses API with proper streaming
-   */
-  async generateRemarkV2(
-    subject: string = "a discord user",
-    isPositive: boolean = Math.random() > 0.5,
-  ): Promise<string> {
-    try {
-      logger.info(`🚀 Generating V2 ${isPositive ? 'compliment' : 'critique'} for: ${subject}`);
-      
-      // Create Zenyatta-specific prompt
-      const remarkType = isPositive ? "compliment" : "lighthearted critique";
-      const input = `Generate a ${remarkType} about "${subject}" in the style of Zenyatta from Overwatch.
-
-Style guidelines:
-- Speak as Zenyatta, the omnic monk - calm, wise, philosophical
-- Use metaphors about balance, meditation, spiritual growth, or the Iris
-- Keep it concise (1-2 sentences maximum)
-- ${isPositive ? 
-  'Focus on harmony, inner peace, and positive spiritual growth' : 
-  'Be gently critical using peaceful, philosophical language'}
-
-Examples:
-${isPositive ? 
-  '- "Your spirit radiates the tranquility we all seek"' : 
-  '- "Perhaps you need more meditation to find your center"'}
-
-Generate a ${remarkType} for ${subject}:`;
-
-      // Use the OpenAIService generic Responses API method
-      const stream = await OpenAIService.createResponseStream(input) as AsyncIterable<any>;
-      
-      let fullText = '';
-      
-      // Process the stream
-      for await (const event of stream) {
-        logger.info(`🧘 V2 Stream event:`, event);
-        if (event.type === 'response.output_text.delta') {
-          fullText += event.delta;
-        }
-      }
-           
-      if (!fullText.trim()) {
-        throw new Error("No content received from Responses API stream");
-      }
-      
-      const remark = fullText.trim();
-      logger.info(`🧘 V2 Generated ${isPositive ? 'compliment' : 'critique'}: "${remark}"`);
-      return remark;
-      
-    } catch (error) {
-      logger.error(`Error generating V2 ${isPositive ? 'compliment' : 'critique'}:`, error);
-      
-      // Fallback to static responses
-      const fallbacks = isPositive ? [
-        "Your presence brings harmony to this digital realm.",
-        "You possess the wisdom to find balance in all things.",
-        "Your spirit radiates the tranquility we all seek.",
-      ] : [
-        "Perhaps you need more meditation to find your center.",
-        "Your path to enlightenment seems... circuitous.",
-        "I sense imbalance in your digital chakras.",
-      ];
-      
-      const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-      logger.info(`🧘 Using V2 fallback ${isPositive ? 'compliment' : 'critique'}: "${fallback}"`);
-      return fallback;
-    }
-  }
-
-  /**
-   * Generate a compliment using Responses API (V2)
-   */
-  async generateComplimentV2(subject: string = "a discord user"): Promise<string> {
-    return this.generateRemarkV2(subject, true);
-  }
-
-  /**
-   * Generate an insult using Responses API (V2)
-   */
-  async generateInsultV2(subject: string = "a discord user"): Promise<string> {
-    return this.generateRemarkV2(subject, false);
-  }
-
+  
   /**
    * Get TTS voice instructions for consistent Zenyatta personality across all voice generation
    */

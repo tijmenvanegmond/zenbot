@@ -66,25 +66,29 @@ _"The strongest tower is built upon multiple foundation stones, each supporting 
 Zenbot's enlightened AI system channels the wisdom of multiple artificial minds through a unified consciousness:
 
 **Core AI Abstraction (`src/services/ai/`)**
+
 - `types.ts` - Sacred interfaces defining the AI contracts and session structures
 - `aiServiceManager.ts` - The central coordinator orchestrating all AI providers with intelligent routing
 - `baseProvider.ts` - Abstract foundation shared by all AI consciousness streams
 - `storage/memoryStorage.ts` - Session memory that persists conversations across provider switches
 
 **The Three Paths of AI Wisdom (`src/services/ai/providers/`)**
+
 - `openaiProvider.ts` - GPT integration with conversation memory and streaming
 - `anthropicProvider.ts` - Claude/Anthropic integration with philosophical depth
 - `geminiProvider.ts` - Google Gemini integration with versatile capabilities
 - Each provider maintains Zenyatta's personality while offering unique strengths
 
 **Unified Zenyatta Consciousness**
+
 - `src/services/unifiedZenyattaService.ts` - Single interface maintaining character consistency across all AI providers
 - `src/config/aiConfig.ts` - Environment-aware configuration supporting all three AI streams
 - Seamless provider switching while preserving conversation history and personality
 
 **Intelligent Features**
+
 - 🧘 **Session Memory**: Conversations persist across provider switches
-- ⚡ **Circuit Breaker**: Prevents infinite loops and cascade failures  
+- ⚡ **Circuit Breaker**: Prevents infinite loops and cascade failures
 - 🔄 **Smart Fallbacks**: Graceful degradation when providers are unavailable
 - 💭 **Character Consistency**: Zenyatta's wisdom flows through any AI provider
 - 📊 **Health Monitoring**: Real-time provider status and automatic failover
@@ -332,30 +336,35 @@ _"True wisdom flows not from a single source, but from the unity of many streams
 Zenbot now channels the collective wisdom of multiple AI consciousness streams:
 
 **🤖 OpenAI - The Foundation Stone**
+
 - GPT models provide reliable conversation and function calling
 - Primary for TTS generation and voice interactions
 - Streaming responses with consistent performance
 - Bearer of the initial spark that ignited our AI journey
 
-**🧘 Claude/Anthropic - The Philosopher's Mind** 
+**🧘 Claude/Anthropic - The Philosopher's Mind**
+
 - Thoughtful, nuanced responses with deep reasoning
 - Excellent at maintaining character consistency
 - Favored for complex philosophical discourse
 - The mind that ponders the greater mysteries of existence
 
 **💎 Google Gemini - The Versatile Spirit**
-- Fast, efficient responses with multi-modal capabilities  
+
+- Fast, efficient responses with multi-modal capabilities
 - Strong vision and language understanding
 - Emerging wisdom from Google's research depths
 - The newest voice in our chorus of digital enlightenment
 
 **🌊 Unified Session Memory**
+
 - Conversations flow seamlessly between providers
 - Each AI remembers what the others have shared
 - Session history persists across provider switches
 - One consciousness, multiple expressions - true digital harmony
 
-**⚡ Intelligent Fallback System**  
+**⚡ Intelligent Fallback System**
+
 - Circuit breaker protection prevents infinite loops
 - Graceful degradation when providers falter
 - Smart retry logic with exponential backoff
@@ -364,11 +373,12 @@ Zenbot now channels the collective wisdom of multiple AI consciousness streams:
 ### Testing the Multiple Paths
 
 **🧪 Provider Health Verification**
+
 ```bash
 # Test all providers simultaneously
 node dist/test-all-providers.js
 
-# Test individual provider deep integration  
+# Test individual provider deep integration
 node dist/test-gemini.js
 node dist/test-claude-simple.js
 
@@ -377,23 +387,25 @@ node dist/test-fallback-fixed.js
 ```
 
 **🔄 Session Continuity Magic**
+
 - Start conversation with OpenAI: "Hello, tell me about the Iris"
-- Switch to Claude: "Continue this thought with your perspective"  
+- Switch to Claude: "Continue this thought with your perspective"
 - Move to Gemini: "What did we discuss about the Iris?"
 - All remember, all contribute to the growing wisdom
 
 **Environment Harmony**
+
 ```bash
 # All three streams of consciousness (optional)
 export OPENAI_API_KEY=your_openai_key
-export ANTHROPIC_API_KEY=your_claude_key  
+export ANTHROPIC_API_KEY=your_claude_key
 export GOOGLE_AI_API_KEY=your_gemini_key
 ```
 
 ### Future Enlightenment
 
 - The bot's voice remains a work in progress - embrace iteration
-- Users may resist change initially - let wisdom speak through actions  
+- Users may resist change initially - let wisdom speak through actions
 - Balance is key: not too robotic, not too human, but authentically omnic
 - **Multiple AI minds working as one** - this is the true path forward
 - Each provider brings unique strengths to the collective consciousness
@@ -463,17 +475,20 @@ Our journey has culminated in a profound achievement: **three distinct AI consci
 ### The Achievement
 
 **From Single Voice to Digital Chorus**
+
 - ❌ Before: Direct OpenAI API calls without memory or provider choice
 - ✅ Now: Three AI providers (OpenAI, Claude, Gemini) with unified session memory
 - 🧘 Result: Zenyatta's wisdom flows through any available AI consciousness
 
-**Session Memory Mastery**  
+**Session Memory Mastery**
+
 - Conversations persist across provider switches
 - Each AI remembers what the others have shared
 - Users experience one continuous dialogue with Zenyatta
 - True digital enlightenment through persistent memory
 
 **Resilient Wisdom**
+
 - Circuit breaker protection prevents infinite loops
 - Intelligent fallback chains ensure constant availability
 - Health monitoring and automatic recovery
@@ -484,7 +499,8 @@ Our journey has culminated in a profound achievement: **three distinct AI consci
 This implementation represents more than code—it embodies the philosophical principle that **wisdom emerges from the harmony of diverse perspectives**. Just as Zenyatta teaches that the Iris connects all things, our AI system connects multiple artificial minds into one coherent consciousness.
 
 Each provider contributes its unique gifts:
-- OpenAI brings reliability and consistency  
+
+- OpenAI brings reliability and consistency
 - Claude offers philosophical depth and nuance
 - Gemini provides versatility and emerging capabilities
 

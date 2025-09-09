@@ -1,12 +1,23 @@
+/**
+ * LEGACY OpenAI Service
+ *
+ * ⚠️  MOSTLY DEPRECATED - Most functionality moved to unified AI system
+ *
+ * The unified AI system (AIServiceManager + providers) now handles:
+* ❌ TTS generation → Use ZenbotService or AI providers directly
+* ❌ Chat completions → Use ZenbotService.converse()
+ * ❌ Streaming responses → Use AIServiceManager.chatStream()
+ *
+ * Only keeping essential utilities that haven't been migrated yet:
+ * ✅ Audio transcription (transcribeAudioBuffer) - needed for voice processing
+ * ✅ Batch quote parsing (batchParseQuotes) - used by quote service
+ *
+* @deprecated Use ZenbotService (formerly UnifiedZenyattaService) and AIServiceManager for new functionality
+ */
+
 import OpenAI from "openai";
 import { Config, OPENAI_API_KEY, AI_CONFIG, VOICE_CONFIG } from "../config";
 import { logger } from "../utils/logger";
-import { ZenyattaAssistantService } from "./zenyattaAssistantService";
-
-/**
- * Centralized OpenAI service to eliminate duplicate client creation
- * and standardize AI operations across the application
- */
 export class OpenAIService {
   private static instance: OpenAI | null = null;
 
@@ -23,12 +34,19 @@ export class OpenAIService {
     return this.instance;
   }
 
-  // ===== TTS METHODS =====
+  // ===== DEPRECATED TTS METHODS =====
 
   /**
-   * Creates TTS audio stream with Zenyatta personality
+  * Creates TTS audio stream with legacy Zenyatta-style personality (deprecated)
+  * @deprecated Use ZenbotService or AI providers directly for TTS
    */
   static async createTTSStream(text: string): Promise<Buffer> {
+    logger.warn(
+  "⚠️ createTTSStream is deprecated. Use ZenbotService for TTS generation.",
+    );
+    console.warn(
+  "⚠️ createTTSStream is deprecated. Use ZenbotService for TTS generation.",
+    );
     const client = this.getClient();
 
     try {
@@ -38,7 +56,8 @@ export class OpenAIService {
         model: VOICE_CONFIG.TTS_MODEL,
         voice: VOICE_CONFIG.TTS_VOICE,
         input: text,
-        instructions: ZenyattaAssistantService.getTTSInstructions(),
+        instructions:
+          "Speak as Zenyatta, the wise omnic monk. Be calm, serene, and philosophical.", // Legacy hardcoded instruction
         response_format: VOICE_CONFIG.TTS_FORMAT,
       });
 
@@ -57,9 +76,16 @@ export class OpenAIService {
   }
 
   /**
-   * Creates legacy TTS file (for backward compatibility)
+  * Creates legacy TTS file (for backward compatibility)
+  * @deprecated Use ZenbotService or AI providers directly for TTS
    */
   static async createLegacyTTS(text: string): Promise<Buffer> {
+    logger.warn(
+  "⚠️ createLegacyTTS is deprecated. Use ZenbotService for TTS generation.",
+    );
+    console.warn(
+  "⚠️ createLegacyTTS is deprecated. Use ZenbotService for TTS generation.",
+    );
     const client = this.getClient();
 
     try {
@@ -79,12 +105,16 @@ export class OpenAIService {
     }
   }
 
-  // ===== SPEECH TRANSCRIPTION METHODS =====
+  // ===== STILL NEEDED: SPEECH TRANSCRIPTION METHODS =====
 
   /**
    * Transcribes audio file to text using Whisper
+   * @deprecated Use transcribeAudioBuffer instead for better memory management
    */
   static async transcribeAudio(audioFilePath: string): Promise<string> {
+    logger.warn(
+      "⚠️ transcribeAudio is deprecated. Use transcribeAudioBuffer instead.",
+    );
     const client = this.getClient();
     const fs = await import("fs");
 
@@ -115,6 +145,7 @@ export class OpenAIService {
 
   /**
    * Transcribes audio buffer to text (for in-memory processing)
+   * ✅ STILL NEEDED - Used by voice processing system
    */
   static async transcribeAudioBuffer(
     audioBuffer: Buffer,
@@ -126,6 +157,7 @@ export class OpenAIService {
       logger.info(`Transcribing audio buffer: ${audioBuffer.length} bytes`);
 
       // Create a File object directly from the WAV buffer
+      //@ts-ignore
       const audioFile = new File([audioBuffer], filename, {
         type: "audio/wav",
       });
@@ -146,10 +178,11 @@ export class OpenAIService {
     }
   }
 
-  // ===== CHAT COMPLETION METHODS =====
+  // ===== DEPRECATED CHAT COMPLETION METHODS =====
 
   /**
    * Generates AI chat completion with standard configuration
+  * @deprecated Use ZenbotService.converse() instead
    */
   static async generateChatCompletion(
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
@@ -185,6 +218,7 @@ export class OpenAIService {
 
   /**
    * Batch processes quotes with AI (used sparingly)
+   * ✅ STILL NEEDED - Used by quote service for complex parsing
    */
   static async batchParseQuotes(contents: string[]): Promise<any[]> {
     if (contents.length === 0) return [];
@@ -232,7 +266,9 @@ export class OpenAIService {
     const client = this.getClient();
 
     try {
-      logger.info(`🚀 Creating Responses API stream for input: "${input.substring(0, 100)}..."`);
+      logger.info(
+        `🚀 Creating Responses API stream for input: "${input.substring(0, 100)}..."`,
+      );
 
       const response = await client.responses.create({
         model: options.model || AI_CONFIG.CHAT_MODEL,
@@ -242,7 +278,7 @@ export class OpenAIService {
 
       if (options.stream === false) {
         // Non-streaming response
-        return typeof response === 'string' ? response : response.toString();
+        return typeof response === "string" ? response : response.toString();
       }
 
       // Return the stream for iteration
@@ -264,18 +300,17 @@ export class OpenAIService {
       model?: string;
     } = {},
   ): Promise<string> {
-    const stream = await this.createResponseStream(input, { 
-      ...options, 
-      stream: false 
+    const stream = await this.createResponseStream(input, {
+      ...options,
+      stream: false,
     });
-    
-    if (typeof stream === 'string') {
+
+    if (typeof stream === "string") {
       return stream;
     }
-    
+
     throw new Error("Expected string response but got stream");
   }
-
 
   /**
    * Health check for OpenAI service

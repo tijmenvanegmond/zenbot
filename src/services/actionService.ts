@@ -70,8 +70,33 @@ export class ActionService {
     actionName: string,
     parameters: any = {},
   ): Promise<ActionResult> {
+    logger.debug(`🎭 ActionService.executeFromCommand: ${actionName}`, {
+      user: interaction.user.username,
+      guild: interaction.guild?.name || 'DM',
+      parameters: Object.keys(parameters),
+      source: 'command'
+    });
+
     const context = this.createContextFromInteraction(interaction, "command");
-    return await this.registry.execute(actionName, context, parameters);
+    
+    logger.debug(`🎭 Created command context:`, {
+      hasGuild: !!context.guild,
+      hasVoiceChannel: !!context.voiceChannel,
+      userId: context.user.id,
+      source: context.source
+    });
+
+    const result = await this.registry.execute(actionName, context, parameters);
+    
+    logger.debug(`🎭 Action execution result:`, {
+      action: actionName,
+      success: result.success,
+      hasResponseText: !!result.responseText,
+      shouldRespond: result.shouldRespond,
+      useVoice: result.useVoice
+    });
+
+    return result;
   }
 
   /**
@@ -109,6 +134,12 @@ export class ActionService {
     actionName: string,
     parameters: any = {},
   ): Promise<ActionResult> {
+    logger.debug(`🎭 ActionService.executeFromAI: ${actionName}`, {
+      user: interaction.user.username,
+      parameters: Object.keys(parameters),
+      source: 'ai'
+    });
+
     const context = this.createContextFromInteraction(interaction, "ai");
     return await this.registry.execute(actionName, context, parameters);
   }

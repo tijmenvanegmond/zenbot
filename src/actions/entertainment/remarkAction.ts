@@ -4,9 +4,20 @@ import {
   ActionParameters,
   ActionResult,
 } from "../actionTypes";
-import { UnifiedZenyattaService } from "../../services/unifiedZenyattaService";
+import { ZenbotService } from "../../services/zenbotService";
 import { playTTSInChannel } from "../../utils/voiceHelpers";
 import { logger } from "../../utils/logger";
+
+export enum RemarkType {
+  POSITIVE = "positive",
+  NEGATIVE = "negative",
+  PHILOSOPHICAL = "philosophical",
+  SARCASTIC = "sarcastic",
+  ENCOURAGING = "encouraging",
+  MYSTERIOUS = "mysterious",
+  WISE = "wise",
+  HUMOROUS = "humorous"
+}
 
 export class RemarkAction implements ZenAction {
   name = "generate_remark";
@@ -27,7 +38,7 @@ export class RemarkAction implements ZenAction {
         type: {
           type: "string" as const,
           description: "Type of remark to generate",
-          enum: ["positive", "negative"],
+          enum: Object.values(RemarkType),
         },
         subject_username: {
           type: "string" as const,
@@ -60,12 +71,12 @@ export class RemarkAction implements ZenAction {
       } = parameters;
 
       // Validate remark type
-      if (!["positive", "negative"].includes(type)) {
+      if (!Object.values(RemarkType).includes(type as RemarkType)) {
         return {
           success: false,
           error: "Invalid remark type",
           shouldRespond: true,
-          responseText: 'Remark type must be either "positive" or "negative".',
+          responseText: `Remark type must be either "${RemarkType.POSITIVE}" or "${RemarkType.NEGATIVE}".`,
         };
       }
 
@@ -90,12 +101,17 @@ export class RemarkAction implements ZenAction {
       let remarkText: string;
       try {
         if (!context.interaction) {
-          throw new Error("Interaction context required for unified remark generation");
+          throw new Error(
+            "Interaction context required for unified remark generation",
+          );
         }
 
-        const zenyatta = UnifiedZenyattaService.getInstance();
-        const isPositive = type === "positive";
-        const result = await zenyatta.generateRemark(context.interaction, subjectName, isPositive);
+        const zenyatta = ZenbotService.getInstance();
+        const result = await zenyatta.generateRemark(
+          context.interaction,
+          type,
+          subjectName,
+        );
         remarkText = result.text;
       } catch (remarkError) {
         logger.error(`🎭 Failed to generate ${type} remark:`, remarkError);
@@ -121,9 +137,19 @@ export class RemarkAction implements ZenAction {
         }
       }
 
-      // Create response
-      const emoji = type === "positive" ? "😊" : "😈";
-      const responseText = `${emoji} **Remark delivered:** ${remarkText}`;
+      // Create response with appropriate emoji
+      const emojiMap: Record<RemarkType, string> = {
+        [RemarkType.POSITIVE]: "😊",
+        [RemarkType.NEGATIVE]: "😈",
+        [RemarkType.PHILOSOPHICAL]: "🧘",
+        [RemarkType.SARCASTIC]: "😏",
+        [RemarkType.ENCOURAGING]: "💪",
+        [RemarkType.MYSTERIOUS]: "🔮",
+        [RemarkType.WISE]: "🦉",
+        [RemarkType.HUMOROUS]: "😄"
+      };
+      const emoji = emojiMap[type as RemarkType] || "🤔";
+      const responseText = `${emoji} **Remark about ${subjectName}:** ${remarkText}`;
 
       logger.info(
         `🎭 Remark action: Generated ${type} remark${subjectName ? ` about ${subjectName}` : ""}`,
@@ -157,7 +183,7 @@ export class RemarkAction implements ZenAction {
     // Validate remark type
     if (
       !parameters.type ||
-      !["positive", "negative"].includes(parameters.type)
+      !Object.values(RemarkType).includes(parameters.type as RemarkType)
     ) {
       return false;
     }

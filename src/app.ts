@@ -9,9 +9,14 @@ import { registerApiRoutes } from "./api";
 import { logger } from "./utils/logger";
 
 // Initialize AI Services
-import { AIServiceManager, MemorySessionStorage, OpenAIProvider, AnthropicProvider } from "./services/ai";
+import {
+  AIServiceManager,
+  MemorySessionStorage,
+  OpenAIProvider,
+  AnthropicProvider,
+} from "./services/ai";
 import { AI_CONFIG } from "./config/aiConfig";
-import { UnifiedZenyattaService } from "./services/unifiedZenyattaService";
+import { ZenbotService } from "./services/zenbotService";
 
 // Allow overriding via command line arguments
 const DISCORD_API_TOKEN = process.argv[2] || process.env.DISCORD_API_TOKEN;
@@ -25,7 +30,7 @@ const sessionStorage = new MemorySessionStorage();
 const aiManager = new AIServiceManager(AI_CONFIG, sessionStorage);
 
 // Initialize Unified Zenyatta Service
-UnifiedZenyattaService.initialize(aiManager);
+ZenbotService.initialize(aiManager);
 
 logger.info("🧘 AI services initialized - The Iris connects all providers");
 

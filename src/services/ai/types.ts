@@ -7,7 +7,7 @@
 
 export interface Message {
   id?: string;
-  role: 'system' | 'user' | 'assistant' | 'function';
+  role: "system" | "user" | "assistant" | "function";
   content: string;
   timestamp?: Date;
   metadata?: Record<string, any>;
@@ -77,7 +77,7 @@ export interface FunctionDefinition {
   name: string;
   description: string;
   parameters: {
-    type: 'object';
+    type: "object";
     properties: Record<string, any>;
     required?: string[];
   };
@@ -86,7 +86,13 @@ export interface FunctionDefinition {
 // ===== STREAMING TYPES =====
 
 export interface StreamEvent {
-  type: 'start' | 'delta' | 'function_call' | 'function_result' | 'complete' | 'error';
+  type:
+    | "start"
+    | "delta"
+    | "function_call"
+    | "function_result"
+    | "complete"
+    | "error";
   content?: string;
   functionCall?: FunctionCall;
   functionResult?: FunctionResult;
@@ -103,87 +109,87 @@ export interface AIProvider {
   readonly supportsVision: boolean;
 
   // ===== SESSION MANAGEMENT =====
-  
+
   /**
    * Create a new conversation session with optional context
    */
   createSession(options?: SessionOptions): Promise<AISession>;
-  
+
   /**
    * Get an existing session by ID
    */
   getSession(sessionId: string): Promise<AISession | null>;
-  
+
   /**
    * Update session metadata (context, system prompt, etc.)
    */
-  updateSession(sessionId: string, updates: Partial<SessionMetadata>): Promise<AISession>;
-  
+  updateSession(
+    sessionId: string,
+    updates: Partial<SessionMetadata>,
+  ): Promise<AISession>;
+
   /**
    * Delete a session and its history
    */
   deleteSession(sessionId: string): Promise<void>;
-  
+
   /**
    * List sessions for a user/context
    */
   listSessions(userId?: string, contextId?: string): Promise<AISession[]>;
-  
+
   /**
    * Clean up expired sessions
    */
   cleanupSessions(): Promise<number>; // Returns count of cleaned sessions
 
   // ===== CONVERSATION WITH MEMORY =====
-  
+
   /**
    * Continue conversation in an existing session
    */
   continueConversation(
     sessionId: string,
     userMessage: string,
-    options?: GenerationOptions
+    options?: GenerationOptions,
   ): Promise<string>;
-  
+
   /**
    * Stream conversation response in an existing session
    */
   streamConversation(
     sessionId: string,
     userMessage: string,
-    options?: GenerationOptions
+    options?: GenerationOptions,
   ): AsyncIterable<StreamEvent>;
-  
+
   /**
    * Add messages to session history without generating response
    */
   addToHistory(sessionId: string, messages: Message[]): Promise<void>;
-  
+
   /**
    * Get conversation history for a session
    */
   getHistory(sessionId: string, limit?: number): Promise<Message[]>;
 
   // ===== SIMPLE GENERATION (STATELESS) =====
-  
+
   /**
    * Simple text generation without session memory
    */
-  generateText(
-    prompt: string,
-    options?: GenerationOptions
-  ): Promise<string>;
-  
+  generateText(prompt: string, options?: GenerationOptions): Promise<string>;
+
   /**
    * Stream text generation without session memory
    */
   generateTextStream(
     prompt: string,
-    options?: GenerationOptions
+    options?: GenerationOptions,
   ): AsyncIterable<StreamEvent>;
 
   // ===== FUNCTION CALLING =====
-  
+
   /**
    * Generate response with function calling in a session
    */
@@ -191,19 +197,19 @@ export interface AIProvider {
     sessionId: string,
     userMessage: string,
     functions: FunctionDefinition[],
-    options?: GenerationOptions
+    options?: GenerationOptions,
   ): Promise<{
     response: string;
     functionCalls: FunctionCall[];
   }>;
 
   // ===== PROVIDER MANAGEMENT =====
-  
+
   /**
    * Health check for the provider
    */
   healthCheck(): Promise<boolean>;
-  
+
   /**
    * Get provider-specific configuration
    */
@@ -217,22 +223,25 @@ export interface SessionStorage {
    * Store session data
    */
   save(session: AISession): Promise<void>;
-  
+
   /**
    * Retrieve session by ID
    */
   get(sessionId: string): Promise<AISession | null>;
-  
+
   /**
    * Update existing session
    */
-  update(sessionId: string, updates: Partial<AISession>): Promise<AISession | null>;
-  
+  update(
+    sessionId: string,
+    updates: Partial<AISession>,
+  ): Promise<AISession | null>;
+
   /**
    * Delete session
    */
   delete(sessionId: string): Promise<void>;
-  
+
   /**
    * Find sessions by criteria
    */
@@ -243,7 +252,7 @@ export interface SessionStorage {
     createdAfter?: Date;
     expiredOnly?: boolean;
   }): Promise<AISession[]>;
-  
+
   /**
    * Clean up expired sessions
    */
@@ -259,7 +268,7 @@ export interface AIServiceConfig {
     defaultExpiry: number; // minutes
     maxMessages: number;
     cleanupInterval: number; // minutes
-    storage: 'memory' | 'redis' | 'database';
+    storage: "memory" | "redis" | "database";
   };
   routing?: {
     simple?: string; // Provider for simple text generation
@@ -281,37 +290,50 @@ export interface AIServiceManager {
    * Register an AI provider
    */
   registerProvider(provider: AIProvider): void;
-  
+
   /**
    * Get a provider by name
    */
   getProvider(name?: string): AIProvider;
-  
+
   /**
    * Get best provider for a specific capability
    */
-  getBestProvider(capability: 'simple' | 'conversation' | 'functions' | 'streaming'): AIProvider;
-  
+  getBestProvider(
+    capability: "simple" | "conversation" | "functions" | "streaming",
+  ): AIProvider;
+
   /**
    * Create session with automatic provider selection
    */
-  createSession(character?: string, options?: SessionOptions): Promise<AISession>;
-  
+  createSession(
+    character?: string,
+    options?: SessionOptions,
+  ): Promise<AISession>;
+
   /**
    * Continue conversation with automatic provider routing
    */
-  chat(sessionId: string, message: string, options?: GenerationOptions): Promise<string>;
-  
+  chat(
+    sessionId: string,
+    message: string,
+    options?: GenerationOptions,
+  ): Promise<string>;
+
   /**
    * Stream conversation with automatic provider routing
    */
-  chatStream(sessionId: string, message: string, options?: GenerationOptions): AsyncIterable<StreamEvent>;
-  
+  chatStream(
+    sessionId: string,
+    message: string,
+    options?: GenerationOptions,
+  ): AsyncIterable<StreamEvent>;
+
   /**
    * Health check all providers
    */
   healthCheck(): Promise<Record<string, boolean>>;
-  
+
   /**
    * Get service statistics
    */
@@ -323,9 +345,9 @@ export interface AIServiceManager {
   }>;
 }
 
-// ===== ZENYATTA-SPECIFIC EXTENSIONS =====
+// ===== ZENBOT-SPECIFIC EXTENSIONS =====
 
-export interface ZenyattaSessionContext {
+export interface ZenbotSessionContext {
   discordGuild?: string;
   discordChannel?: string;
   discordUser?: {
@@ -345,38 +367,42 @@ export interface ZenyattaSessionContext {
   };
 }
 
-export interface ZenyattaSession extends AISession {
-  character: 'Zenyatta';
+export interface ZenbotSession extends AISession {
+  character: "Zenbot";
   metadata: SessionMetadata & {
-    context: ZenyattaSessionContext;
-    mood: 'zen' | 'wise' | 'playful' | 'mysterious';
+    context: ZenbotSessionContext;
+    mood: "zen" | "wise" | "playful" | "mysterious" | "sassy";
     lastQuote?: string;
     functionCallsEnabled: boolean;
   };
 }
 
-// ===== ERROR TYPES =====
 
 export class AIServiceError extends Error {
   constructor(
     message: string,
     public provider: string,
     public code?: string,
-    public cause?: Error
+    public cause?: Error,
   ) {
     super(message);
-    this.name = 'AIServiceError';
+    this.name = "AIServiceError";
   }
 }
 
 export class SessionNotFoundError extends AIServiceError {
   constructor(sessionId: string, provider: string) {
-    super(`Session ${sessionId} not found`, provider, 'SESSION_NOT_FOUND');
+    super(`Session ${sessionId} not found`, provider, "SESSION_NOT_FOUND");
   }
 }
 
 export class ProviderUnavailableError extends AIServiceError {
   constructor(provider: string, cause?: Error) {
-    super(`Provider ${provider} is unavailable`, provider, 'PROVIDER_UNAVAILABLE', cause);
+    super(
+      `Provider ${provider} is unavailable`,
+      provider,
+      "PROVIDER_UNAVAILABLE",
+      cause,
+    );
   }
 }

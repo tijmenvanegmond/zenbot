@@ -5,67 +5,74 @@
 
 import "dotenv/config";
 import { AIServiceManager, MemorySessionStorage } from "./services/ai";
-import { UnifiedZenyattaService } from "./services/unifiedZenyattaService";
+import { ZenbotService } from "./services/zenbotService";
 import { logger } from "./utils/logger";
 
 // Mock interaction for testing
 const mockInteraction = {
-  user: { id: "gemini-test", username: "geminitester", displayName: "Gemini Tester" },
-  guildId: "test-guild", channelId: "test-channel",
-  client: { users: { fetch: async () => ({ username: "testuser" }) } }
+  user: {
+    id: "gemini-test",
+    username: "geminitester",
+    displayName: "Gemini Tester",
+  },
+  guildId: "test-guild",
+  channelId: "test-channel",
+  client: { users: { fetch: async () => ({ username: "testuser" }) } },
 } as any;
 
 async function testGemini() {
   try {
     console.log("🤖 Testing Gemini Integration...");
-    
+
     if (!process.env.GOOGLE_AI_API_KEY) {
       console.log("❌ GOOGLE_AI_API_KEY not found. Skipping Gemini test.");
-      console.log("To test Gemini, set: export GOOGLE_AI_API_KEY=your_key_here");
+      console.log(
+        "To test Gemini, set: export GOOGLE_AI_API_KEY=your_key_here",
+      );
       return;
     }
-    
+
     console.log("✅ Google AI API key found");
 
     // Create config with Gemini as primary
     const geminiConfig = {
-      defaultProvider: 'gemini',
+      defaultProvider: "gemini",
       providers: {
         openai: {
-          apiKey: process.env.OPENAI_API_KEY || 'backup',
-          defaultModel: 'gpt-4o-mini',
+          apiKey: process.env.OPENAI_API_KEY || "backup",
+          defaultModel: "gpt-4o-mini",
         },
         anthropic: {
-          apiKey: process.env.ANTHROPIC_API_KEY || 'backup',
-          defaultModel: 'claude-3-5-haiku-20241022',
+          apiKey: process.env.ANTHROPIC_API_KEY || "backup",
+          defaultModel: "claude-3-5-haiku-20241022",
         },
         gemini: {
           apiKey: process.env.GOOGLE_AI_API_KEY,
-          defaultModel: 'gemini-1.5-flash',
-        }
+          defaultModel: "gemini-1.5-flash",
+        },
       },
       session: {
         defaultExpiry: 60, // 1 hour for testing
         maxMessages: 50,
         cleanupInterval: 30,
-        storage: 'memory' as const
+        storage: "memory" as const,
       },
       fallbacks: {
         providers: {
-          gemini: ['openai', 'anthropic'], // Gemini fails → OpenAI → Anthropic
-          openai: ['anthropic'],           // OpenAI fails → Anthropic
-          anthropic: []                    // Anthropic fails → stop
+          gemini: ["openai", "anthropic"], // Gemini fails → OpenAI → Anthropic
+          openai: ["anthropic"], // OpenAI fails → Anthropic
+          anthropic: [], // Anthropic fails → stop
         },
         maxRetries: 2,
-        circuitBreakerThreshold: 3
-      }
+        circuitBreakerThreshold: 3,
+      },
     };
 
     // Initialize with Gemini as primary
     const sessionStorage = new MemorySessionStorage();
     const aiManager = new AIServiceManager(geminiConfig, sessionStorage);
-    UnifiedZenyattaService.initialize(aiManager);
-    const zenyatta = UnifiedZenyattaService.getInstance();
+    ZenbotService.initialize(aiManager);
+    const zenyatta = ZenbotService.getInstance();
 
     console.log("🧘 Initialized with Gemini as primary provider");
 
@@ -73,7 +80,7 @@ async function testGemini() {
     console.log("\n=== Test 1: Provider Health ===");
     const health = await aiManager.healthCheck();
     console.log("Provider Health:", health);
-    
+
     if (!health.gemini) {
       console.log("❌ Gemini health check failed. Reason:", health);
       return;
@@ -84,9 +91,9 @@ async function testGemini() {
     console.log("\n=== Test 2: Gemini Conversation ===");
     const response1 = await zenyatta.converse(
       mockInteraction,
-      "Hello Gemini! Please respond as Zenyatta and tell me about the nature of harmony between technology and spirit."
+      "Hello Gemini! Please respond as Zenyatta and tell me about the nature of harmony between technology and spirit.",
     );
-    
+
     console.log("✅ Gemini Response:");
     console.log("Text:", response1.text);
     console.log("Provider used:", geminiConfig.defaultProvider);
@@ -97,9 +104,9 @@ async function testGemini() {
     console.log("\n=== Test 3: Gemini Memory Test ===");
     const response2 = await zenyatta.converse(
       mockInteraction,
-      "What did we just discuss about harmony between technology and spirit?"
+      "What did we just discuss about harmony between technology and spirit?",
     );
-    
+
     console.log("✅ Gemini Memory Response:");
     console.log("Text:", response2.text.substring(0, 150) + "...");
     console.log("Same session:", response1.sessionId === response2.sessionId);
@@ -109,13 +116,13 @@ async function testGemini() {
     const remarkPositive = await zenyatta.generateRemark(
       mockInteraction,
       "a mindful student of technology",
-      true
+      true,
     );
-    
+
     const remarkNegative = await zenyatta.generateRemark(
-      mockInteraction, 
+      mockInteraction,
       "a distracted apprentice",
-      false
+      false,
     );
 
     console.log("✅ Gemini Remarks:");
@@ -126,7 +133,7 @@ async function testGemini() {
     console.log("\n=== Test 5: Service Statistics ===");
     const stats = await aiManager.getStats();
     console.log("✅ AI Service Stats:");
-    console.log(`- Providers: ${stats.providers.join(', ')}`);
+    console.log(`- Providers: ${stats.providers.join(", ")}`);
     console.log(`- Active Sessions: ${stats.activeSessions}`);
     console.log(`- Total Messages: ${stats.totalMessages}`);
     console.log(`- Uptime: ${Math.round(stats.uptime)} seconds`);
@@ -134,26 +141,25 @@ async function testGemini() {
     // Test 6: Streaming Test
     console.log("\n=== Test 6: Gemini Streaming Test ===");
     console.log("🔄 Testing streaming response...");
-    
+
     let streamedResponse = "";
     const streamEvents: string[] = [];
-    
+
     try {
       for await (const event of aiManager.chatStream(
-        response1.sessionId, 
-        "Please give me a short philosophical quote about the Iris, and speak it slowly with pauses for contemplation."
+        response1.sessionId,
+        "Please give me a short philosophical quote about the Iris, and speak it slowly with pauses for contemplation.",
       )) {
         streamEvents.push(event.type);
-        if (event.type === 'delta' && event.content) {
+        if (event.type === "delta" && event.content) {
           streamedResponse += event.content;
           process.stdout.write(event.content); // Show real-time streaming
         }
       }
-      
+
       console.log("\n✅ Streaming completed!");
-      console.log("Events:", streamEvents.join(' → '));
+      console.log("Events:", streamEvents.join(" → "));
       console.log("Full response:", streamedResponse.trim());
-      
     } catch (error) {
       console.log("⚠️ Streaming test failed:", error);
     }
@@ -161,24 +167,26 @@ async function testGemini() {
     // Test 7: Fallback Test (if configured)
     if (process.env.OPENAI_API_KEY) {
       console.log("\n=== Test 7: Fallback to OpenAI ===");
-      
+
       // Force a test of fallback by using a bad Gemini model
       try {
-        const session = await aiManager.createSession('Zenyatta', {
-          userId: 'fallback-test',
-          model: 'gemini-nonexistent-model' // This should trigger fallback
+        const session = await aiManager.createSession("Zenyatta", {
+          userId: "fallback-test",
+          model: "gemini-nonexistent-model", // This should trigger fallback
         });
-        
+
         const fallbackResponse = await aiManager.chat(
           session.id,
-          "Test fallback mechanism - this should use OpenAI as fallback."
+          "Test fallback mechanism - this should use OpenAI as fallback.",
         );
-        
+
         console.log("✅ Fallback Response:");
         console.log("Text:", fallbackResponse.substring(0, 100) + "...");
-        
       } catch (error) {
-        console.log("⚠️ Fallback test result:", error instanceof Error ? error.message : error);
+        console.log(
+          "⚠️ Fallback test result:",
+          error instanceof Error ? error.message : error,
+        );
       }
     }
 
@@ -195,17 +203,20 @@ async function testGemini() {
     // Cleanup
     aiManager.destroy();
     setTimeout(() => process.exit(0), 500);
-    
   } catch (error) {
     console.error("❌ Gemini test failed:", error);
-    
+
     if (error instanceof Error) {
-      if (error.message.includes('API_KEY_INVALID')) {
+      if (error.message.includes("API_KEY_INVALID")) {
         console.log("💡 Hint: Check your GOOGLE_AI_API_KEY is valid");
-      } else if (error.message.includes('PERMISSION_DENIED')) {
-        console.log("💡 Hint: Your Google AI API key may not have Gemini access");
-      } else if (error.message.includes('quota')) {
-        console.log("💡 Hint: Your Google AI account may have hit quota limits");
+      } else if (error.message.includes("PERMISSION_DENIED")) {
+        console.log(
+          "💡 Hint: Your Google AI API key may not have Gemini access",
+        );
+      } else if (error.message.includes("quota")) {
+        console.log(
+          "💡 Hint: Your Google AI account may have hit quota limits",
+        );
       } else {
         console.log("Error details:", error.message);
       }

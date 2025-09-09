@@ -7,9 +7,9 @@ import {
 import { VoiceSessionManager } from "../../services/voiceSessionManager";
 import { joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
 import { logger } from "../../utils/logger";
-import { OpenAIService } from "../../services/openaiService";
-import { UnifiedZenyattaService } from "../../services/unifiedZenyattaService";
+import { ZenbotService } from "../../services/zenbotService";
 import { ActionService } from "../../services/actionService";
+import { OpenAIService } from "../../services/openaiService";
 import { opus } from "prism-media";
 
 // Audio processing constants - Adjusted for real speech patterns
@@ -99,7 +99,7 @@ async function processVoiceCommand(
     }
 
     // Get the Zenyatta assistant for intelligent conversation
-    const zenyatta = UnifiedZenyattaService.getInstance();
+    const zenyatta = ZenbotService.getInstance();
 
     // Create a mock interaction object for the assistant to use
     const mockInteraction = {

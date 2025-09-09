@@ -3,25 +3,20 @@
  * Supports Gemini models with conversation memory
  */
 
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import { BaseAIProvider } from '../baseProvider';
-import { 
-  GenerationOptions, 
-  StreamEvent, 
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import { BaseAIProvider } from "../baseProvider";
+import {
+  GenerationOptions,
+  StreamEvent,
   Message,
   SessionStorage,
-  AIServiceError
-} from '../types';
-import { logger } from '../../../utils/logger';
+  AIServiceError,
+} from "../types";
+import { logger } from "../../../utils/logger";
 
 export class GeminiProvider extends BaseAIProvider {
-  readonly name = 'gemini';
-  readonly supportedModels = [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-1.0-pro',
-    'gemini-pro-vision'
-  ];
+  readonly name = "gemini";
+  readonly supportedModels = ["gemini-2.5-flash"];
   readonly supportsStreaming = true;
   readonly supportsFunctions = true; // Via function calling
   readonly supportsVision = true;
@@ -29,89 +24,109 @@ export class GeminiProvider extends BaseAIProvider {
   private client: GoogleGenerativeAI;
   private models = new Map<string, GenerativeModel>();
 
-  constructor(sessionStorage: SessionStorage, config: { apiKey: string; baseURL?: string } & Record<string, any>) {
+  constructor(
+    sessionStorage: SessionStorage,
+    config: { apiKey: string; baseURL?: string } & Record<string, any>,
+  ) {
     super(sessionStorage, config);
-    
+
     if (!config.apiKey) {
-      throw new AIServiceError('Google AI API key is required', this.name, 'MISSING_API_KEY');
+      throw new AIServiceError(
+        "Google AI API key is required",
+        this.name,
+        "MISSING_API_KEY",
+      );
     }
 
     this.client = new GoogleGenerativeAI(config.apiKey);
   }
 
-  private getModel(modelName: string = 'gemini-1.5-flash'): GenerativeModel {
+  private getModel(modelName: string = "gemini-2.5-flash"): GenerativeModel {
     if (!this.models.has(modelName)) {
-      this.models.set(modelName, this.client.getGenerativeModel({ model: modelName }));
+      this.models.set(
+        modelName,
+        this.client.getGenerativeModel({ model: modelName }),
+      );
     }
     return this.models.get(modelName)!;
   }
 
   // ===== SIMPLE TEXT GENERATION =====
 
-  async generateText(prompt: string, options: GenerationOptions = {}): Promise<string> {
+  async generateText(
+    prompt: string,
+    options: GenerationOptions = {},
+  ): Promise<string> {
     try {
       const model = this.getModel(options.model);
-      
+
       const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxTokens || 1000,
-          topP: options.topP,
-          stopSequences: options.stopSequences
-        }
+          maxOutputTokens: options.maxTokens || 4000,
+          topP: options.topP || 0.95,
+          stopSequences: options.stopSequences,
+        },
       });
 
       const response = await result.response;
       const text = response.text();
 
       if (!text) {
-        throw new AIServiceError('No response content received', this.name, 'EMPTY_RESPONSE');
+        throw new AIServiceError(
+          "No response content received",
+          this.name,
+          "EMPTY_RESPONSE",
+        );
       }
 
       return text.trim();
     } catch (error) {
-      logger.error('Gemini text generation failed:', error);
+      logger.error("Gemini text generation failed:", error);
       throw new AIServiceError(
-        `Text generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Text generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         this.name,
-        'GENERATION_FAILED',
-        error instanceof Error ? error : undefined
+        "GENERATION_FAILED",
+        error instanceof Error ? error : undefined,
       );
     }
   }
 
-  async *generateTextStream(prompt: string, options: GenerationOptions = {}): AsyncIterable<StreamEvent> {
+  async *generateTextStream(
+    prompt: string,
+    options: GenerationOptions = {},
+  ): AsyncIterable<StreamEvent> {
     try {
-      yield { type: 'start' };
+      yield { type: "start" };
 
       const model = this.getModel(options.model);
-      
+
       const result = await model.generateContentStream({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxTokens || 1000,
-          topP: options.topP,
-          stopSequences: options.stopSequences
-        }
+          maxOutputTokens: options.maxTokens || 4000,
+          topP: options.topP || 0.95,
+          stopSequences: options.stopSequences,
+        },
       });
 
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
         if (chunkText) {
-          yield { type: 'delta', content: chunkText };
+          yield { type: "delta", content: chunkText };
         }
       }
 
-      yield { type: 'complete' };
+      yield { type: "complete" };
     } catch (error) {
-      logger.error('Gemini streaming failed:', error);
-      yield { 
-        type: 'error', 
-        metadata: { 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        } 
+      logger.error("Gemini streaming failed:", error);
+      yield {
+        type: "error",
+        metadata: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       };
     }
   }
@@ -121,22 +136,26 @@ export class GeminiProvider extends BaseAIProvider {
   protected formatMessagesForProvider(messages: Message[]): any[] {
     // Convert messages to Gemini format
     const geminiMessages = [];
-    
+
     for (const msg of messages) {
-      if (msg.role === 'system') {
+      if (msg.role === "system") {
         // Gemini doesn't have system role, so we'll prepend system message to first user message
         continue;
       }
-      
+
       geminiMessages.push({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
       });
     }
 
     // Add system message as context to first user message if present
-    const systemMessage = messages.find(m => m.role === 'system');
-    if (systemMessage && geminiMessages.length > 0 && geminiMessages[0].role === 'user') {
+    const systemMessage = messages.find((m) => m.role === "system");
+    if (
+      systemMessage &&
+      geminiMessages.length > 0 &&
+      geminiMessages[0].role === "user"
+    ) {
       const originalText = geminiMessages[0].parts[0].text;
       geminiMessages[0].parts[0].text = `${systemMessage.content}\n\nUser: ${originalText}`;
     }
@@ -146,73 +165,114 @@ export class GeminiProvider extends BaseAIProvider {
 
   protected async generateConversationResponse(
     geminiMessages: any[],
-    options: GenerationOptions = {}
+    options: GenerationOptions = {},
   ): Promise<string> {
     try {
       const model = this.getModel(options.model);
-      
+
       const result = await model.generateContent({
         contents: geminiMessages,
         generationConfig: {
           temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxTokens || 1000,
-          topP: options.topP,
-          stopSequences: options.stopSequences
-        }
+          maxOutputTokens: options.maxTokens || 4000,
+          topP: options.topP || 0.95,
+          stopSequences: options.stopSequences,
+        },
       });
 
       const response = await result.response;
-      const text = response.text();
 
-      if (!text) {
-        throw new AIServiceError('No response content received', this.name, 'EMPTY_RESPONSE');
+      // Enhanced debugging for Gemini responses
+      logger.debug(
+        `🔍 Gemini response candidates: ${response.candidates?.length || 0}`,
+      );
+
+      if (!response.candidates || response.candidates.length === 0) {
+        logger.error("❌ Gemini returned no candidates");
+        throw new AIServiceError(
+          "No response candidates received from Gemini",
+          this.name,
+          "NO_CANDIDATES",
+        );
+      }
+
+      const candidate = response.candidates[0];
+      logger.debug(
+        `🔍 Gemini candidate finish reason: ${candidate.finishReason}`,
+      );
+
+      if (candidate.finishReason && candidate.finishReason !== "STOP") {
+        logger.warn(`⚠️ Gemini response blocked: ${candidate.finishReason}`);
+        if (candidate.finishReason === "SAFETY") {
+          throw new AIServiceError(
+            "Response blocked by Gemini safety filters",
+            this.name,
+            "SAFETY_BLOCKED",
+          );
+        }
+        throw new AIServiceError(
+          `Response generation stopped: ${candidate.finishReason}`,
+          this.name,
+          "GENERATION_STOPPED",
+        );
+      }
+
+      const text = response.text();
+      logger.debug(`🔍 Gemini response text length: ${text?.length || 0}`);
+
+      if (!text || text.trim().length === 0) {
+        throw new AIServiceError(
+          "No response content received",
+          this.name,
+          "EMPTY_RESPONSE",
+        );
       }
 
       return text.trim();
     } catch (error) {
       throw new AIServiceError(
-        `Conversation generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Conversation generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         this.name,
-        'GENERATION_FAILED',
-        error instanceof Error ? error : undefined
+        "GENERATION_FAILED",
+        error instanceof Error ? error : undefined,
       );
     }
   }
 
   async *generateConversationStream(
     geminiMessages: any[],
-    options: GenerationOptions = {}
+    options: GenerationOptions = {},
   ): AsyncIterable<StreamEvent> {
     try {
-      yield { type: 'start' };
+      yield { type: "start" };
 
       const model = this.getModel(options.model);
-      
+
       const result = await model.generateContentStream({
         contents: geminiMessages,
         generationConfig: {
           temperature: options.temperature || 0.7,
-          maxOutputTokens: options.maxTokens || 1000,
-          topP: options.topP,
-          stopSequences: options.stopSequences
-        }
+          maxOutputTokens: options.maxTokens || 4000,
+          topP: options.topP || 0.95,
+          stopSequences: options.stopSequences,
+        },
       });
 
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
         if (chunkText) {
-          yield { type: 'delta', content: chunkText };
+          yield { type: "delta", content: chunkText };
         }
       }
 
-      yield { type: 'complete' };
+      yield { type: "complete" };
     } catch (error) {
-      logger.error('Gemini conversation streaming failed:', error);
-      yield { 
-        type: 'error', 
-        metadata: { 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        } 
+      logger.error("Gemini conversation streaming failed:", error);
+      yield {
+        type: "error",
+        metadata: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       };
     }
   }
@@ -221,42 +281,46 @@ export class GeminiProvider extends BaseAIProvider {
   async continueConversation(
     sessionId: string,
     userMessage: string,
-    options: GenerationOptions = {}
+    options: GenerationOptions = {},
   ): Promise<string> {
     const session = await this.getSession(sessionId);
     if (!session) {
-      throw new AIServiceError(`Session ${sessionId} not found`, this.name, 'SESSION_NOT_FOUND');
+      throw new AIServiceError(
+        `Session ${sessionId} not found`,
+        this.name,
+        "SESSION_NOT_FOUND",
+      );
     }
 
     // Add user message to history
     const userMsg: Message = {
       id: crypto.randomUUID(),
-      role: 'user',
+      role: "user",
       content: userMessage,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     session.messages.push(userMsg);
 
     // Format messages for Gemini
     const geminiMessages = this.formatMessagesForProvider(session.messages);
-    
+
     try {
       // Generate response
       const response = await this.generateConversationResponse(geminiMessages, {
         ...options,
         model: options.model || session.metadata.model,
-        temperature: options.temperature || session.metadata.temperature
+        temperature: options.temperature || session.metadata.temperature,
       });
 
       // Add assistant response to history
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
-        role: 'assistant',
+        role: "assistant",
         content: response,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       session.messages.push(assistantMsg);
 
       // Trim history if needed
@@ -266,14 +330,18 @@ export class GeminiProvider extends BaseAIProvider {
       session.updatedAt = new Date();
       await this.sessionStorage.update(sessionId, {
         messages: session.messages,
-        updatedAt: session.updatedAt
+        updatedAt: session.updatedAt,
       });
 
-      logger.info(`💬 Gemini conversation in session ${sessionId}: ${response.substring(0, 100)}...`);
+      logger.info(
+        `💬 Gemini conversation in session ${sessionId}: ${response.substring(0, 100)}...`,
+      );
       return response;
-      
     } catch (error) {
-      logger.error(`❌ Gemini conversation failed in session ${sessionId}:`, error);
+      logger.error(
+        `❌ Gemini conversation failed in session ${sessionId}:`,
+        error,
+      );
       throw error; // Re-throw AIServiceError
     }
   }
@@ -281,36 +349,43 @@ export class GeminiProvider extends BaseAIProvider {
   async *streamConversation(
     sessionId: string,
     userMessage: string,
-    options: GenerationOptions = {}
+    options: GenerationOptions = {},
   ): AsyncIterable<StreamEvent> {
     const session = await this.getSession(sessionId);
     if (!session) {
-      throw new AIServiceError(`Session ${sessionId} not found`, this.name, 'SESSION_NOT_FOUND');
+      throw new AIServiceError(
+        `Session ${sessionId} not found`,
+        this.name,
+        "SESSION_NOT_FOUND",
+      );
     }
 
     // Add user message to history
     const userMsg: Message = {
       id: crypto.randomUUID(),
-      role: 'user',
+      role: "user",
       content: userMessage,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     session.messages.push(userMsg);
 
     // Format messages for Gemini
     const geminiMessages = this.formatMessagesForProvider(session.messages);
-    
-    let fullResponse = '';
-    
+
+    let fullResponse = "";
+
     try {
       // Stream response
-      for await (const event of this.generateConversationStream(geminiMessages, {
-        ...options,
-        model: options.model || session.metadata.model,
-        temperature: options.temperature || session.metadata.temperature
-      })) {
-        if (event.type === 'delta' && event.content) {
+      for await (const event of this.generateConversationStream(
+        geminiMessages,
+        {
+          ...options,
+          model: options.model || session.metadata.model,
+          temperature: options.temperature || session.metadata.temperature,
+        },
+      )) {
+        if (event.type === "delta" && event.content) {
           fullResponse += event.content;
         }
         yield event;
@@ -319,11 +394,11 @@ export class GeminiProvider extends BaseAIProvider {
       // Add complete response to history
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
-        role: 'assistant',
+        role: "assistant",
         content: fullResponse,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       session.messages.push(assistantMsg);
 
       // Trim history if needed
@@ -333,16 +408,18 @@ export class GeminiProvider extends BaseAIProvider {
       session.updatedAt = new Date();
       await this.sessionStorage.update(sessionId, {
         messages: session.messages,
-        updatedAt: session.updatedAt
+        updatedAt: session.updatedAt,
       });
-      
     } catch (error) {
-      logger.error(`❌ Gemini streaming failed in session ${sessionId}:`, error);
-      yield { 
-        type: 'error', 
-        metadata: { 
-          error: error instanceof Error ? error.message : 'Unknown error' 
-        } 
+      logger.error(
+        `❌ Gemini streaming failed in session ${sessionId}:`,
+        error,
+      );
+      yield {
+        type: "error",
+        metadata: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       };
     }
   }
@@ -353,11 +430,15 @@ export class GeminiProvider extends BaseAIProvider {
     sessionId: string,
     userMessage: string,
     functions: any[],
-    options: GenerationOptions = {}
+    options: GenerationOptions = {},
   ): Promise<{ response: string; functionCalls: any[] }> {
     // Gemini function calling is more complex - for now, fall back to conversation
     // TODO: Implement proper Gemini function calling when needed
-    const response = await this.continueConversation(sessionId, userMessage, options);
+    const response = await this.continueConversation(
+      sessionId,
+      userMessage,
+      options,
+    );
     return { response, functionCalls: [] };
   }
 
@@ -368,14 +449,14 @@ export class GeminiProvider extends BaseAIProvider {
       // Simple test generation to check API connectivity
       const model = this.getModel();
       const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        generationConfig: { maxOutputTokens: 10 }
+        contents: [{ role: "user", parts: [{ text: "Hello" }] }],
+        generationConfig: { maxOutputTokens: 10 },
       });
-      
+
       const response = await result.response;
       return !!response.text();
     } catch (error) {
-      logger.error('Gemini health check failed:', error);
+      logger.error("Gemini health check failed:", error);
       return false;
     }
   }

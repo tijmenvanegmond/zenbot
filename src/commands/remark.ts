@@ -1,6 +1,7 @@
 import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
 import { Command } from "./command";
 import { ActionService } from "../services/actionService";
+import { RemarkType } from "../actions/entertainment/remarkAction";
 import { logger } from "../utils/logger";
 import {
   getInteractionOptions,
@@ -17,8 +18,14 @@ export const Remark: Command = {
         .setDescription("Type of remark")
         .setRequired(true)
         .addChoices(
-          { name: "😊 Positive", value: "positive" },
-          { name: "😈 Negative", value: "negative" },
+          { name: "😊 Positive", value: RemarkType.POSITIVE },
+          { name: "😈 Negative", value: RemarkType.NEGATIVE },
+          { name: "🧘 Philosophical", value: RemarkType.PHILOSOPHICAL },
+          { name: "😏 Sarcastic", value: RemarkType.SARCASTIC },
+          { name: "💪 Encouraging", value: RemarkType.ENCOURAGING },
+          { name: "🔮 Mysterious", value: RemarkType.MYSTERIOUS },
+          { name: "🦉 Wise", value: RemarkType.WISE },
+          { name: "😄 Humorous", value: RemarkType.HUMOROUS },
         ),
     )
     .addUserOption((option) =>

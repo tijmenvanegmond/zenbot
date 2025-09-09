@@ -54,5 +54,5 @@ export function formatWisdomMessage(text: string, type?: string): string {
  */
 export function formatSimpleWisdomMessage(text: string, type?: string): string {
   const emoji = getAdviceEmoji(type);
-  return `${emoji} **Zenyatta's Wisdom:** ${text}`;
+  return `${emoji} **Zenbot:** ${text}`;
 }
