@@ -7,6 +7,7 @@ import "dotenv/config";
 import { AIServiceManager, MemorySessionStorage } from "./services/ai";
 import { AI_CONFIG } from "./config/aiConfig";
 import { ZenbotService } from "./services/zenbotService";
+import { RemarkType } from "./actions/entertainment/remarkAction";
 import { logger } from "./utils/logger";
 
 // Mock interaction for testing
@@ -74,15 +75,15 @@ async function testUnifiedZenyatta() {
     logger.info("\n=== Test 4: Remark Generation ===");
     const positiveRemark = await zenyatta.generateRemark(
       mockInteraction,
+      RemarkType.POSITIVE,
       "a helpful person",
-      true,
     );
     console.log("Positive Remark:", positiveRemark.text);
 
     const negativeRemark = await zenyatta.generateRemark(
       mockInteraction,
+      RemarkType.NEGATIVE,
       "a troublemaker",
-      false,
     );
     console.log("Negative Remark:", negativeRemark.text);
 

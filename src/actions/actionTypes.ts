@@ -13,6 +13,7 @@ export interface ActionContext {
   user: {
     id: string;
     username: string;
+    displayName?: string;
   };
   voiceChannel?: VoiceChannel;
 

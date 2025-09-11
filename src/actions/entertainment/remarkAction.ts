@@ -25,7 +25,7 @@ export class RemarkAction implements ZenAction {
   category = "entertainment" as const;
 
   permissions = {
-    allowedSources: ["command", "api", "ai"],
+    allowedSources: ["command", "api"],
   };
 
   schema = {

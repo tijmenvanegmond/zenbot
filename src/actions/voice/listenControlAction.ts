@@ -113,8 +113,6 @@ async function processVoiceCommand(
         displayName: `Voice User ${userId.slice(-4)}`,
       },
       guild: context.guild,
-      guildId: context.guild?.id,
-      channelId: context.voiceChannel.id,
       channel: context.voiceChannel, // Use voice channel as context
       client: {
         users: {

@@ -95,21 +95,29 @@ export class ChannelManagementAction implements ZenAction {
               responseText: "I can only manage channels within a server",
             };
           }
+          // Attempt to resolve channel first by ID; if that fails, try by name (case-insensitive)
+          let channel = context.interaction.guild.channels.cache.get(channel_id);
+          if (!channel) {
+            channel = context.interaction.guild.channels.cache.find(
+              (c: any) =>
+                c.isVoiceBased?.() &&
+                typeof c.name === "string" &&
+                c.name.toLowerCase() === channel_id.toLowerCase(),
+            ) as any;
+          }
 
-          const channel =
-            context.interaction.guild.channels.cache.get(channel_id);
-          if (!channel || !channel.isVoiceBased()) {
+          if (!channel || !channel.isVoiceBased?.()) {
             return {
               success: false,
               error: "Channel not found or not a voice channel",
               shouldRespond: true,
               responseText:
-                "That channel does not exist or is not a voice channel",
+                "Could not find a matching voice channel by that ID or name",
             };
           }
 
-          const newName =
-            custom_name || this.generateChannelName(channel, name_style);
+          const oldName = channel.name;
+          const newName = custom_name || this.generateChannelName(channel, name_style);
 
           // Check permissions
           const botMember = context.interaction.guild.members.me;
@@ -126,15 +134,17 @@ export class ChannelManagementAction implements ZenAction {
           // Rename the channel
           await channel.setName(newName);
 
-          logger.info(`🏷️ Renamed channel ${channel_id} to "${newName}"`);
+          logger.info(
+            `🏷️ Renamed channel ${channel.id} (${oldName}) to "${newName}"`,
+          );
 
           return {
             success: true,
             message: "Channel renamed successfully",
             data: {
-              old_name: channel.name,
+              old_name: oldName,
               new_name: newName,
-              channel_id,
+              channel_id: channel.id,
               style: name_style,
               member_count: channel.members.size,
             },
@@ -513,6 +523,7 @@ export class ChannelManagementAction implements ZenAction {
   }
 
   validate(parameters: ActionParameters): boolean {
+    logger.debug("🏷️ Validating Channel Management Action parameters", { parameters });
     const validActions = ["rename", "create", "analyze", "suggest_name"];
     if (!parameters.action || !validActions.includes(parameters.action)) {
       return false;

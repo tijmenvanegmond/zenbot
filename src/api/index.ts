@@ -4,6 +4,7 @@ import guildsRoutes from "./routes/guilds";
 import voiceRoutes from "./routes/voice";
 import commandsRoutes from "./routes/commands";
 import quotesRoutes from "./routes/quotes";
+import actionsRoutes from "./routes/actions";
 
 export async function registerApiRoutes(
   fastify: FastifyInstance,
@@ -26,4 +27,5 @@ export async function registerApiRoutes(
   await fastify.register(voiceRoutes, { discordClient });
   await fastify.register(commandsRoutes, { discordClient });
   await fastify.register(quotesRoutes, { discordClient });
+  await fastify.register(actionsRoutes, { discordClient });
 }

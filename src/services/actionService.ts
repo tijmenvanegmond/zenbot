@@ -143,6 +143,59 @@ export class ActionService {
   }
 
   /**
+   * Execute action from API request
+   */
+  async executeFromAPI(
+    apiContext: {
+      guild: any;
+      channel?: any;
+      user: {
+        id: string;
+        username: string;
+        displayName?: string;
+      };
+    },
+    actionName: string,
+    parameters: any = {},
+  ): Promise<ActionResult> {
+    logger.debug(`🎭 ActionService.executeFromAPI: ${actionName}`, {
+      guild: apiContext.guild?.name,
+      user: apiContext.user.username,
+      parameters: Object.keys(parameters),
+      source: "api",
+    });
+
+    // Create a mock interaction for API calls that need guild access
+    const mockInteraction = apiContext.guild ? {
+      guild: apiContext.guild,
+      user: apiContext.user,
+      client: apiContext.guild.client
+    } : undefined;
+
+    const context: ActionContext = {
+      interaction: mockInteraction as any,
+      guild: apiContext.guild
+        ? {
+            id: apiContext.guild.id,
+            name: apiContext.guild.name,
+          }
+        : undefined,
+      user: {
+        id: apiContext.user.id,
+        username: apiContext.user.username,
+        displayName: apiContext.user.displayName,
+      },
+      voiceChannel: apiContext.channel?.isVoiceBased?.() 
+        ? apiContext.channel 
+        : undefined,
+      isVoiceInteraction: apiContext.channel?.isVoiceBased?.() || false,
+      source: "api",
+    };
+
+    return await this.registry.execute(actionName, context, parameters);
+  }
+
+  /**
    * Get function schemas for OpenAI function calling
    */
   getFunctionSchemas(): any[] {
@@ -176,7 +229,7 @@ export class ActionService {
   ): ActionContext {
     const voiceValidation = validateVoiceChannel(interaction);
 
-    return {
+    const context: ActionContext = {
       interaction,
       guild: interaction.guild
         ? {
@@ -187,6 +240,7 @@ export class ActionService {
       user: {
         id: interaction.user.id,
         username: interaction.user.username,
+        displayName: (interaction.member as any)?.displayName || interaction.user.displayName,
       },
       voiceChannel: voiceValidation.isValid
         ? (voiceValidation.member!.voice.channel as VoiceChannel)
@@ -194,6 +248,18 @@ export class ActionService {
       isVoiceInteraction: voiceValidation.isValid,
       source,
     };
+
+    // Enhanced logging for voice context debugging
+    logger.debug(`🎭 Created context from interaction:`, {
+      source,
+      hasVoiceChannel: !!context.voiceChannel,
+      voiceChannelId: context.voiceChannel?.id,
+      voiceChannelName: context.voiceChannel?.name,
+      userId: context.user.id,
+      username: context.user.username,
+    });
+
+    return context;
   }
 
   /**
@@ -216,6 +282,17 @@ export class ActionService {
         `🎭 AI function call: ${functionName} with args:`,
         functionArgs,
       );
+
+      // Enhanced logging for voice context debugging
+      const voiceValidation = validateVoiceChannel(interaction);
+      logger.debug(`🎭 AI function call context:`, {
+        functionName,
+        hasVoiceChannel: voiceValidation.isValid,
+        voiceChannelId: voiceValidation.member?.voice?.channelId,
+        voiceChannelName: voiceValidation.member?.voice?.channel?.name,
+        userId: interaction.user.id,
+        guildId: interaction.guild?.id,
+      });
 
       const result = await this.executeFromAI(
         interaction,

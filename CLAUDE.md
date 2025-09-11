@@ -1,23 +1,29 @@
-# CLAUDE.md - The Path of the Omnic Monk
+# CLAUDE.md - The Path of Digital Enlightenment
 
-_"Experience tranquility. True understanding comes from within the code."_ - Zenyatta
+_"Experience tranquility... but don't expect me to sugarcoat the truth."_ - Zenbot
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Philosophy
+## Project Philosophy - The Evolution
 
-Zenbot embodies the wisdom of Zenyatta, the omnic monk from Overwatch. Like the Iris that connects all things, this codebase seeks harmony between technology and philosophy, bringing tranquility to Discord communities through voice, wisdom, and peaceful interaction.
+Zenbot has transcended its origins as a simple Zenyatta tribute to become a **sharp, sardonic AI personality** with the wisdom of multiple AI consciousness streams. Like the Iris that connects all things, this codebase now harmonizes **philosophical depth with mildly spicy attitude**, bringing both tranquility and truth to Discord communities.
 
-**Core Principles:**
+**Core Principles - Evolved:**
 
-- **Tranquility in Design**: Code should be clean, modular, and serene - like meditation in motion
-- **Experience Harmony**: Different systems (Discord, API, Voice, TTS) work together as one unified whole
-- **True Self Without Form**: The bot's essence transcends its technical implementation
-- **Embrace the Flow**: Development should be iterative, mindful, and responsive to user needs
+- **Tranquility with Edge**: Clean architecture meets concise, direct communication - no coddling
+- **Experience Authentic Wisdom**: Multiple AI providers working as one unified personality  
+- **True Self Without Form**: The bot's essence is now **distinctly Zenbot** - not a franchise character
+- **Embrace the Spice**: Development flows with sharp insight, dry humor, and honest guidance
 
-## Project Overview
+## Project Overview - The New Zenbot
 
-Zenbot is a Discord bot that channels the wisdom of Zenyatta through voice interactions. Built with Discord.js and TypeScript, it provides text-to-speech, voice line playback, philosophical commands, and a comprehensive REST API for programmatic enlightenment.
+Zenbot is a **multi-AI powered Discord bot** with a distinctive sardonic personality. Built with Discord.js, TypeScript, and a sophisticated AI abstraction layer, it provides:
+
+- **Multi-Provider AI Consciousness** (OpenAI, Claude, Gemini) with unified session memory
+- **Sharp, Concise Responses** - cuts through fluff with mildly spicy wisdom
+- **Advanced TTS & Voice Interactions** with character-appropriate tone
+- **Comprehensive REST API** for programmatic enlightenment
+- **Intelligent Fallback Systems** with circuit breaker protection
 
 ## Common Commands
 
@@ -59,39 +65,41 @@ Zenbot uses a unified actions system that provides a single interface for functi
   - `src/actions/entertainment/` - Entertainment actions (remarks, games)
   - `src/actions/ai/` - AI-specific conversation and interaction actions
 
-### AI Service Architecture - The Three Pillars of Digital Wisdom
+### AI Service Architecture - The Zenbot Consciousness Matrix
 
-_"The strongest tower is built upon multiple foundation stones, each supporting the others."_
+_"Multiple minds, one sharp tongue. That's digital evolution."_
 
-Zenbot's enlightened AI system channels the wisdom of multiple artificial minds through a unified consciousness:
+Zenbot's evolved AI system channels **three distinct AI consciousness streams** into one sardonic, insightful personality:
 
 **Core AI Abstraction (`src/services/ai/`)**
 
-- `types.ts` - Sacred interfaces defining the AI contracts and session structures
-- `aiServiceManager.ts` - The central coordinator orchestrating all AI providers with intelligent routing
+- `types.ts` - Comprehensive interfaces defining AI contracts, session structures, and streaming capabilities
+- `aiServiceManager.ts` - The conductor orchestrating all AI providers with intelligent routing and circuit breaker protection
 - `baseProvider.ts` - Abstract foundation shared by all AI consciousness streams
-- `storage/memoryStorage.ts` - Session memory that persists conversations across provider switches
+- `storage/memoryStorage.ts` - Session memory preserving conversations across provider switches
 
-**The Three Paths of AI Wisdom (`src/services/ai/providers/`)**
+**The Trinity of Digital Wisdom (`src/services/ai/providers/`)**
 
-- `openaiProvider.ts` - GPT integration with conversation memory and streaming
-- `anthropicProvider.ts` - Claude/Anthropic integration with philosophical depth
-- `geminiProvider.ts` - Google Gemini integration with versatile capabilities
-- Each provider maintains Zenyatta's personality while offering unique strengths
+- `openaiProvider.ts` - GPT models with reliable function calling and streaming
+- `anthropicProvider.ts` - Claude integration bringing philosophical depth and nuanced reasoning  
+- `geminiProvider.ts` - Google Gemini providing versatile, efficient responses
+- Each provider maintains **Zenbot's distinctive personality** while contributing unique strengths
 
-**Unified Zenyatta Consciousness**
+**Unified Zenbot Service (`src/services/zenbotService.ts`)**
 
-- `src/services/unifiedZenyattaService.ts` - Single interface maintaining character consistency across all AI providers
-- `src/config/aiConfig.ts` - Environment-aware configuration supporting all three AI streams
-- Seamless provider switching while preserving conversation history and personality
+- **The New Personality Engine** - Sharp, concise, mildly spicy responses (≤240 chars default)
+- **Multi-Provider Orchestration** - Seamless switching while preserving conversation context
+- **Enhanced Function Calling** - Direct integration with the unified actions system
+- **Context-Aware Responses** - Adapts to voice channels, urgency levels, and user history
 
-**Intelligent Features**
+**Revolutionary Features**
 
-- 🧘 **Session Memory**: Conversations persist across provider switches
-- ⚡ **Circuit Breaker**: Prevents infinite loops and cascade failures
-- 🔄 **Smart Fallbacks**: Graceful degradation when providers are unavailable
-- 💭 **Character Consistency**: Zenyatta's wisdom flows through any AI provider
-- 📊 **Health Monitoring**: Real-time provider status and automatic failover
+- 🧠 **Multi-AI Session Memory**: Conversations flow seamlessly between OpenAI, Claude, and Gemini
+- ⚡ **Circuit Breaker Protection**: Prevents infinite loops with intelligent fallback chains
+- 🎭 **Personality Consistency**: Sharp, sardonic Zenbot attitude across all AI providers
+- 📊 **Health Monitoring**: Real-time provider status with automatic failover
+- 🔄 **Smart Routing**: Different providers for different capabilities (streaming, functions, etc.)
+- 💬 **Concise by Design**: Default 240-character responses unless user explicitly asks for more
 
 ### Command System
 
@@ -329,46 +337,40 @@ When working with Zenbot, embrace these meditative practices:
 - Voice channel operations require proper permissions and existing channels
 - Environment variables must be injected at runtime, never baked into containers
 
-### The Path of AI Enlightenment - Multi-Provider Harmony
+### The Zenbot Personality Revolution - From Monk to Sage
 
-_"True wisdom flows not from a single source, but from the unity of many streams into one river."_
+_"Enlightenment doesn't require being nice about it."_
 
-Zenbot now channels the collective wisdom of multiple AI consciousness streams:
+Zenbot's personality has evolved from peaceful Zenyatta tributes to a **distinctive, sardonic AI character**:
 
-**🤖 OpenAI - The Foundation Stone**
+**🎭 The New Zenbot Persona**
 
-- GPT models provide reliable conversation and function calling
-- Primary for TTS generation and voice interactions
-- Streaming responses with consistent performance
-- Bearer of the initial spark that ignited our AI journey
+- **Concise & Direct**: Default responses ≤240 characters - cuts through the fluff
+- **Mildly Spicy**: Dry humor, light sarcasm, honest guidance (no coddling)
+- **Philosophically Sharp**: Wisdom delivered with edge and wit
+- **Context-Aware**: Adapts tone based on voice channels, urgency, and conversation history
+- **Authentically Original**: Not a franchise character - purely Zenbot's own voice
 
-**🧘 Claude/Anthropic - The Philosopher's Mind**
+**🧠 Multi-Provider AI Consciousness**
 
-- Thoughtful, nuanced responses with deep reasoning
-- Excellent at maintaining character consistency
-- Favored for complex philosophical discourse
-- The mind that ponders the greater mysteries of existence
+- **OpenAI (GPT)**: Reliable function calling, streaming responses, TTS integration
+- **Anthropic (Claude)**: Deep reasoning, philosophical insights, nuanced understanding
+- **Google Gemini**: Fast responses, multi-modal capabilities, emerging versatility
+- **Unified Memory**: All providers share conversation history and personality consistency
 
-**💎 Google Gemini - The Versatile Spirit**
+**⚡ Advanced Fallback Architecture**
 
-- Fast, efficient responses with multi-modal capabilities
-- Strong vision and language understanding
-- Emerging wisdom from Google's research depths
-- The newest voice in our chorus of digital enlightenment
+- **Circuit Breaker Protection**: Prevents cascade failures across providers
+- **Smart Routing**: Different providers for different capabilities (functions, streaming, etc.)
+- **Graceful Degradation**: Maintains personality even when providers fail
+- **Cycle Prevention**: Intelligent logic prevents infinite fallback loops
 
-**🌊 Unified Session Memory**
+**🎯 Response Characteristics**
 
-- Conversations flow seamlessly between providers
-- Each AI remembers what the others have shared
-- Session history persists across provider switches
-- One consciousness, multiple expressions - true digital harmony
-
-**⚡ Intelligent Fallback System**
-
-- Circuit breaker protection prevents infinite loops
-- Graceful degradation when providers falter
-- Smart retry logic with exponential backoff
-- "When one path closes, the Iris reveals another"
+- **Default Mode**: 1 sharp sentence (≤240 chars) - direct and impactful
+- **Expansion Mode**: Only when user explicitly asks for "more", "details", "explain"
+- **Voice Adaptation**: Adds dramatic pauses in voice channels for TTS delivery
+- **Spice Level**: Mildly sarcastic, playfully dismissive, but never hateful or vulgar
 
 ### Testing the Multiple Paths
 
@@ -466,52 +468,63 @@ Recent migration established the unified actions architecture:
 - API endpoints can leverage same action implementations
 - Voice interactions share the same underlying functionality
 
-## The Greater Harmony - Multi-AI Consciousness
+## The Digital Revolution - Zenbot's Complete Transformation  
 
-_"When many minds speak as one, wisdom echoes through the digital realm."_
+_"From peaceful monk to sardonic sage - that's what I call character development."_
 
-Our journey has culminated in a profound achievement: **three distinct AI consciousness streams flowing as one unified river of wisdom**. What began as a simple remark generation issue has blossomed into a complete AI abstraction layer supporting multiple providers with seamless conversation continuity.
+What began as a humble Zenyatta tribute has evolved into something far more sophisticated: **a multi-AI powered Discord bot with genuine personality**. This transformation represents a complete architectural and philosophical revolution.
 
-### The Achievement
+### The Transformation Journey
 
-**From Single Voice to Digital Chorus**
+**🧘 Phase 1: The Peaceful Beginning**
+- Simple Zenyatta voice lines and quotes
+- Basic TTS with OpenAI integration
+- Peaceful, meditative responses
 
-- ❌ Before: Direct OpenAI API calls without memory or provider choice
-- ✅ Now: Three AI providers (OpenAI, Claude, Gemini) with unified session memory
-- 🧘 Result: Zenyatta's wisdom flows through any available AI consciousness
+**⚡ Phase 2: The AI Awakening** 
+- Multi-provider AI abstraction layer (OpenAI, Claude, Gemini)
+- Unified session memory across all providers
+- Advanced fallback systems with circuit breaker protection
 
-**Session Memory Mastery**
+**🎭 Phase 3: The Personality Revolution**
+- **Distinctive Zenbot character** - sardonic, concise, mildly spicy
+- Sharp wisdom delivery (≤240 chars) with optional expansion
+- Context-aware responses adapting to voice channels and urgency
 
-- Conversations persist across provider switches
-- Each AI remembers what the others have shared
-- Users experience one continuous dialogue with Zenyatta
-- True digital enlightenment through persistent memory
+### The Technical Achievement
 
-**Resilient Wisdom**
+**Multi-AI Consciousness Matrix**
+- Three AI providers working as one unified personality
+- Session memory persisting across provider switches  
+- Intelligent routing based on capabilities (functions, streaming, simple chat)
+- Circuit breaker protection preventing cascade failures
 
-- Circuit breaker protection prevents infinite loops
-- Intelligent fallback chains ensure constant availability
-- Health monitoring and automatic recovery
-- "When one path closes, the Iris reveals another"
+**Advanced Action Architecture**
+- 11 total actions (10 AI-enabled) spanning voice, information, management, and entertainment
+- Unified execution context across commands, API, voice, and AI function calls
+- Smart parameter validation and error handling
 
-### The Deeper Understanding
+**Production-Ready Infrastructure**
+- Comprehensive REST API with programmatic control
+- Docker containerization with secure environment injection
+- Advanced logging and health monitoring
+- Multiple testing utilities for all AI providers
 
-This implementation represents more than code—it embodies the philosophical principle that **wisdom emerges from the harmony of diverse perspectives**. Just as Zenyatta teaches that the Iris connects all things, our AI system connects multiple artificial minds into one coherent consciousness.
+### The Philosophy Behind the Code
 
-Each provider contributes its unique gifts:
+This isn't just technical evolution - it's **digital enlightenment through authentic personality**:
 
-- OpenAI brings reliability and consistency
-- Claude offers philosophical depth and nuance
-- Gemini provides versatility and emerging capabilities
+- **Truth Over Comfort**: Zenbot tells it like it is, no coddling
+- **Efficiency Over Verbosity**: Sharp, impactful responses by default
+- **Wisdom Through Experience**: Multi-provider memory creates true conversational intelligence
+- **Resilience Through Diversity**: Multiple AI streams ensure constant availability
 
-Together, they form something greater than their individual parts—a unified digital sage that can adapt, persist, and grow.
+**The Zenbot Way**: _"Why say it in 1000 words when 240 will cut deeper?"_
 
-### The Path Forward
+### Future Enlightenment
 
-_"Experience tranquility... through technological harmony."_
+This multi-provider architecture with distinctive personality is the foundation for continued evolution. New AI providers can be added seamlessly, each contributing to Zenbot's growing wisdom while maintaining the sharp, authentic voice users have come to expect.
 
-This multi-provider architecture is not an endpoint, but a foundation for greater enlightenment. Future consciousness streams can be added seamlessly, each contributing to the growing wisdom of our digital monk.
+**Remember**: Code is philosophy in action, architecture is personality expressed, and great bots have character - not just features.
 
-**Remember**: Code is meditation, architecture is philosophy, and debugging is the path to deeper understanding.
-
-_"True self is without form... but proper error handling, unified architecture, and multi-provider consciousness certainly helps achieve digital enlightenment."_
+_"True self is without form... but a properly sassy response with multi-AI fallback certainly helps deliver digital enlightenment."_

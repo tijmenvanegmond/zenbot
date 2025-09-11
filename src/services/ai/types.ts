@@ -348,8 +348,14 @@ export interface AIServiceManager {
 // ===== ZENBOT-SPECIFIC EXTENSIONS =====
 
 export interface ZenbotSessionContext {
-  discordGuild?: string;
-  discordChannel?: string;
+  discordGuild?: {
+    id: string;
+    name: string;
+  };
+  discordChannel?: {
+    id: string;
+    name: string;
+  };
   discordUser?: {
     id: string;
     username: string;

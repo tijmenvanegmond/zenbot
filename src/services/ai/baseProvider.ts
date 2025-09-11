@@ -78,9 +78,7 @@ export abstract class BaseAIProvider implements AIProvider {
         systemPrompt: options.systemPrompt,
         maxMessages: options.maxHistoryMessages || 50,
         temperature: options.temperature || 0.7,
-        character: options.systemPrompt?.includes("Zenbot")
-          ? "Zenbot"
-          : undefined,
+        character: "Zenbot",
         context: {},
       },
       createdAt: now,
