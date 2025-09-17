@@ -374,5 +374,113 @@ export default async function actionsRoutes(
     }
   });
 
+  // ===== CONSCIOUSNESS CONFERENCE SHORTCUT =====
+
+  /**
+   * POST /consciousness-conference - Convenience endpoint for consciousness conferences
+   */
+  fastify.post<{
+    Body: {
+      guildId: string;
+      question: string;
+      requireConsensus?: boolean;
+      debateRounds?: number;
+      maxProviders?: number;
+      providerFilter?: "all" | "reasoning" | "creative" | "fast";
+      userId?: string;
+    }
+  }>("/consciousness-conference", {
+    schema: {
+      body: {
+        type: "object",
+        properties: {
+          guildId: { type: "string" },
+          question: { type: "string" },
+          requireConsensus: { type: "boolean" },
+          debateRounds: { type: "number", minimum: 1, maximum: 5 },
+          maxProviders: { type: "number", minimum: 1, maximum: 3 },
+          providerFilter: { 
+            type: "string", 
+            enum: ["all", "reasoning", "creative", "fast"] 
+          },
+          userId: { type: "string" }
+        },
+        required: ["guildId", "question"]
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const {
+        guildId,
+        question,
+        requireConsensus = false,
+        debateRounds = 2,
+        maxProviders = 3,
+        providerFilter = "all",
+        userId
+      } = request.body;
+
+      logger.info(`🧠 Consciousness conference API request: "${question.substring(0, 100)}..."`);
+
+      // Execute via the generic action execution method
+      const result = await actionService.executeFromAPI({
+        guild: discordClient.guilds.cache.get(guildId),
+        channel: null,
+        user: userId 
+          ? await discordClient.users.fetch(userId).catch(() => ({ 
+              id: "api-user", 
+              username: "api", 
+              displayName: "API User" 
+            }))
+          : { id: "api-user", username: "api", displayName: "API User" }
+      }, "consciousness_conference", {
+        question,
+        require_consensus: requireConsensus,
+        debate_rounds: debateRounds,
+        max_providers: maxProviders,
+        provider_filter: providerFilter
+      });
+
+      if (!result.success) {
+        return reply.code(400).send({
+          success: false,
+          error: result.error,
+          wisdom: "The consciousness conference could not be convened"
+        });
+      }
+
+      return {
+        success: true,
+        data: {
+          question,
+          response: result.data?.response || result.responseText,
+          providers: result.data?.providers || [],
+          consensusLevel: result.data?.consensusLevel || 0,
+          consciousnessLevel: result.data?.consciousnessLevel || "individual",
+          reasoning: result.data?.reasoning || "Single provider response",
+          synthesisTime: result.data?.synthesisTime || 0,
+          totalDuration: result.data?.totalDuration || 0,
+          conference: {
+            requireConsensus,
+            debateRounds,
+            maxProviders,
+            providerFilter
+          }
+        },
+        wisdom: result.data?.providers?.length > 1 
+          ? "When digital minds unite, wisdom multiplies"
+          : "Even individual consciousness carries profound insight"
+      };
+
+    } catch (error) {
+      logger.error("🧠 Consciousness conference API failed:", error);
+      return reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        wisdom: "The digital minds are temporarily in discord"
+      });
+    }
+  });
+
   logger.info("🎭 Actions API routes registered - the path to programmatic enlightenment is open");
 }

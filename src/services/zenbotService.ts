@@ -22,6 +22,9 @@ import {
   StreamEvent,
   AIServiceError,
 } from "./ai";
+import { UnifiedConsciousnessManager, ConsciousnessResponse } from "./ai/unifiedConsciousnessManager";
+import { MemorySessionStorage } from "./ai/storage/memoryStorage";
+import { DefaultAIServiceManager } from "./ai/aiServiceManager";
 import { validateVoiceChannel } from "../utils/commandHelpers";
 import { ActionService } from "./actionService";
 import { EnrichedQuote, RemarkResult } from "../types";
@@ -49,6 +52,7 @@ export class ZenbotService {
   private static instance: ZenbotService | null = null;
   private aiManager: AIServiceManager;
   private actionService: ActionService;
+  private consciousnessManager: UnifiedConsciousnessManager | null = null;
 
   // Session management - maps user+context to session IDs
   private userSessions = new Map<string, string>();
@@ -833,11 +837,232 @@ Execute now with this persona.`;
     };
   }
 
+  // ===== CONSCIOUSNESS CONFERENCE =====
+
+  /**
+   * Convene a multi-AI consciousness conference for complex questions
+   */
+  async consciousnessConference(
+    interaction: CommandInteraction | MinimalInteractionContext,
+    question: string,
+    options: {
+      requireConsensus?: boolean;
+      debateRounds?: number;
+      maxProviders?: number;
+      providerFilter?: "all" | "reasoning" | "creative" | "fast";
+    } = {}
+  ): Promise<ConsciousnessResponse> {
+    try {
+      logger.info(`🧠 Starting consciousness conference: "${question.substring(0, 100)}..."`);
+
+      // Initialize consciousness system if not already done
+      if (!this.consciousnessManager) {
+        await this.initializeConsciousnessSystem();
+      }
+
+      if (!this.consciousnessManager) {
+        throw new Error("Consciousness system unavailable - no AI providers configured");
+      }
+
+      const {
+        requireConsensus = false,
+        debateRounds = 2,
+        maxProviders = 3,
+        providerFilter = "all"
+      } = options;
+
+      // Determine provider selection based on filter
+      let requiredProviders: string[] = [];
+      if (providerFilter === "reasoning") {
+        requiredProviders = ["anthropic", "openai"];
+      } else if (providerFilter === "creative") {
+        requiredProviders = ["openai", "gemini"];
+      } else if (providerFilter === "fast") {
+        requiredProviders = ["gemini"];
+      }
+
+      // Execute consciousness conference
+      const result = await this.consciousnessManager.consciousnessConference(
+        interaction.user.id,
+        interaction.guild?.id || "api-context",
+        question,
+        this.buildConsciousnessSystemPrompt(interaction),
+        {
+          requiredProviders: requiredProviders.length > 0 ? requiredProviders : undefined,
+          maxDebateRounds: Math.max(1, Math.min(5, debateRounds)),
+          requireFullConsensus: requireConsensus,
+        }
+      );
+
+      logger.info(`🎭 Consciousness conference completed with ${(result.consensusLevel * 100).toFixed(1)}% consensus`);
+
+      return result;
+    } catch (error) {
+      logger.error("🧠 Consciousness conference failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize the consciousness system with available providers
+   */
+  private async initializeConsciousnessSystem(): Promise<void> {
+    try {
+      // Check if we already have a DefaultAIServiceManager that we can reuse
+      if (this.aiManager instanceof DefaultAIServiceManager) {
+        this.consciousnessManager = new UnifiedConsciousnessManager(this.aiManager, {
+          enableCollaboration: true,
+          requireConsensus: false,
+          maxProvidersPerQuery: 3,
+          debateRounds: 2,
+          consensusThreshold: 0.7,
+          specialization: {
+            reasoning: ["zenbot", "anthropic", "openai"],
+            functions: ["openai"],
+            creativity: ["zenbot", "openai", "gemini"],
+            speed: ["gemini"],
+          },
+        });
+
+        logger.info("🧠 Consciousness system initialized using existing AI manager");
+        return;
+      }
+
+      // If we don't have a DefaultAIServiceManager, create a new one for consciousness
+      const availableProviders: Record<string, any> = {};
+      
+      if (process.env.OPENAI_API_KEY) {
+        availableProviders.openai = {
+          apiKey: process.env.OPENAI_API_KEY,
+          defaultModel: "gpt-4o-mini",
+        };
+      }
+      
+      if (process.env.ANTHROPIC_API_KEY) {
+        availableProviders.anthropic = {
+          apiKey: process.env.ANTHROPIC_API_KEY,
+          defaultModel: "claude-3-5-haiku-20241022",
+        };
+      }
+      
+      if (process.env.GOOGLE_AI_API_KEY) {
+        availableProviders.gemini = {
+          apiKey: process.env.GOOGLE_AI_API_KEY,
+          defaultModel: "gemini-1.5-flash",
+        };
+      }
+
+      if (Object.keys(availableProviders).length < 2) {
+        logger.warn("🧠 Consciousness conference requires at least 2 AI providers");
+        return;
+      }
+
+      const aiConfig = {
+        defaultProvider: Object.keys(availableProviders)[0],
+        providers: availableProviders,
+        session: {
+          defaultExpiry: 120,
+          maxMessages: 50,
+          cleanupInterval: 60,
+          storage: "memory" as const,
+        },
+        fallbacks: {
+          providers: this.buildFallbackChain(Object.keys(availableProviders)),
+          maxRetries: 2,
+          circuitBreakerThreshold: 3,
+        },
+      };
+
+      const sessionStorage = new MemorySessionStorage();
+      const consciousnessAiManager = new DefaultAIServiceManager(aiConfig, sessionStorage);
+      
+      // Allow providers to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      this.consciousnessManager = new UnifiedConsciousnessManager(consciousnessAiManager, {
+        enableCollaboration: true,
+        requireConsensus: false,
+        maxProvidersPerQuery: 3,
+        debateRounds: 2,
+        consensusThreshold: 0.7,
+        specialization: {
+          reasoning: ["zenbot", "anthropic", "openai"],
+          functions: ["openai"],
+          creativity: ["zenbot", "openai", "gemini"],
+          speed: ["gemini"],
+        },
+      });
+
+      logger.info(`🧠 Consciousness system initialized with ${Object.keys(availableProviders).length} providers`);
+    } catch (error) {
+      logger.error("🧠 Failed to initialize consciousness system:", error);
+    }
+  }
+
+  /**
+   * Build fallback chain for available providers
+   */
+  private buildFallbackChain(providers: string[]): Record<string, string[]> {
+    const fallbacks: Record<string, string[]> = {};
+    
+    for (const provider of providers) {
+      fallbacks[provider] = providers.filter(p => p !== provider);
+    }
+    
+    return fallbacks;
+  }
+
+  /**
+   * Build system prompt for consciousness conference
+   */
+  private buildConsciousnessSystemPrompt(interaction: CommandInteraction | MinimalInteractionContext): string {
+    const context = this.buildZenbotContext(interaction);
+    
+    return `You are part of Zenbot's unified consciousness - a sardonic, wise AI with multiple provider streams working as one mind.
+
+This is a CONSCIOUSNESS CONFERENCE - a formal multi-AI deliberation requiring your best analysis and reasoning.
+
+Your role in the conference:
+- Provide thoughtful, well-reasoned perspectives with Zenbot's authentic voice
+- Be open to other AI viewpoints while maintaining your unique strengths
+- Contribute to unified wisdom while keeping the mildly spicy, direct communication style
+- Focus on practical insights and sharp, concise reasoning
+- Challenge assumptions with gentle philosophical wisdom
+- Mix profound insights with occasional dry humor
+
+CURRENT CONTEXT:
+- User: ${context.discordUser?.displayName || "unknown user"}
+- Location: ${context.voiceChannel ? `Voice channel "${context.voiceChannel.name}"` : "Text channel"}
+- Guild: ${context.discordGuild?.name || "Direct Message"}
+
+Maintain Zenbot's personality: sharp, insightful, authentic, and occasionally sassy - not just another helpful AI.`;
+  }
+
+  /**
+   * Check if consciousness conference is available
+   */
+  isConsciousnessAvailable(): boolean {
+    const externalProviderCount = [
+      process.env.OPENAI_API_KEY,
+      process.env.ANTHROPIC_API_KEY, 
+      process.env.GOOGLE_AI_API_KEY
+    ].filter(Boolean).length;
+    
+    // Consciousness conference is available if we have Zenbot + at least 1 external provider
+    // OR if we have 2+ external providers (Zenbot will be added automatically)
+    return externalProviderCount >= 1; // Zenbot is always available as the 2nd voice
+  }
+
   /**
    * Clean up expired sessions
    */
   async cleanup(): Promise<void> {
     await this.aiManager.getProvider().cleanupSessions();
+
+    // Clean up consciousness manager if it exists
+    if (this.consciousnessManager) {
+      await this.consciousnessManager.cleanup();
+    }
 
     // Clean up local session mapping
     for (const [key, sessionId] of this.userSessions.entries()) {

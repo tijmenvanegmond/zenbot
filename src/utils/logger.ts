@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -7,6 +10,19 @@ export enum LogLevel {
 
 class Logger {
   private level: LogLevel = LogLevel.INFO;
+  private logFilePath: string;
+
+  constructor() {
+    // Create logs directory if it doesn't exist
+    const logsDir = path.join(process.cwd(), 'logs');
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+    
+    // Create log file with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    this.logFilePath = path.join(logsDir, `zenbot-${timestamp}.log`);
+  }
 
   setLevel(level: LogLevel) {
     this.level = level;
@@ -20,8 +36,22 @@ class Logger {
   ) {
     if (level >= this.level) {
       const timestamp = new Date().toISOString();
+      const logLine = `[${timestamp}] 🧘 ${prefix} ${message} ${args.length > 0 ? JSON.stringify(args) : ''}`;
+      
+      // Log to console
       console.log(`[${timestamp}] 🧘 ${prefix}`, message, ...args);
+      
+      // Log to file
+      try {
+        fs.appendFileSync(this.logFilePath, logLine + '\n');
+      } catch (error) {
+        console.error('Failed to write to log file:', error);
+      }
     }
+  }
+
+  getLogFilePath(): string {
+    return this.logFilePath;
   }
 
   debug(message: string, ...args: any[]) {

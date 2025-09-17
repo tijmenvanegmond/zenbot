@@ -18,7 +18,7 @@ import { logger } from "../../../utils/logger";
 
 export class GeminiProvider extends BaseAIProvider {
   readonly name = "gemini";
-  readonly supportedModels = ["gemini-2.5-flash"];
+  readonly supportedModels = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
   readonly supportsStreaming = true;
   readonly supportsFunctions = true; // Via function calling
   readonly supportsVision = true;

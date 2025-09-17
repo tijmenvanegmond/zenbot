@@ -15,6 +15,7 @@ import { ChannelManagementAction } from "../actions/management/channelManagement
 import { ChannelQuoteAction } from "../actions/information/channelQuoteAction";
 import { RenameUserAction } from "../actions/management/renameUserAction";
 import { RemarkAction } from "../actions/entertainment/remarkAction";
+import { ConsciousnessConferenceAction } from "../actions/ai/consciousnessConferenceAction";
 
 /**
  * Service for executing actions from various sources
@@ -56,6 +57,9 @@ export class ActionService {
 
     // Entertainment actions
     this.registry.register(new RemarkAction());
+
+    // AI actions
+    this.registry.register(new ConsciousnessConferenceAction());
 
     logger.info(`🎭 Registered ${this.registry.getStats().total} core actions`);
   }
