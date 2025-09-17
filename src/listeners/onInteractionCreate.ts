@@ -1,4 +1,9 @@
-import { CommandInteraction, Client, BaseInteraction, InteractionType } from "discord.js";
+import {
+  CommandInteraction,
+  Client,
+  BaseInteraction,
+  InteractionType,
+} from "discord.js";
 import { CommandCollection } from "../commands/commandCollection";
 import { logger } from "../utils/logger";
 
@@ -6,7 +11,10 @@ export default (client: Client): void => {
   client.on("interactionCreate", async (interaction: BaseInteraction) => {
     try {
       // Only handle chat input (slash) commands
-      if (interaction.type === InteractionType.ApplicationCommand && interaction.isChatInputCommand()) {
+      if (
+        interaction.type === InteractionType.ApplicationCommand &&
+        interaction.isChatInputCommand()
+      ) {
         await handleSlashCommand(client, interaction as CommandInteraction);
       }
     } catch (err) {
@@ -28,19 +36,29 @@ const handleSlashCommand = async (
     );
     if (!slashCommand) {
       if (!interaction.deferred && !interaction.replied) {
-        await interaction.reply({ content: "Unknown command.", ephemeral: true });
+        await interaction.reply({
+          content: "Unknown command.",
+          ephemeral: true,
+        });
       }
       return;
     }
-    
-    // Prevent double acknowledgement
-    if (!interaction.deferred && !interaction.replied) {
+
+    // Let long-running commands handle their own deferral
+    const longRunningCommands = ["conference"];
+    const shouldDeferHere = !longRunningCommands.includes(
+      interaction.commandName,
+    );
+
+    if (shouldDeferHere && !interaction.deferred && !interaction.replied) {
       try {
         await interaction.deferReply({ ephemeral: true });
       } catch (deferErr: any) {
         // If the interaction is unknown already, bail early
         if (deferErr?.code === 10062) {
-          logger.warn("⚠️ Interaction became unknown before defer (possibly timed out). Skipping execution.");
+          logger.warn(
+            "⚠️ Interaction became unknown before defer (possibly timed out). Skipping execution.",
+          );
           return;
         }
         throw deferErr;
@@ -53,7 +71,7 @@ const handleSlashCommand = async (
       `Error handling slash command ${interaction.commandName}:`,
       error,
     );
-    
+
     try {
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply({
@@ -67,9 +85,13 @@ const handleSlashCommand = async (
           });
         } catch (secondaryError: any) {
           if (secondaryError?.code === 10062) {
-            logger.warn("⚠️ Could not send error reply: interaction unknown (timeout)." );
+            logger.warn(
+              "⚠️ Could not send error reply: interaction unknown (timeout).",
+            );
           } else if (secondaryError?.code === 40060) {
-            logger.warn("⚠️ Interaction already acknowledged while sending error reply.");
+            logger.warn(
+              "⚠️ Interaction already acknowledged while sending error reply.",
+            );
           } else {
             logger.error("Failed secondary error reply:", secondaryError);
           }

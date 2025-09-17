@@ -3,7 +3,7 @@
  * Supports Gemini models with conversation memory
  */
 
-import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import { BaseAIProvider } from "../baseProvider";
 import {
   GenerationOptions,
@@ -18,7 +18,11 @@ import { logger } from "../../../utils/logger";
 
 export class GeminiProvider extends BaseAIProvider {
   readonly name = "gemini";
-  readonly supportedModels = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+  readonly supportedModels = [
+    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+  ];
   readonly supportsStreaming = true;
   readonly supportsFunctions = true; // Via function calling
   readonly supportsVision = true;
@@ -47,7 +51,28 @@ export class GeminiProvider extends BaseAIProvider {
     if (!this.models.has(modelName)) {
       this.models.set(
         modelName,
-        this.client.getGenerativeModel({ model: modelName }),
+        this.client.getGenerativeModel({
+          model: modelName,
+          // More permissive safety settings for gaming/relationship topics
+          safetySettings: [
+            {
+              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+              threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+              threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+              threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+              threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            },
+          ],
+        }),
       );
     }
     return this.models.get(modelName)!;
@@ -530,6 +555,15 @@ export class GeminiProvider extends BaseAIProvider {
           ? { functionCalls: functionCalls.map((f) => ({ name: f.name })) }
           : undefined,
       };
+
+      // Debug logging for empty responses
+      if (!responseText && !functionCalls.length) {
+        logger.warn(`⚠️ Gemini returned empty response for session ${sessionId}`, {
+          candidatesCount: result.response.candidates?.length || 0,
+          finishReason: result.response.candidates?.[0]?.finishReason,
+          hasContent: !!result.response.candidates?.[0]?.content,
+        });
+      }
       session.messages.push(assistantMsg);
 
       await this.trimSessionHistory(session);

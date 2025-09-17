@@ -5,13 +5,14 @@ import { Listen } from "./listen";
 import { Remark } from "./remark";
 import { Quote } from "./quote";
 import { Advice } from "./advice";
+import { conferenceCommand } from "./conference";
 
 export const CommandCollection: Command[] = [
-  // Original commands (unchanged)
   Advice,
   Rename,
   TTS,
   Listen,
   Remark,
   Quote,
+  conferenceCommand,
 ];

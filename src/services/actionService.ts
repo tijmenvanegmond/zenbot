@@ -15,7 +15,7 @@ import { ChannelManagementAction } from "../actions/management/channelManagement
 import { ChannelQuoteAction } from "../actions/information/channelQuoteAction";
 import { RenameUserAction } from "../actions/management/renameUserAction";
 import { RemarkAction } from "../actions/entertainment/remarkAction";
-import { ConsciousnessConferenceAction } from "../actions/ai/consciousnessConferenceAction";
+import { ConferenceAction } from "../actions/ai/conferenceAction";
 
 /**
  * Service for executing actions from various sources
@@ -59,7 +59,7 @@ export class ActionService {
     this.registry.register(new RemarkAction());
 
     // AI actions
-    this.registry.register(new ConsciousnessConferenceAction());
+    this.registry.register(new ConferenceAction());
 
     logger.info(`🎭 Registered ${this.registry.getStats().total} core actions`);
   }
@@ -170,11 +170,13 @@ export class ActionService {
     });
 
     // Create a mock interaction for API calls that need guild access
-    const mockInteraction = apiContext.guild ? {
-      guild: apiContext.guild,
-      user: apiContext.user,
-      client: apiContext.guild.client
-    } : undefined;
+    const mockInteraction = apiContext.guild
+      ? {
+          guild: apiContext.guild,
+          user: apiContext.user,
+          client: apiContext.guild.client,
+        }
+      : undefined;
 
     const context: ActionContext = {
       interaction: mockInteraction as any,
@@ -189,8 +191,8 @@ export class ActionService {
         username: apiContext.user.username,
         displayName: apiContext.user.displayName,
       },
-      voiceChannel: apiContext.channel?.isVoiceBased?.() 
-        ? apiContext.channel 
+      voiceChannel: apiContext.channel?.isVoiceBased?.()
+        ? apiContext.channel
         : undefined,
       isVoiceInteraction: apiContext.channel?.isVoiceBased?.() || false,
       source: "api",
@@ -244,7 +246,9 @@ export class ActionService {
       user: {
         id: interaction.user.id,
         username: interaction.user.username,
-        displayName: (interaction.member as any)?.displayName || interaction.user.displayName,
+        displayName:
+          (interaction.member as any)?.displayName ||
+          interaction.user.displayName,
       },
       voiceChannel: voiceValidation.isValid
         ? (voiceValidation.member!.voice.channel as VoiceChannel)

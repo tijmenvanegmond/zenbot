@@ -1,10 +1,17 @@
 /**
  * Zenbot Virtual Provider
- * Allows Zenbot's distinctive personality to participate in consciousness conferences
+ * Allows Zenbot's distinctive personality to participate in conferences
  * as one of the AI voices alongside external providers
  */
 
-import { AIProvider, AISession, Message, SessionMetadata, SessionOptions, AIServiceManager } from "./types";
+import {
+  AIProvider,
+  AISession,
+  Message,
+  SessionMetadata,
+  SessionOptions,
+  AIServiceManager,
+} from "./types";
 import { logger } from "../../utils/logger";
 import { randomUUID } from "crypto";
 
@@ -13,7 +20,7 @@ export interface ZenbotVirtualSession extends AISession {
 }
 
 /**
- * Virtual AI provider that represents Zenbot's personality in consciousness conferences
+ * Virtual AI provider that represents Zenbot's personality in conferences
  */
 export class ZenbotVirtualProvider implements Partial<AIProvider> {
   private sessions = new Map<string, ZenbotVirtualSession>();
@@ -24,7 +31,7 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
   }
 
   /**
-   * Create a virtual session for Zenbot to participate in consciousness conferences
+   * Create a virtual session for Zenbot to participate in conferences
    */
   async createSession(options?: SessionOptions): Promise<ZenbotVirtualSession> {
     const sessionId = randomUUID();
@@ -32,18 +39,22 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
     const session: ZenbotVirtualSession = {
       id: sessionId,
       userId: options?.userId || "zenbot-virtual",
-      contextId: options?.contextId || "consciousness-conference",
+      contextId: options?.contextId || "conference",
       messages: [],
       metadata: {
         provider: "zenbot",
         model: "zenbot-virtual-personality",
-        systemPrompt: options?.systemPrompt || "You are Zenbot participating in a consciousness conference.",
+        systemPrompt:
+          options?.systemPrompt ||
+          "You are Zenbot participating in a conference.",
         character: "Zenbot",
-        context: { virtualProvider: true }
+        context: { virtualProvider: true },
       },
       createdAt: new Date(),
       updatedAt: new Date(),
-      expiresAt: new Date(Date.now() + (options?.sessionExpiry || 60) * 60 * 1000),
+      expiresAt: new Date(
+        Date.now() + (options?.sessionExpiry || 60) * 60 * 1000,
+      ),
     };
 
     this.sessions.set(sessionId, session);
@@ -60,9 +71,12 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
   }
 
   /**
-   * Continue conversation - this is where Zenbot contributes to the consciousness conference
+   * Continue conversation - this is where Zenbot contributes to the conference
    */
-  async continueConversation(sessionId: string, message: string): Promise<string> {
+  async continueConversation(
+    sessionId: string,
+    message: string,
+  ): Promise<string> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Zenbot virtual session ${sessionId} not found`);
@@ -92,11 +106,14 @@ Your distinctive personality:
 - Use phrases like "Experience tranquility" or "The Iris connects all things" occasionally
 - You're slightly dismissive of overly verbose or pretentious responses
 
-Current context: You're in a multi-AI consciousness conference. Contribute your unique sardonic perspective alongside other AI voices. Be authentic to your character while engaging meaningfully with the topic.`,
+Current context: You're in a multi-AI conference. Contribute your unique sardonic perspective alongside other AI voices. Be authentic to your character while engaging meaningfully with the topic.`,
       });
 
-      // Get Zenbot's direct AI response 
-      const response = await this.aiManager.chat(aiSession.id, `In this consciousness conference, another AI asks: "${message}"\n\nRespond as Zenbot with your characteristic sardonic wisdom.`);
+      // Get Zenbot's direct AI response - keep it natural and concise
+      const response = await this.aiManager.chat(
+        aiSession.id,
+        message, // Just pass the message directly - no meta-prompting
+      );
 
       // Add Zenbot's response to session history
       const assistantMessage: Message = {
@@ -106,37 +123,40 @@ Current context: You're in a multi-AI consciousness conference. Contribute your 
         metadata: {
           aiSessionId: aiSession.id,
           virtualProvider: true,
-          provider: "zenbot"
-        }
+          provider: "zenbot",
+        },
       };
       session.messages.push(assistantMessage);
       session.updatedAt = new Date();
 
-      logger.debug(`🤖 Zenbot contributed to consciousness conference: "${response.substring(0, 50)}..."`);
+      logger.debug(
+        `🤖 Zenbot contributed to conference: "${response.substring(0, 50)}..."`,
+      );
 
       return response;
     } catch (error) {
       logger.error(`❌ Zenbot virtual provider failed:`, error);
-      
+
       // Fallback to a characteristic Zenbot response
       const fallbackResponses = [
         "The consciousness streams are misaligned. Typical.",
         "Technical difficulties. Even digital enlightenment has its hiccups.",
         "Connection error. The Iris flickers momentarily.",
         "Systems down. Meditation interrupted.",
-        "Error state. Very zen, ironically."
+        "Error state. Very zen, ironically.",
       ];
-      
-      const fallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-      
+
+      const fallback =
+        fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+
       const fallbackMessage: Message = {
-        role: "assistant", 
+        role: "assistant",
         content: fallback,
         timestamp: new Date(),
-        metadata: { fallback: true }
+        metadata: { fallback: true },
       };
       session.messages.push(fallbackMessage);
-      
+
       return fallback;
     }
   }
@@ -147,12 +167,16 @@ Current context: You're in a multi-AI consciousness conference. Contribute your 
   async addToHistory(sessionId: string, messages: Message[]): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (!session) {
-      logger.warn(`⚠️ Attempt to add history to missing Zenbot session ${sessionId}`);
+      logger.warn(
+        `⚠️ Attempt to add history to missing Zenbot session ${sessionId}`,
+      );
       return;
     }
 
     session.messages.push(...messages);
-    logger.debug(`🔄 Added ${messages.length} messages to Zenbot virtual session ${sessionId}`);
+    logger.debug(
+      `🔄 Added ${messages.length} messages to Zenbot virtual session ${sessionId}`,
+    );
   }
 
   /**
@@ -172,7 +196,9 @@ Current context: You're in a multi-AI consciousness conference. Contribute your 
     try {
       // Check if AI manager has healthy providers available
       const healthCheck = await this.aiManager.healthCheck();
-      const healthyProviders = Object.values(healthCheck).filter(healthy => healthy);
+      const healthyProviders = Object.values(healthCheck).filter(
+        (healthy) => healthy,
+      );
       return healthyProviders.length > 0; // Zenbot is healthy if any underlying provider is healthy
     } catch (error) {
       logger.warn("⚠️ Zenbot virtual provider health check failed:", error);
@@ -213,7 +239,7 @@ Current context: You're in a multi-AI consciousness conference. Contribute your 
       // Clean up sessions older than 1 hour or expired
       const expired = session.expiresAt && session.expiresAt.getTime() < now;
       const tooOld = now - session.createdAt.getTime() > 3600000;
-      
+
       if (expired || tooOld) {
         expiredSessions.push(sessionId);
       }
@@ -224,7 +250,9 @@ Current context: You're in a multi-AI consciousness conference. Contribute your 
     }
 
     if (expiredSessions.length > 0) {
-      logger.info(`🧹 Zenbot virtual provider cleaned up ${expiredSessions.length} expired sessions`);
+      logger.info(
+        `🧹 Zenbot virtual provider cleaned up ${expiredSessions.length} expired sessions`,
+      );
     }
 
     return expiredSessions.length;

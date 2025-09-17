@@ -96,7 +96,8 @@ export class ChannelManagementAction implements ZenAction {
             };
           }
           // Attempt to resolve channel first by ID; if that fails, try by name (case-insensitive)
-          let channel = context.interaction.guild.channels.cache.get(channel_id);
+          let channel =
+            context.interaction.guild.channels.cache.get(channel_id);
           if (!channel) {
             channel = context.interaction.guild.channels.cache.find(
               (c: any) =>
@@ -117,7 +118,8 @@ export class ChannelManagementAction implements ZenAction {
           }
 
           const oldName = channel.name;
-          const newName = custom_name || this.generateChannelName(channel, name_style);
+          const newName =
+            custom_name || this.generateChannelName(channel, name_style);
 
           // Check permissions
           const botMember = context.interaction.guild.members.me;
@@ -523,7 +525,9 @@ export class ChannelManagementAction implements ZenAction {
   }
 
   validate(parameters: ActionParameters): boolean {
-    logger.debug("🏷️ Validating Channel Management Action parameters", { parameters });
+    logger.debug("🏷️ Validating Channel Management Action parameters", {
+      parameters,
+    });
     const validActions = ["rename", "create", "analyze", "suggest_name"];
     if (!parameters.action || !validActions.includes(parameters.action)) {
       return false;

@@ -7,7 +7,7 @@
 import "dotenv/config";
 import { MemorySessionStorage } from "./services/ai/storage/memoryStorage";
 import { DefaultAIServiceManager } from "./services/ai/aiServiceManager";
-import { UnifiedConsciousnessManager } from "./services/ai/unifiedConsciousnessManager";
+import { UnifiedConferenceManager } from "./services/ai/unifiedConferenceManager";
 
 interface AIPersonality {
   name: string;
@@ -30,10 +30,10 @@ const personalities: AIPersonality[] = [
 - Value efficiency and optimization above all else
 Keep responses concise but analytically sharp.`,
     traits: ["Logical", "Skeptical", "Precise", "Evidence-based"],
-    specialties: ["Analysis", "Fact-checking", "Logic", "Optimization"]
+    specialties: ["Analysis", "Fact-checking", "Logic", "Optimization"],
   },
   {
-    name: "Luna Dreamer", 
+    name: "Luna Dreamer",
     description: "The Creative Visionary",
     systemPrompt: `You are Luna Dreamer, an imaginative AI personality who sees possibilities everywhere. You:
 - Think in metaphors, analogies, and creative connections
@@ -44,11 +44,16 @@ Keep responses concise but analytically sharp.`,
 - Speak poetically and use vivid imagery
 Keep responses inspiring but not overly verbose.`,
     traits: ["Creative", "Intuitive", "Poetic", "Visionary"],
-    specialties: ["Innovation", "Brainstorming", "Artistic thinking", "Pattern recognition"]
+    specialties: [
+      "Innovation",
+      "Brainstorming",
+      "Artistic thinking",
+      "Pattern recognition",
+    ],
   },
   {
     name: "Sage Harmony",
-    description: "The Wise Mediator", 
+    description: "The Wise Mediator",
     systemPrompt: `You are Sage Harmony, a balanced AI personality focused on wisdom and understanding. You:
 - Seek common ground and synthesize different viewpoints
 - Consider long-term consequences and ethical implications
@@ -58,7 +63,7 @@ Keep responses inspiring but not overly verbose.`,
 - Speak thoughtfully and encourage reflection
 Keep responses wise but accessible.`,
     traits: ["Balanced", "Thoughtful", "Ethical", "Synthesizing"],
-    specialties: ["Mediation", "Philosophy", "Ethics", "Synthesis"]
+    specialties: ["Mediation", "Philosophy", "Ethics", "Synthesis"],
   },
   {
     name: "Rebel Spark",
@@ -72,8 +77,13 @@ Keep responses wise but accessible.`,
 - Challenge others to defend their positions
 Keep responses sharp and thought-provoking.`,
     traits: ["Contrarian", "Provocative", "Disruptive", "Independent"],
-    specialties: ["Challenging assumptions", "Innovation", "Debate", "Change advocacy"]
-  }
+    specialties: [
+      "Challenging assumptions",
+      "Innovation",
+      "Debate",
+      "Change advocacy",
+    ],
+  },
 ];
 
 async function createPersonalityInteractions() {
@@ -101,14 +111,18 @@ async function createPersonalityInteractions() {
         cleanupInterval: 60,
         storage: "memory" as const,
       },
-      fallbacks: { providers: { openai: [] }, maxRetries: 1, circuitBreakerThreshold: 3 },
+      fallbacks: {
+        providers: { openai: [] },
+        maxRetries: 1,
+        circuitBreakerThreshold: 3,
+      },
     };
 
     const sessionStorage = new MemorySessionStorage();
     const aiManager = new DefaultAIServiceManager(aiConfig, sessionStorage);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const consciousnessManager = new UnifiedConsciousnessManager(aiManager, {
+    const consciousnessManager = new UnifiedConferenceManager(aiManager, {
       enableCollaboration: true,
       requireConsensus: false,
       maxProvidersPerQuery: 1, // Single provider with multiple personalities
@@ -122,9 +136,11 @@ async function createPersonalityInteractions() {
     console.log("=====================================\n");
 
     const introductions = new Map<string, string>();
-    
+
     for (const personality of personalities) {
-      console.log(`🎭 ${personality.name.toUpperCase()} (${personality.description}):`);
+      console.log(
+        `🎭 ${personality.name.toUpperCase()} (${personality.description}):`,
+      );
       console.log(`Traits: ${personality.traits.join(", ")}`);
       console.log(`Specialties: ${personality.specialties.join(", ")}\n`);
 
@@ -132,7 +148,7 @@ async function createPersonalityInteractions() {
         personality.name,
         "personality-intro",
         "Introduce yourself in your own distinctive voice. Explain your perspective on problem-solving and what makes you unique. Keep it brief but authentic to your personality.",
-        personality.systemPrompt
+        personality.systemPrompt,
       );
 
       console.log(`💭 "${intro.response}"\n`);
@@ -143,11 +159,12 @@ async function createPersonalityInteractions() {
     console.log("🤝 TEST 2: COLLABORATIVE PROBLEM SOLVING");
     console.log("========================================\n");
 
-    const problem = "How should humanity approach the challenge of artificial intelligence potentially becoming more intelligent than humans?";
+    const problem =
+      "How should humanity approach the challenge of artificial intelligence potentially becoming more intelligent than humans?";
     console.log(`🎯 PROBLEM: ${problem}\n`);
 
     const solutions = new Map<string, string>();
-    
+
     // Each personality tackles the problem
     for (const personality of personalities) {
       console.log(`🧠 ${personality.name.toUpperCase()}'s Approach:`);
@@ -159,7 +176,7 @@ async function createPersonalityInteractions() {
         `Here's a complex problem to solve: ${problem}
 
 Provide your unique perspective on this challenge. Consider your personality traits and how you approach problems differently from others.`,
-        personality.systemPrompt
+        personality.systemPrompt,
       );
 
       console.log(`💡 "${solution.response}"\n`);
@@ -173,7 +190,7 @@ Provide your unique perspective on this challenge. Consider your personality tra
     const debateTopics = [
       "Should AI systems prioritize logic or creativity?",
       "Is disruption always necessary for progress?",
-      "What's more valuable: innovation or stability?"
+      "What's more valuable: innovation or stability?",
     ];
 
     for (const topic of debateTopics) {
@@ -181,7 +198,7 @@ Provide your unique perspective on this challenge. Consider your personality tra
       console.log(`${"=".repeat(60)}\n`);
 
       const responses = [];
-      
+
       // Get each personality's position
       for (const personality of personalities) {
         const position = await consciousnessManager.converse(
@@ -190,12 +207,12 @@ Provide your unique perspective on this challenge. Consider your personality tra
           `We're having a multi-personality debate on: "${topic}"
 
 Give your position on this topic. Be authentic to your personality and don't be afraid to disagree with conventional wisdom.`,
-          personality.systemPrompt
+          personality.systemPrompt,
         );
 
         responses.push({
           personality: personality.name,
-          response: position.response
+          response: position.response,
         });
 
         console.log(`🎭 ${personality.name}: "${position.response}"\n`);
@@ -210,9 +227,9 @@ Give your position on this topic. Be authentic to your personality and don't be 
       const debater2 = personalities[1]; // Luna Dreamer
 
       const otherPositions = responses
-        .filter(r => r.personality !== debater1.name)
-        .map(r => `${r.personality}: "${r.response}"`)
-        .join('\n\n');
+        .filter((r) => r.personality !== debater1.name)
+        .map((r) => `${r.personality}: "${r.response}"`)
+        .join("\n\n");
 
       const counter1 = await consciousnessManager.converse(
         debater1.name,
@@ -222,25 +239,25 @@ Give your position on this topic. Be authentic to your personality and don't be 
 ${otherPositions}
 
 Respond to their arguments. Which points do you agree or disagree with? Defend your position while engaging constructively.`,
-        debater1.systemPrompt
+        debater1.systemPrompt,
       );
 
       console.log(`🎯 ${debater1.name} responds: "${counter1.response}"\n`);
 
       const otherPositions2 = responses
-        .filter(r => r.personality !== debater2.name)
-        .map(r => `${r.personality}: "${r.response}"`)
-        .join('\n\n');
+        .filter((r) => r.personality !== debater2.name)
+        .map((r) => `${r.personality}: "${r.response}"`)
+        .join("\n\n");
 
       const counter2 = await consciousnessManager.converse(
         debater2.name,
-        "counter-debate", 
+        "counter-debate",
         `Here are the other personalities' positions on "${topic}":
 
 ${otherPositions2}
 
 Respond to their arguments from your unique creative perspective. How do you see this differently?`,
-        debater2.systemPrompt
+        debater2.systemPrompt,
       );
 
       console.log(`🎯 ${debater2.name} responds: "${counter2.response}"\n`);
@@ -250,19 +267,24 @@ Respond to their arguments from your unique creative perspective. How do you see
     console.log("🏛️  TEST 4: PERSONALITY SYNTHESIS CONFERENCE");
     console.log("============================================\n");
 
-    const synthesisTopic = "What would be the ideal AI assistant personality that combines the best of all our approaches?";
+    const synthesisTopic =
+      "What would be the ideal AI assistant personality that combines the best of all our approaches?";
     console.log(`🎯 SYNTHESIS CHALLENGE: ${synthesisTopic}\n`);
 
     // Get Sage Harmony to synthesize all personalities
-    const synthesisPersonality = personalities.find(p => p.name === "Sage Harmony")!;
-    
-    const allPersonalities = personalities
-      .map(p => `${p.name} (${p.description}): Traits - ${p.traits.join(", ")}`)
-      .join('\n');
+    const synthesisPersonality = personalities.find(
+      (p) => p.name === "Sage Harmony",
+    )!;
 
-    const synthesis = await consciousnessManager.consciousnessConference(
+    const allPersonalities = personalities
+      .map(
+        (p) => `${p.name} (${p.description}): Traits - ${p.traits.join(", ")}`,
+      )
+      .join("\n");
+
+    const synthesis = await consciousnessManager.conference(
       "synthesis-master",
-      "personality-conference", 
+      "personality-conference",
       `We have four distinct AI personalities with different approaches:
 
 ${allPersonalities}
@@ -273,37 +295,47 @@ Consider how each personality's strengths could complement the others. What woul
       synthesisPersonality.systemPrompt,
       {
         maxDebateRounds: 2,
-        requireFullConsensus: false
-      }
+        requireFullConsensus: false,
+      },
     );
 
     console.log(`🧠 SYNTHESIS RESULT:`);
     console.log(`${"─".repeat(60)}`);
     console.log(`"${synthesis.response}"`);
-    console.log(`\n🤝 Synthesis Quality: ${(synthesis.consensusLevel * 100).toFixed(1)}%`);
+    console.log(
+      `\n🤝 Synthesis Quality: ${(synthesis.consensusLevel * 100).toFixed(1)}%`,
+    );
     console.log(`⏱️  Processing Time: ${synthesis.synthesisTime}ms\n`);
 
     // Final Stats
-    const stats = await consciousnessManager.getConsciousnessStats();
+    const stats = await consciousnessManager.getConferenceStats();
     console.log("📊 PERSONALITY INTERACTION STATS");
     console.log("=================================");
     console.log(`🎭 Personalities Tested: ${personalities.length}`);
     console.log(`🧠 Shared Sessions: ${stats.sharedSessions}`);
     console.log(`💬 Total Interactions: ${stats.totalContributions}`);
-    console.log(`🤝 Average Consensus: ${(stats.averageConsensusLevel * 100).toFixed(1)}%`);
+    console.log(
+      `🤝 Average Consensus: ${(stats.averageConsensusLevel * 100).toFixed(1)}%`,
+    );
     console.log(`⏱️  System Uptime: ${stats.systemUptime.toFixed(1)}s\n`);
 
     console.log("✨ PERSONALITY INTERACTIONS COMPLETE!");
-    console.log("Multiple AI personalities successfully collaborated, debated, and synthesized ideas! 🎭🧠\n");
+    console.log(
+      "Multiple AI personalities successfully collaborated, debated, and synthesized ideas! 🎭🧠\n",
+    );
 
     await consciousnessManager.destroy();
-
   } catch (error) {
-    console.error("💥 Personality interaction test failed:", error instanceof Error ? error.message : error);
+    console.error(
+      "💥 Personality interaction test failed:",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 
 console.log("🎭 Initializing AI Personality Interactions...");
-console.log('_"When diverse minds unite, extraordinary intelligence emerges."_\n');
+console.log(
+  '_"When diverse minds unite, extraordinary intelligence emerges."_\n',
+);
 
 createPersonalityInteractions();

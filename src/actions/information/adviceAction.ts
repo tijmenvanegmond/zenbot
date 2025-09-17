@@ -16,7 +16,7 @@ export class AdviceAction implements ZenAction {
   category = "information" as const;
 
   permissions = {
-    allowedSources: ["command", "voice", "api", "ai"],
+    allowedSources: ["command", "voice", "api"], // Removed "ai" to prevent recursive loops
   };
 
   schema = {

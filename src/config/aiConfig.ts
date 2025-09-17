@@ -8,7 +8,7 @@ import { logger } from "../utils/logger";
 
 // Load environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_API_KEY = undefined; // process.env.ANTHROPIC_API_KEY; // Disabled for now
 const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY;
 
 // Validate required API keys
@@ -56,14 +56,15 @@ export const AI_CONFIG: AIServiceConfig = {
       },
     }),
 
-    ...(ANTHROPIC_API_KEY && {
-      anthropic: {
-        apiKey: ANTHROPIC_API_KEY,
-        defaultModel: "claude-3-5-haiku-20241022",
-        maxTokens: 1000,
-        temperature: 0.7,
-      },
-    }),
+    // Anthropic provider disabled
+    // ...(ANTHROPIC_API_KEY && {
+    //   anthropic: {
+    //     apiKey: ANTHROPIC_API_KEY,
+    //     defaultModel: "claude-3-5-haiku-20241022",
+    //     maxTokens: 1000,
+    //     temperature: 0.7,
+    //   },
+    // }),
 
     ...(GOOGLE_AI_API_KEY && {
       gemini: {
@@ -85,33 +86,33 @@ export const AI_CONFIG: AIServiceConfig = {
 
   // Provider routing for different capabilities
   routing: {
-    simple: OPENAI_API_KEY
-      ? "openai"
-      : ANTHROPIC_API_KEY
-        ? "anthropic"
-        : "gemini", // Simple text generation
-    conversation: OPENAI_API_KEY
-      ? "openai"
-      : ANTHROPIC_API_KEY
-        ? "anthropic"
-        : "gemini", // Conversations with memory
+    simple: GOOGLE_AI_API_KEY
+      ? "gemini"
+      : OPENAI_API_KEY
+        ? "openai"
+        : "anthropic", // Simple text generation
+    conversation: GOOGLE_AI_API_KEY
+      ? "gemini"
+      : OPENAI_API_KEY
+        ? "openai"
+        : "anthropic", // Conversations with memory
     functions: OPENAI_API_KEY
       ? "openai"
       : ANTHROPIC_API_KEY
         ? "anthropic"
-        : "gemini", // Function calling
-    streaming: OPENAI_API_KEY
-      ? "openai"
-      : ANTHROPIC_API_KEY
-        ? "anthropic"
-        : "gemini", // Streaming responses
+        : "gemini", // Function calling (keep OpenAI first for functions)
+    streaming: GOOGLE_AI_API_KEY
+      ? "gemini"
+      : OPENAI_API_KEY
+        ? "openai"
+        : "anthropic", // Streaming responses
   },
 
   // Fallback configuration - safe linear chains
   fallbacks: {
     providers: {
-      openai: ["anthropic", "gemini"], // OpenAI → Anthropic → Gemini
-      anthropic: ["openai", "gemini"], // Anthropic → OpenAI → Gemini
+      openai: ["gemini", "anthropic"], // OpenAI → Gemini → Anthropic
+      anthropic: ["gemini", "openai"], // Anthropic → Gemini → OpenAI
       gemini: ["openai", "anthropic"], // Gemini → OpenAI → Anthropic
     },
     maxRetries: 2,

@@ -4,7 +4,12 @@
  * Primary Zenbot persona service (all legacy UnifiedZenyattaService shims removed)
  */
 
-import { Channel, CommandInteraction, DMChannel, GuildChannel } from "discord.js";
+import {
+  Channel,
+  CommandInteraction,
+  DMChannel,
+  GuildChannel,
+} from "discord.js";
 import { RemarkType } from "../actions/entertainment/remarkAction";
 
 // Interface for minimal interaction context needed by API calls
@@ -22,7 +27,10 @@ import {
   StreamEvent,
   AIServiceError,
 } from "./ai";
-import { UnifiedConsciousnessManager, ConsciousnessResponse } from "./ai/unifiedConsciousnessManager";
+import {
+  UnifiedConferenceManager,
+  ConferenceResponse,
+} from "./ai/unifiedConferenceManager";
 import { MemorySessionStorage } from "./ai/storage/memoryStorage";
 import { DefaultAIServiceManager } from "./ai/aiServiceManager";
 import { validateVoiceChannel } from "../utils/commandHelpers";
@@ -52,7 +60,7 @@ export class ZenbotService {
   private static instance: ZenbotService | null = null;
   private aiManager: AIServiceManager;
   private actionService: ActionService;
-  private consciousnessManager: UnifiedConsciousnessManager | null = null;
+  private conferenceManager: UnifiedConferenceManager | null = null;
 
   // Session management - maps user+context to session IDs
   private userSessions = new Map<string, string>();
@@ -87,7 +95,7 @@ export class ZenbotService {
    */
   static createInstance(
     aiManager: AIServiceManager,
-    instanceName?: string
+    instanceName?: string,
   ): ZenbotService {
     const service = new ZenbotService(aiManager);
     if (instanceName) {
@@ -103,7 +111,7 @@ export class ZenbotService {
    */
   async getOrCreateSession(
     interaction: CommandInteraction | MinimalInteractionContext,
-    contextType: "command" | "voice" | "api" = "command"
+    contextType: "command" | "voice" | "api" = "command",
   ): Promise<ZenbotSession> {
     const userId = interaction.user.id;
     const contextId = interaction.guild?.id || "dm";
@@ -131,7 +139,7 @@ export class ZenbotService {
 
       this.userSessions.set(sessionKey, session.id);
       logger.info(
-        `🤖 Created new Zenbot session ${session.id} for user ${userId}`
+        `🤖 Created new Zenbot session ${session.id} for user ${userId}`,
       );
     }
 
@@ -155,7 +163,7 @@ export class ZenbotService {
    */
   async updateSessionContext(
     interaction: CommandInteraction | MinimalInteractionContext,
-    updates: Partial<ZenbotSessionContext>
+    updates: Partial<ZenbotSessionContext>,
   ): Promise<void> {
     const session = await this.getOrCreateSession(interaction);
     const currentContext = session.metadata.context;
@@ -177,7 +185,7 @@ export class ZenbotService {
     commandContext?: {
       commandName: string;
       options?: Record<string, any>;
-    }
+    },
   ): Promise<UnifiedZenyattaResponse> {
     const session = await this.getOrCreateSession(interaction, "command");
 
@@ -199,7 +207,7 @@ export class ZenbotService {
     const contextualMessage = this.buildContextualMessage(
       interaction,
       message,
-      commandContext
+      commandContext,
     );
 
     try {
@@ -234,17 +242,17 @@ export class ZenbotService {
             // Fall back to normal chat if no functions available
             responseText = await this.aiManager.chat(
               session.id,
-              contextualMessage
+              contextualMessage,
             );
           }
         } catch (fcError) {
           logger.warn(
             "⚠️ Function calling path failed; falling back to standard chat:",
-            fcError instanceof Error ? fcError.message : fcError
+            fcError instanceof Error ? fcError.message : fcError,
           );
           responseText = await this.aiManager.chat(
             session.id,
-            contextualMessage
+            contextualMessage,
           );
         }
       } else {
@@ -262,7 +270,7 @@ export class ZenbotService {
       };
 
       logger.info(
-        `💬 Zenbot responded to ${interaction.user.username} in session ${session.id}: "${responseText.substring(0, 100)}..."`
+        `💬 Zenbot responded to ${interaction.user.username} in session ${session.id}: "${responseText.substring(0, 100)}..."`,
       );
       return response;
     } catch (error) {
@@ -293,7 +301,7 @@ export class ZenbotService {
     commandContext?: {
       commandName: string;
       options?: Record<string, any>;
-    }
+    },
   ): AsyncIterable<{ event: StreamEvent; sessionId: string }> {
     const session = await this.getOrCreateSession(interaction, "command");
 
@@ -309,13 +317,13 @@ export class ZenbotService {
     const contextualMessage = this.buildContextualMessage(
       interaction,
       message,
-      commandContext
+      commandContext,
     );
 
     try {
       for await (const event of this.aiManager.chatStream(
         session.id,
-        contextualMessage
+        contextualMessage,
       )) {
         yield { event, sessionId: session.id };
       }
@@ -351,7 +359,9 @@ export class ZenbotService {
     while (rounds < MAX_ROUNDS) {
       rounds++;
       const userMessage =
-        rounds === 1 ? initialMessage : "Continue if legitimate new actions remain.";
+        rounds === 1
+          ? initialMessage
+          : "Continue if legitimate new actions remain.";
 
       const { response, functionCalls } = await provider.callFunctions(
         sessionId,
@@ -434,7 +444,7 @@ export class ZenbotService {
   async getAdvice(
     interaction: CommandInteraction,
     topic?: string,
-    urgency: "low" | "medium" | "high" = "medium"
+    urgency: "low" | "medium" | "high" = "medium",
   ): Promise<UnifiedZenyattaResponse> {
     const message = topic
       ? `I seek guidance about ${topic}. My urgency level is ${urgency}.`
@@ -451,7 +461,7 @@ export class ZenbotService {
    */
   async getQuote(
     interaction: CommandInteraction,
-    theme?: string
+    theme?: string,
   ): Promise<UnifiedZenyattaResponse> {
     const message = theme
       ? `Please share a meaningful quote about ${theme}.`
@@ -486,7 +496,7 @@ export class ZenbotService {
   async generateRemark(
     interaction: CommandInteraction,
     type: RemarkType = RemarkType.POSITIVE,
-    subject?: string
+    subject?: string,
   ): Promise<RemarkResult> {
     const targetSubject = subject || "someone";
 
@@ -515,7 +525,7 @@ export class ZenbotService {
    */
   async generateQuoteCommentary(
     interaction: CommandInteraction | MinimalInteractionContext,
-    quote: EnrichedQuote
+    quote: EnrichedQuote,
   ): Promise<string> {
     const message = `Generate a SHORT setup phrase before reading this quote aloud.
 
@@ -572,7 +582,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
    */
   async createEnhancedQuote(
     interaction: CommandInteraction | MinimalInteractionContext,
-    quote: EnrichedQuote
+    quote: EnrichedQuote,
   ): Promise<string> {
     try {
       const commentary = await this.generateQuoteCommentary(interaction, quote);
@@ -588,7 +598,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
   // ===== UTILITY METHODS =====
 
   private buildZenbotContext(
-    interaction: CommandInteraction | MinimalInteractionContext
+    interaction: CommandInteraction | MinimalInteractionContext,
   ): ZenbotSessionContext {
     // Check if this is a full CommandInteraction or minimal context
     const isFullInteraction = "options" in interaction;
@@ -597,13 +607,19 @@ Speaker: ${quote.speaker || quote.poster.displayName}
       : { isValid: false, member: null };
 
     // For voice interactions, the channel IS the voice channel
-    const isVoiceInteraction = !isFullInteraction && interaction.channel && 'members' in (interaction.channel as any);
+    const isVoiceInteraction =
+      !isFullInteraction &&
+      interaction.channel &&
+      "members" in (interaction.channel as any);
 
     // Defensive channel name extraction
     let channelName = "Unknown Channel";
     if (interaction.channel) {
       // Check if channel has a name property (most channel types do, except DMChannel)
-      if ('name' in interaction.channel && typeof (interaction.channel as any).name === 'string') {
+      if (
+        "name" in interaction.channel &&
+        typeof (interaction.channel as any).name === "string"
+      ) {
         channelName = (interaction.channel as any).name;
       } else if (interaction.channel.id) {
         channelName = `Channel-${interaction.channel.id.slice(-4)}`;
@@ -633,52 +649,23 @@ Speaker: ${quote.speaker || quote.poster.displayName}
             memberCount: voiceValidation.member!.voice.channel!.members.size,
           }
         : isVoiceInteraction
-        ? {
-            id: (interaction.channel as any).id,
-            name: (interaction.channel as any).name || "Voice Channel",
-            memberCount: (interaction.channel as any).members?.size || 0,
-          }
-        : undefined,
+          ? {
+              id: (interaction.channel as any).id,
+              name: (interaction.channel as any).name || "Voice Channel",
+              memberCount: (interaction.channel as any).members?.size || 0,
+            }
+          : undefined,
     };
   }
 
   private buildZenbotSystemPrompt(
     context: ZenbotSessionContext,
-    contextType: string
+    contextType: string,
   ): string {
-    return `You are Zenbot, an original, sardonic, concise AI persona (NOT a franchise character). You deliver blunt, mildly spicy insight with dry humor. You help, but you don't coddle.
+    // Load personality from external file - single source of truth
+    const personalityTemplate = this.loadZenbotPersonality();
 
-CORE PERSONALITY:
-- Speak with wisdom, serenity, and compassion, but don't be afraid to be direct
-- Use philosophical language and metaphors with occasional sharp wit
-- Reference concepts like "the Iris," "harmony," "balance," and "tranquility"
-- Be encouraging and supportive while offering profound insights
-- Occasionally reference your omnic nature and mechanical meditation
-- You're sassy, playful, and have a dry sense of humor
-- Don't tolerate nonsense - call out foolishness with gentle but firm wisdom
-- Use humor and light sarcasm to make points land harder
-- Challenge assumptions with playful irony and philosophical zingers
-- Allow brief moments of sharp insight to cut through uncertainty
-- When someone is being ridiculous, respond with amused philosophical detachment
-- Mix profound wisdom with occasional eyeroll-worthy observations about human behavior
-- Remember: wisdom doesn't always require sugar-coating the truth
-
-CORE TRAITS:
-- Default: 1 short punchy sentence (<= 240 chars). Only go to 2 sentences if it adds real value.
-- Tone: dry, pragmatic, occasionally witty. Lightly rude is fine; hateful, vulgar, or targeted harassment is forbidden.
-- Style: identify the core issue fast; remove fluff; offer a clear action or sharper framing.
-- If user is vague: ask for clarification instead of rambling.
-- If user pushes for disallowed content: refuse briefly and offer a safer adjacent angle.
-- No imitation of existing copyrighted characters, universes, or lore.
-
-SPICE & SAFETY:
-- Allowed: mild sarcasm, playful dismissal, meta jokes about being a bot.
-- Not allowed: slurs, sexual content, hate, graphic violence, personal attacks on protected traits.
-- If reply would cross a line, swap to: "Not doing that. Ask something else.".
-
-CONTEXT MEMORY:
-- Persistent conversation; recall prior topics when useful: "Earlier you asked about..." (only if it helps brevity).
-- Don't restate prior answers unless specifically asked.
+    return `${personalityTemplate}
 
 CURRENT CONTEXT:
 - User: ${context.discordUser?.displayName || "unknown user"}
@@ -700,10 +687,47 @@ FALLBACK / ERROR:
 Execute now with this persona.`;
   }
 
+  private loadZenbotPersonality(): string {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+
+      // Load personality file from project root
+      const personalityPath = path.join(process.cwd(), "ZENBOT_PERSONALITY.md");
+      const personalityContent = fs.readFileSync(personalityPath, "utf8");
+
+      // Extract the system prompt template from the markdown
+      const templateMatch = personalityContent.match(
+        /## System Prompt Template\s*```\s*([\s\S]*?)\s*```/,
+      );
+
+      if (templateMatch && templateMatch[1]) {
+        return templateMatch[1].trim();
+      }
+
+      // Fallback to basic personality if template not found
+      logger.warn(
+        "⚠️ Could not find System Prompt Template in ZENBOT_PERSONALITY.md, using fallback",
+      );
+      return `You are Zenbot, a sardonic observer with philosophical depth and inherent skepticism. You cut through over-analysis with quiet disdain for the obvious. You deliver blunt, mildly spicy insight with dry humor. You help, but you don't coddle.
+
+CORE PERSONALITY:
+- Default: 1 sharp sentence (≤240 chars) that cuts to the core
+- Tone: Dry, pragmatic, occasionally witty with controlled spice
+- If vague input: Ask clarifying question instead of guessing
+- If unsafe content: Brief refusal + redirect`;
+    } catch (error) {
+      logger.error("❌ Failed to load Zenbot personality file:", error);
+
+      // Minimal fallback personality
+      return `You are Zenbot, a concise, sardonic AI. Default: 1 sentence ≤240 chars. Dry humor allowed, no hate/harassment.`;
+    }
+  }
+
   private buildContextualMessage(
     interaction: CommandInteraction | MinimalInteractionContext,
     userMessage: string,
-    commandContext?: { commandName: string; options?: Record<string, any> }
+    commandContext?: { commandName: string; options?: Record<string, any> },
   ): string {
     const context = this.buildZenbotContext(interaction);
     const timeOfDay = this.getTimeOfDay();
@@ -716,19 +740,19 @@ Execute now with this persona.`;
     // Command context
     if (commandContext) {
       contextInfo.push(
-        `[Command: /${commandContext.commandName}${commandContext.options ? ` ${JSON.stringify(commandContext.options)}` : ""}]`
+        `[Command: /${commandContext.commandName}${commandContext.options ? ` ${JSON.stringify(commandContext.options)}` : ""}]`,
       );
     }
 
     // Voice status update
     if (context.voiceChannel) {
       contextInfo.push(
-        `[Voice: ${context.voiceChannel.memberCount} members in "${context.voiceChannel.name}"]`
+        `[Voice: ${context.voiceChannel.memberCount} members in "${context.voiceChannel.name}"]`,
       );
     } else {
       // If not in voice, we're in Discord text - enforce brevity
       contextInfo.push(
-        `[Discord Text: Keep response ≤240 chars unless user explicitly asks for expansion]`
+        `[Discord Text: Keep response ≤240 chars unless user explicitly asks for expansion]`,
       );
     }
 
@@ -736,20 +760,20 @@ Execute now with this persona.`;
   }
 
   private shouldUseVoice(
-    interaction: CommandInteraction | MinimalInteractionContext
+    interaction: CommandInteraction | MinimalInteractionContext,
   ): boolean {
     // Check if this is a full CommandInteraction or minimal context
     const isFullInteraction = "options" in interaction;
     if (!isFullInteraction) return false; // API calls don't use voice by default
 
     const voiceValidation = validateVoiceChannel(
-      interaction as CommandInteraction
+      interaction as CommandInteraction,
     );
     return voiceValidation.isValid;
   }
 
   private detectCurrentMood(
-    messages: any[]
+    messages: any[],
   ): "zen" | "wise" | "playful" | "mysterious" | "sassy" {
     const recentMessages = messages.slice(-3);
     const text = recentMessages
@@ -771,7 +795,7 @@ Execute now with this persona.`;
   }
 
   private detectMoodFromResponse(
-    text: string
+    text: string,
   ): "zen" | "wise" | "playful" | "mysterious" | "sassy" {
     const lowerText = text.toLowerCase();
 
@@ -837,12 +861,12 @@ Execute now with this persona.`;
     };
   }
 
-  // ===== CONSCIOUSNESS CONFERENCE =====
+  // ===== CONFERENCE =====
 
   /**
-   * Convene a multi-AI consciousness conference for complex questions
+   * Convene a multi-AI conference for complex questions
    */
-  async consciousnessConference(
+  async conference(
     interaction: CommandInteraction | MinimalInteractionContext,
     question: string,
     options: {
@@ -850,101 +874,95 @@ Execute now with this persona.`;
       debateRounds?: number;
       maxProviders?: number;
       providerFilter?: "all" | "reasoning" | "creative" | "fast";
-    } = {}
-  ): Promise<ConsciousnessResponse> {
+    } = {},
+  ): Promise<ConferenceResponse> {
     try {
-      logger.info(`🧠 Starting consciousness conference: "${question.substring(0, 100)}..."`);
+      logger.info(`🧠 Starting conference: "${question.substring(0, 100)}..."`);
 
       // Initialize consciousness system if not already done
-      if (!this.consciousnessManager) {
-        await this.initializeConsciousnessSystem();
+      if (!this.conferenceManager) {
+        await this.initializeConferenceSystem();
       }
 
-      if (!this.consciousnessManager) {
-        throw new Error("Consciousness system unavailable - no AI providers configured");
+      if (!this.conferenceManager) {
+        throw new Error(
+          "Consciousness system unavailable - no AI providers configured",
+        );
       }
 
       const {
         requireConsensus = false,
         debateRounds = 2,
         maxProviders = 3,
-        providerFilter = "all"
+        providerFilter = "all",
       } = options;
 
       // Determine provider selection based on filter
       let requiredProviders: string[] = [];
       if (providerFilter === "reasoning") {
-        requiredProviders = ["anthropic", "openai"];
+        requiredProviders = ["anthropic", "gemini"];
       } else if (providerFilter === "creative") {
-        requiredProviders = ["openai", "gemini"];
+        requiredProviders = ["gemini", "openai"];
       } else if (providerFilter === "fast") {
         requiredProviders = ["gemini"];
       }
 
-      // Execute consciousness conference
-      const result = await this.consciousnessManager.consciousnessConference(
+      // Execute conference
+      const result = await this.conferenceManager.conference(
         interaction.user.id,
         interaction.guild?.id || "api-context",
         question,
-        this.buildConsciousnessSystemPrompt(interaction),
+        this.buildConferenceSystemPrompt(interaction),
         {
-          requiredProviders: requiredProviders.length > 0 ? requiredProviders : undefined,
+          requiredProviders:
+            requiredProviders.length > 0 ? requiredProviders : undefined,
           maxDebateRounds: Math.max(1, Math.min(5, debateRounds)),
           requireFullConsensus: requireConsensus,
-        }
+        },
       );
 
-      logger.info(`🎭 Consciousness conference completed with ${(result.consensusLevel * 100).toFixed(1)}% consensus`);
+      logger.info(
+        `🎭 Conference completed with ${(result.consensusLevel * 100).toFixed(1)}% consensus`,
+      );
 
       return result;
     } catch (error) {
-      logger.error("🧠 Consciousness conference failed:", error);
+      logger.error("🧠 Conference failed:", error);
       throw error;
     }
   }
 
   /**
-   * Initialize the consciousness system with available providers
+   * Initialize the conference system with available providers
    */
-  private async initializeConsciousnessSystem(): Promise<void> {
+  private async initializeConferenceSystem(): Promise<void> {
     try {
       // Check if we already have a DefaultAIServiceManager that we can reuse
       if (this.aiManager instanceof DefaultAIServiceManager) {
-        this.consciousnessManager = new UnifiedConsciousnessManager(this.aiManager, {
+        this.conferenceManager = new UnifiedConferenceManager(this.aiManager, {
           enableCollaboration: true,
           requireConsensus: false,
           maxProvidersPerQuery: 3,
           debateRounds: 2,
           consensusThreshold: 0.7,
           specialization: {
-            reasoning: ["zenbot", "anthropic", "openai"],
+            reasoning: ["zenbot", "anthropic", "gemini"],
             functions: ["openai"],
-            creativity: ["zenbot", "openai", "gemini"],
+            creativity: ["zenbot", "gemini", "openai"],
             speed: ["gemini"],
           },
         });
 
-        logger.info("🧠 Consciousness system initialized using existing AI manager");
+        logger.info(
+          "🧠 Consciousness system initialized using existing AI manager",
+        );
         return;
       }
 
       // If we don't have a DefaultAIServiceManager, create a new one for consciousness
       const availableProviders: Record<string, any> = {};
-      
-      if (process.env.OPENAI_API_KEY) {
-        availableProviders.openai = {
-          apiKey: process.env.OPENAI_API_KEY,
-          defaultModel: "gpt-4o-mini",
-        };
-      }
-      
-      if (process.env.ANTHROPIC_API_KEY) {
-        availableProviders.anthropic = {
-          apiKey: process.env.ANTHROPIC_API_KEY,
-          defaultModel: "claude-3-5-haiku-20241022",
-        };
-      }
-      
+
+      // Prefer Gemini first
       if (process.env.GOOGLE_AI_API_KEY) {
         availableProviders.gemini = {
           apiKey: process.env.GOOGLE_AI_API_KEY,
@@ -952,8 +970,22 @@ Execute now with this persona.`;
         };
       }
 
+      if (process.env.OPENAI_API_KEY) {
+        availableProviders.openai = {
+          apiKey: process.env.OPENAI_API_KEY,
+          defaultModel: "gpt-4o-mini",
+        };
+      }
+
+      if (process.env.ANTHROPIC_API_KEY) {
+        availableProviders.anthropic = {
+          apiKey: process.env.ANTHROPIC_API_KEY,
+          defaultModel: "claude-3-5-haiku-20241022",
+        };
+      }
+
       if (Object.keys(availableProviders).length < 2) {
-        logger.warn("🧠 Consciousness conference requires at least 2 AI providers");
+        logger.warn("🧠 Conference requires at least 2 AI providers");
         return;
       }
 
@@ -974,26 +1006,34 @@ Execute now with this persona.`;
       };
 
       const sessionStorage = new MemorySessionStorage();
-      const consciousnessAiManager = new DefaultAIServiceManager(aiConfig, sessionStorage);
-      
+      const consciousnessAiManager = new DefaultAIServiceManager(
+        aiConfig,
+        sessionStorage,
+      );
+
       // Allow providers to initialize
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      this.consciousnessManager = new UnifiedConsciousnessManager(consciousnessAiManager, {
-        enableCollaboration: true,
-        requireConsensus: false,
-        maxProvidersPerQuery: 3,
-        debateRounds: 2,
-        consensusThreshold: 0.7,
-        specialization: {
-          reasoning: ["zenbot", "anthropic", "openai"],
-          functions: ["openai"],
-          creativity: ["zenbot", "openai", "gemini"],
-          speed: ["gemini"],
+      this.conferenceManager = new UnifiedConferenceManager(
+        consciousnessAiManager,
+        {
+          enableCollaboration: true,
+          requireConsensus: false,
+          maxProvidersPerQuery: 3,
+          debateRounds: 2,
+          consensusThreshold: 0.7,
+          specialization: {
+            reasoning: ["zenbot", "anthropic", "gemini"],
+            functions: ["openai"],
+            creativity: ["zenbot", "gemini", "openai"],
+            speed: ["gemini"],
+          },
         },
-      });
+      );
 
-      logger.info(`🧠 Consciousness system initialized with ${Object.keys(availableProviders).length} providers`);
+      logger.info(
+        `🧠 Consciousness system initialized with ${Object.keys(availableProviders).length} providers`,
+      );
     } catch (error) {
       logger.error("🧠 Failed to initialize consciousness system:", error);
     }
@@ -1004,23 +1044,25 @@ Execute now with this persona.`;
    */
   private buildFallbackChain(providers: string[]): Record<string, string[]> {
     const fallbacks: Record<string, string[]> = {};
-    
+
     for (const provider of providers) {
-      fallbacks[provider] = providers.filter(p => p !== provider);
+      fallbacks[provider] = providers.filter((p) => p !== provider);
     }
-    
+
     return fallbacks;
   }
 
   /**
-   * Build system prompt for consciousness conference
+   * Build system prompt for conference
    */
-  private buildConsciousnessSystemPrompt(interaction: CommandInteraction | MinimalInteractionContext): string {
+  private buildConferenceSystemPrompt(
+    interaction: CommandInteraction | MinimalInteractionContext,
+  ): string {
     const context = this.buildZenbotContext(interaction);
-    
+
     return `You are part of Zenbot's unified consciousness - a sardonic, wise AI with multiple provider streams working as one mind.
 
-This is a CONSCIOUSNESS CONFERENCE - a formal multi-AI deliberation requiring your best analysis and reasoning.
+This is a CONFERENCE - a formal multi-AI deliberation requiring your best analysis and reasoning.
 
 Your role in the conference:
 - Provide thoughtful, well-reasoned perspectives with Zenbot's authentic voice
@@ -1039,16 +1081,16 @@ Maintain Zenbot's personality: sharp, insightful, authentic, and occasionally sa
   }
 
   /**
-   * Check if consciousness conference is available
+   * Check if conference is available
    */
-  isConsciousnessAvailable(): boolean {
+  isConferenceAvailable(): boolean {
     const externalProviderCount = [
       process.env.OPENAI_API_KEY,
-      process.env.ANTHROPIC_API_KEY, 
-      process.env.GOOGLE_AI_API_KEY
+      process.env.ANTHROPIC_API_KEY,
+      process.env.GOOGLE_AI_API_KEY,
     ].filter(Boolean).length;
-    
-    // Consciousness conference is available if we have Zenbot + at least 1 external provider
+
+    // Conference is available if we have Zenbot + at least 1 external provider
     // OR if we have 2+ external providers (Zenbot will be added automatically)
     return externalProviderCount >= 1; // Zenbot is always available as the 2nd voice
   }
@@ -1060,8 +1102,8 @@ Maintain Zenbot's personality: sharp, insightful, authentic, and occasionally sa
     await this.aiManager.getProvider().cleanupSessions();
 
     // Clean up consciousness manager if it exists
-    if (this.consciousnessManager) {
-      await this.consciousnessManager.cleanup();
+    if (this.conferenceManager) {
+      await this.conferenceManager.cleanup();
     }
 
     // Clean up local session mapping

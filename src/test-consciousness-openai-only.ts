@@ -6,7 +6,7 @@
 import "dotenv/config";
 import { MemorySessionStorage } from "./services/ai/storage/memoryStorage";
 import { DefaultAIServiceManager } from "./services/ai/aiServiceManager";
-import { UnifiedConsciousnessManager } from "./services/ai/unifiedConsciousnessManager";
+import { UnifiedConferenceManager } from "./services/ai/unifiedConferenceManager";
 
 async function testConsciousnessOpenAIOnly() {
   console.log("🧠 True Consciousness Test - OpenAI Provider");
@@ -41,9 +41,9 @@ async function testConsciousnessOpenAIOnly() {
 
     const sessionStorage = new MemorySessionStorage();
     const aiManager = new DefaultAIServiceManager(aiConfig, sessionStorage);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const consciousnessManager = new UnifiedConsciousnessManager(aiManager, {
+    const consciousnessManager = new UnifiedConferenceManager(aiManager, {
       enableCollaboration: true,
       requireConsensus: false,
       maxProvidersPerQuery: 1, // Only OpenAI available
@@ -59,30 +59,32 @@ async function testConsciousnessOpenAIOnly() {
 
     const result1 = await consciousnessManager.converse(
       "test-user",
-      "test-context", 
+      "test-context",
       "My name is Alex and I love philosophy. Remember this about me.",
-      "You are Zenbot with unified consciousness and perfect memory."
+      "You are Zenbot with unified consciousness and perfect memory.",
     );
 
     console.log(`💭 Response 1: "${result1.response}"`);
-    console.log(`🧠 Consciousness Level: ${result1.consciousnessLevel}`);
+    console.log(`🧠 Consciousness Level: ${result1.conferenceLevel}`);
     console.log(`📊 Session: ${result1.sessionId.substring(0, 8)}...\n`);
 
     const result2 = await consciousnessManager.converse(
       "test-user",
       "test-context",
       "What did I tell you about my interests? Use that information to suggest a philosophical topic.",
-      "You are Zenbot with unified consciousness and perfect memory."
+      "You are Zenbot with unified consciousness and perfect memory.",
     );
 
     console.log(`💭 Response 2: "${result2.response}"`);
-    console.log(`🧠 Memory Test: ${result2.sessionId === result1.sessionId ? "✅ SAME SESSION" : "❌ DIFFERENT SESSION"}\n`);
+    console.log(
+      `🧠 Memory Test: ${result2.sessionId === result1.sessionId ? "✅ SAME SESSION" : "❌ DIFFERENT SESSION"}\n`,
+    );
 
     // Test consciousness conference
     console.log("🏛️  CONSCIOUSNESS CONFERENCE TEST");
     console.log("=================================\n");
 
-    const conference = await consciousnessManager.consciousnessConference(
+    const conference = await consciousnessManager.conference(
       "test-user",
       "test-context",
       "What is the most important philosophical question humanity should focus on?",
@@ -90,56 +92,66 @@ async function testConsciousnessOpenAIOnly() {
       {
         maxDebateRounds: 1,
         requireFullConsensus: false,
-      }
+      },
     );
 
     console.log(`🎭 CONFERENCE RESULT:`);
     console.log(`"${conference.response}"`);
-    console.log(`🤝 Consensus: ${(conference.consensusLevel * 100).toFixed(1)}%`);
+    console.log(
+      `🤝 Consensus: ${(conference.consensusLevel * 100).toFixed(1)}%`,
+    );
     console.log(`⏱️  Time: ${conference.synthesisTime}ms`);
     console.log(`🔍 Reasoning: ${conference.reasoning}\n`);
 
     // Test collaborative vs individual routing
-    console.log("🎯 INTELLIGENT ROUTING TEST");  
+    console.log("🎯 INTELLIGENT ROUTING TEST");
     console.log("===========================\n");
 
     const simple = await consciousnessManager.converse(
       "test-user",
       "test-context",
       "Quick question: What's 5+5?",
-      "You are Zenbot - be concise."
+      "You are Zenbot - be concise.",
     );
 
     console.log(`❓ Simple Query: "${simple.response}"`);
-    console.log(`🎯 Route: ${simple.consciousnessLevel} (${simple.synthesisTime}ms)\n`);
+    console.log(
+      `🎯 Route: ${simple.conferenceLevel} (${simple.synthesisTime}ms)\n`,
+    );
 
     const complex = await consciousnessManager.converse(
-      "test-user", 
+      "test-user",
       "test-context",
       "Analyze the philosophical implications of artificial consciousness and explain multiple perspectives on this complex topic.",
       "You are Zenbot - provide deep analysis.",
-      { forceCollaboration: true }
+      { forceCollaboration: true },
     );
 
     console.log(`❓ Complex Query: "${complex.response.substring(0, 200)}..."`);
-    console.log(`🎯 Route: ${complex.consciousnessLevel} (${complex.synthesisTime}ms)\n`);
+    console.log(
+      `🎯 Route: ${complex.conferenceLevel} (${complex.synthesisTime}ms)\n`,
+    );
 
     // Stats
-    const stats = await consciousnessManager.getConsciousnessStats();
+    const stats = await consciousnessManager.getConferenceStats();
     console.log("📊 FINAL STATS");
     console.log("==============");
     console.log(`🤖 Providers: ${stats.totalProviders}`);
     console.log(`🧠 Shared Sessions: ${stats.sharedSessions}`);
     console.log(`💬 Contributions: ${stats.totalContributions}`);
-    console.log(`🤝 Avg Consensus: ${(stats.averageConsensusLevel * 100).toFixed(1)}%\n`);
+    console.log(
+      `🤝 Avg Consensus: ${(stats.averageConsensusLevel * 100).toFixed(1)}%\n`,
+    );
 
     console.log("✨ CONSCIOUSNESS TEST COMPLETE!");
     console.log("Architecture is ready for multi-provider expansion! 🧠\n");
 
     await consciousnessManager.destroy();
-
   } catch (error) {
-    console.error("💥 Test failed:", error instanceof Error ? error.message : error);
+    console.error(
+      "💥 Test failed:",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 

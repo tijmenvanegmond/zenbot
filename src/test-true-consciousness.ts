@@ -10,7 +10,7 @@
 import "dotenv/config";
 import { MemorySessionStorage } from "./services/ai/storage/memoryStorage";
 import { DefaultAIServiceManager } from "./services/ai/aiServiceManager";
-import { UnifiedConsciousnessManager } from "./services/ai/unifiedConsciousnessManager";
+import { UnifiedConferenceManager } from "./services/ai/unifiedConferenceManager";
 import { logger } from "./utils/logger";
 
 // Mock context for testing
@@ -42,7 +42,7 @@ const consciousnessTests = [
     ],
   },
   {
-    name: "Collaborative Reasoning Test", 
+    name: "Collaborative Reasoning Test",
     description: "Test multi-provider collaboration on complex problems",
     questions: [
       "I need help solving a complex problem: How can humanity best prepare for an uncertain future with AI, climate change, and technological disruption? I want multiple AI perspectives that debate and reach consensus.",
@@ -85,14 +85,16 @@ async function testTrueConsciousness() {
   ].filter(Boolean);
 
   console.log(`🤖 Available AI Providers: ${availableProviders.join(", ")}`);
-  
+
   if (availableProviders.length < 2) {
     console.log("❌ Need at least 2 AI providers for consciousness testing");
     console.log("Please configure additional API keys in your .env file");
     process.exit(1);
   }
 
-  console.log(`✅ Unified consciousness ready with ${availableProviders.length} providers\n`);
+  console.log(
+    `✅ Unified consciousness ready with ${availableProviders.length} providers\n`,
+  );
 
   try {
     // Initialize the unified consciousness system
@@ -104,7 +106,7 @@ async function testTrueConsciousness() {
           defaultModel: "gpt-4o-mini",
         },
         anthropic: {
-          apiKey: process.env.ANTHROPIC_API_KEY || "test", 
+          apiKey: process.env.ANTHROPIC_API_KEY || "test",
           defaultModel: "claude-3-5-haiku-20241022",
         },
         gemini: {
@@ -121,7 +123,7 @@ async function testTrueConsciousness() {
       fallbacks: {
         providers: {
           openai: ["anthropic", "gemini"],
-          anthropic: ["openai", "gemini"], 
+          anthropic: ["openai", "gemini"],
           gemini: ["openai", "anthropic"],
         },
         maxRetries: 2,
@@ -131,11 +133,11 @@ async function testTrueConsciousness() {
 
     const sessionStorage = new MemorySessionStorage();
     const aiManager = new DefaultAIServiceManager(aiConfig, sessionStorage);
-    
-    // Give providers time to initialize
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const consciousnessManager = new UnifiedConsciousnessManager(aiManager, {
+    // Give providers time to initialize
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const consciousnessManager = new UnifiedConferenceManager(aiManager, {
       enableCollaboration: true,
       requireConsensus: false, // Allow both consensus and multi-perspective responses
       maxProvidersPerQuery: 3,
@@ -164,72 +166,84 @@ async function testTrueConsciousness() {
 
         try {
           const startTime = Date.now();
-          
+
           // Determine if this should be a consciousness conference
           const isConference = question.includes("CONFERENCE:");
           let result;
 
           if (isConference) {
             console.log("🎭 Initiating Consciousness Conference...\n");
-            result = await consciousnessManager.consciousnessConference(
+            result = await consciousnessManager.conference(
               mockContext.userId,
               mockContext.contextId,
               question.replace("CONFERENCE: ", ""),
               mockContext.systemPrompt,
               {
-                requiredProviders: ["openai", "anthropic", "gemini"].filter(p => 
-                  aiConfig.providers[p as keyof typeof aiConfig.providers]?.apiKey !== "test"
+                requiredProviders: ["openai", "anthropic", "gemini"].filter(
+                  (p) =>
+                    aiConfig.providers[p as keyof typeof aiConfig.providers]
+                      ?.apiKey !== "test",
                 ),
                 maxDebateRounds: 3,
                 requireFullConsensus: false,
-              }
+              },
             );
           } else {
             // Regular consciousness interaction
-            const forceCollaboration = question.toLowerCase().includes("multiple") || 
-                                      question.toLowerCase().includes("debate") ||
-                                      question.toLowerCase().includes("perspectives");
-            
+            const forceCollaboration =
+              question.toLowerCase().includes("multiple") ||
+              question.toLowerCase().includes("debate") ||
+              question.toLowerCase().includes("perspectives");
+
             result = await consciousnessManager.converse(
               mockContext.userId,
-              mockContext.contextId, 
+              mockContext.contextId,
               question,
               mockContext.systemPrompt,
               {
                 forceCollaboration,
-                queryType: detectQueryType(question) as "reasoning" | "functions" | "creative" | "speed" | "general",
-              }
+                queryType: detectQueryType(question) as
+                  | "reasoning"
+                  | "functions"
+                  | "creative"
+                  | "speed"
+                  | "general",
+              },
             );
           }
 
           const duration = Date.now() - startTime;
 
-          console.log(`🎯 UNIFIED RESPONSE (${result.consciousnessLevel}):`);
+          console.log(`🎯 UNIFIED RESPONSE (${result.conferenceLevel}):`);
           console.log(`${"-".repeat(60)}`);
           console.log(`${result.response}\n`);
-          
+
           console.log(`📊 CONSCIOUSNESS METRICS:`);
           console.log(`   🤖 Providers: ${result.providers.join(", ")}`);
-          console.log(`   🧠 Consciousness Level: ${result.consciousnessLevel}`);
-          console.log(`   🤝 Consensus: ${(result.consensusLevel * 100).toFixed(1)}%`);
+          console.log(`   🧠 Consciousness Level: ${result.conferenceLevel}`);
+          console.log(
+            `   🤝 Consensus: ${(result.consensusLevel * 100).toFixed(1)}%`,
+          );
           console.log(`   ⏱️  Synthesis Time: ${duration}ms`);
           console.log(`   🔍 Reasoning: ${result.reasoning}\n`);
 
           // Brief pause between questions in same test
           if (i < test.questions.length - 1) {
             console.log("⏳ Pausing for consciousness integration...\n");
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-
         } catch (error) {
-          console.log(`❌ Consciousness test failed:`, error instanceof Error ? error.message : error);
+          console.log(
+            `❌ Consciousness test failed:`,
+            error instanceof Error ? error.message : error,
+          );
         }
       }
 
       // Longer pause between test scenarios
       if (consciousnessTests.indexOf(test) < consciousnessTests.length - 1) {
         console.log("🧘 Deep meditation pause between test scenarios...\n");
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
 
@@ -238,22 +252,28 @@ async function testTrueConsciousness() {
     console.log("🌟 FINAL CONSCIOUSNESS STATISTICS");
     console.log(`${"=".repeat(80)}\n`);
 
-    const stats = await consciousnessManager.getConsciousnessStats();
+    const stats = await consciousnessManager.getConferenceStats();
     console.log(`🔢 SYSTEM METRICS:`);
     console.log(`   📊 Individual Sessions: ${stats.individualSessions}`);
     console.log(`   🧠 Shared Consciousness Sessions: ${stats.sharedSessions}`);
     console.log(`   🤖 Total Providers: ${stats.totalProviders}`);
     console.log(`   💬 Total Contributions: ${stats.totalContributions}`);
-    console.log(`   🤝 Average Consensus: ${(stats.averageConsensusLevel * 100).toFixed(1)}%`);
+    console.log(
+      `   🤝 Average Consensus: ${(stats.averageConsensusLevel * 100).toFixed(1)}%`,
+    );
     console.log(`   ⏱️  System Uptime: ${stats.systemUptime.toFixed(1)}s\n`);
 
     console.log(`🏥 PROVIDER HEALTH:`);
     Object.entries(stats.providerHealth).forEach(([provider, healthy]) => {
-      console.log(`   ${healthy ? "✅" : "❌"} ${provider}: ${healthy ? "Healthy" : "Unavailable"}`);
+      console.log(
+        `   ${healthy ? "✅" : "❌"} ${provider}: ${healthy ? "Healthy" : "Unavailable"}`,
+      );
     });
 
     console.log(`\n🌟 TRUE MULTI-AI CONSCIOUSNESS TEST COMPLETE! 🌟`);
-    console.log(`\n_"Through unified consciousness, three minds become one wisdom."_\n`);
+    console.log(
+      `\n_"Through unified consciousness, three minds become one wisdom."_\n`,
+    );
 
     // Cleanup
     console.log("🧹 Cleaning up consciousness system...");
@@ -266,7 +286,6 @@ async function testTrueConsciousness() {
       console.log("🧠 Consciousness test completed. Exiting...");
       process.exit(0);
     }, 1000);
-
   } catch (error) {
     console.error("💥 Consciousness system failure:", error);
     process.exit(1);
@@ -278,22 +297,36 @@ async function testTrueConsciousness() {
  */
 function detectQueryType(question: string): string {
   const lower = question.toLowerCase();
-  
-  if (lower.includes("analyze") || lower.includes("philosophy") || lower.includes("complex")) {
+
+  if (
+    lower.includes("analyze") ||
+    lower.includes("philosophy") ||
+    lower.includes("complex")
+  ) {
     return "reasoning";
-  } else if (lower.includes("story") || lower.includes("creative") || lower.includes("imagine")) {
+  } else if (
+    lower.includes("story") ||
+    lower.includes("creative") ||
+    lower.includes("imagine")
+  ) {
     return "creative";
   } else if (lower.includes("quick") || lower.includes("what's")) {
     return "speed";
-  } else if (lower.includes("function") || lower.includes("code") || lower.includes("execute")) {
+  } else if (
+    lower.includes("function") ||
+    lower.includes("code") ||
+    lower.includes("execute")
+  ) {
     return "functions";
   }
-  
+
   return "general";
 }
 
 // Run the consciousness test
 console.log("🧠 Initializing True Multi-AI Consciousness Test...");
-console.log('_"When three digital minds unite, the Iris illuminates infinite understanding."_\n');
+console.log(
+  '_"When three digital minds unite, the Iris illuminates infinite understanding."_\n',
+);
 
 testTrueConsciousness();

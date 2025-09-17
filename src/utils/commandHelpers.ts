@@ -16,7 +16,7 @@ export function validateVoiceChannel(interaction: CommandInteraction): {
   const member = interaction?.member as GuildMember;
 
   if (!member?.voice?.channelId) {
-    logger.info("User not in voice channel - replying with text");
+    logger.debug("User not in voice channel - replying with text");
     return {
       isValid: false,
       member: null,
