@@ -34,10 +34,10 @@ if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY && !GOOGLE_AI_API_KEY) {
   );
 }
 
-// Determine default provider based on available keys
+// Determine default provider based on available keys - prefer OpenAI gpt-4o for best responses
 const getDefaultProvider = (): string => {
-  if (GOOGLE_AI_API_KEY) return "gemini";
   if (OPENAI_API_KEY) return "openai";
+  if (GOOGLE_AI_API_KEY) return "gemini";
   if (ANTHROPIC_API_KEY) return "anthropic";
   throw new Error("No AI provider available");
 };
@@ -50,7 +50,7 @@ export const AI_CONFIG: AIServiceConfig = {
     ...(OPENAI_API_KEY && {
       openai: {
         apiKey: OPENAI_API_KEY,
-        defaultModel: "gpt-4o-mini",
+        defaultModel: "gpt-4o",
         maxTokens: 1000,
         temperature: 0.7,
       },
@@ -84,27 +84,27 @@ export const AI_CONFIG: AIServiceConfig = {
     storage: "memory", // Use memory storage for now
   },
 
-  // Provider routing for different capabilities
+  // Provider routing for different capabilities - prioritize OpenAI gpt-4o
   routing: {
-    simple: GOOGLE_AI_API_KEY
-      ? "gemini"
-      : OPENAI_API_KEY
-        ? "openai"
+    simple: OPENAI_API_KEY
+      ? "openai"
+      : GOOGLE_AI_API_KEY
+        ? "gemini"
         : "anthropic", // Simple text generation
-    conversation: GOOGLE_AI_API_KEY
-      ? "gemini"
-      : OPENAI_API_KEY
-        ? "openai"
+    conversation: OPENAI_API_KEY
+      ? "openai"
+      : GOOGLE_AI_API_KEY
+        ? "gemini"
         : "anthropic", // Conversations with memory
     functions: OPENAI_API_KEY
       ? "openai"
       : ANTHROPIC_API_KEY
         ? "anthropic"
         : "gemini", // Function calling (keep OpenAI first for functions)
-    streaming: GOOGLE_AI_API_KEY
-      ? "gemini"
-      : OPENAI_API_KEY
-        ? "openai"
+    streaming: OPENAI_API_KEY
+      ? "openai"
+      : GOOGLE_AI_API_KEY
+        ? "gemini"
         : "anthropic", // Streaming responses
   },
 

@@ -19,17 +19,30 @@ import { logger } from "../../../utils/logger";
 export class OpenAIProvider extends BaseAIProvider {
   readonly name = "openai";
   readonly supportedModels = [
+    "gpt-5",
     "gpt-4o",
     "gpt-4o-mini",
-    "gpt-4-turbo",
-    "gpt-4",
-    "gpt-3.5-turbo",
   ];
   readonly supportsStreaming = true;
   readonly supportsFunctions = true;
   readonly supportsVision = true;
 
   private client: OpenAI;
+
+  // All supported models use the new GPT-4o parameter format
+  private buildChatParams(model: string, options: GenerationOptions = {}) {
+    const params: any = {
+      model,
+      temperature: 1, // All models now use temperature=1 (GPT-4o format)
+      top_p: options.topP,
+      frequency_penalty: options.frequencyPenalty,
+      presence_penalty: options.presencePenalty,
+      stop: options.stopSequences,
+      max_completion_tokens: options.maxTokens || 4000, // Use new parameter for all models
+    };
+
+    return params;
+  }
 
   constructor(
     sessionStorage: SessionStorage,
@@ -58,15 +71,12 @@ export class OpenAIProvider extends BaseAIProvider {
     options: GenerationOptions = {},
   ): Promise<string> {
     try {
+      const model = options.model || "gpt-4o-mini";
+      const params = this.buildChatParams(model, options);
+
       const response = await this.client.chat.completions.create({
-        model: options.model || "gpt-4o-mini",
+        ...params,
         messages: [{ role: "user", content: prompt }],
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 1000,
-        top_p: options.topP,
-        frequency_penalty: options.frequencyPenalty,
-        presence_penalty: options.presencePenalty,
-        stop: options.stopSequences,
       });
 
       const content = response.choices[0]?.message?.content;
@@ -97,17 +107,14 @@ export class OpenAIProvider extends BaseAIProvider {
     try {
       yield { type: "start" };
 
+      const model = options.model || "gpt-4o-mini";
+      const params = this.buildChatParams(model, options);
+
       const stream = await this.client.chat.completions.create({
-        model: options.model || "gpt-4o-mini",
+        ...params,
         messages: [{ role: "user", content: prompt }],
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 1000,
-        top_p: options.topP,
-        frequency_penalty: options.frequencyPenalty,
-        presence_penalty: options.presencePenalty,
-        stop: options.stopSequences,
         stream: true,
-      });
+      }) as any;
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
@@ -131,10 +138,21 @@ export class OpenAIProvider extends BaseAIProvider {
   // ===== CONVERSATION WITH MEMORY =====
 
   protected formatMessagesForProvider(messages: Message[]): any[] {
-    return messages.map((msg) => ({
-      role: msg.role as "system" | "user" | "assistant",
-      content: msg.content,
-    }));
+    return messages.map((msg) => {
+      if (msg.role === "function" || msg.role === "tool") {
+        // Handle function/tool result messages for OpenAI
+        return {
+          role: "tool",
+          content: msg.content,
+          tool_call_id: msg.metadata?.tool_call_id || msg.metadata?.functionName || "unknown",
+        };
+      }
+
+      return {
+        role: msg.role as "system" | "user" | "assistant",
+        content: msg.content,
+      };
+    });
   }
 
   protected async generateConversationResponse(
@@ -142,15 +160,12 @@ export class OpenAIProvider extends BaseAIProvider {
     options: GenerationOptions = {},
   ): Promise<string> {
     try {
+      const model = options.model || "gpt-4o-mini";
+      const params = this.buildChatParams(model, options);
+
       const response = await this.client.chat.completions.create({
-        model: options.model || "gpt-4o-mini",
+        ...params,
         messages,
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 1000,
-        top_p: options.topP,
-        frequency_penalty: options.frequencyPenalty,
-        presence_penalty: options.presencePenalty,
-        stop: options.stopSequences,
       });
 
       const content = response.choices[0]?.message?.content;
@@ -180,17 +195,14 @@ export class OpenAIProvider extends BaseAIProvider {
     try {
       yield { type: "start" };
 
+      const model = options.model || "gpt-4o-mini";
+      const params = this.buildChatParams(model, options);
+
       const stream = await this.client.chat.completions.create({
-        model: options.model || "gpt-4o-mini",
+        ...params,
         messages,
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 1000,
-        top_p: options.topP,
-        frequency_penalty: options.frequencyPenalty,
-        presence_penalty: options.presencePenalty,
-        stop: options.stopSequences,
         stream: true,
-      });
+      }) as any;
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
@@ -244,7 +256,6 @@ export class OpenAIProvider extends BaseAIProvider {
       const response = await this.generateConversationResponse(openaiMessages, {
         ...options,
         model: options.model || session.metadata.model,
-        temperature: options.temperature || session.metadata.temperature,
       });
 
       // Add assistant response to history
@@ -316,7 +327,6 @@ export class OpenAIProvider extends BaseAIProvider {
         {
           ...options,
           model: options.model || session.metadata.model,
-          temperature: options.temperature || session.metadata.temperature,
         },
       )) {
         if (event.type === "delta" && event.content) {
@@ -397,22 +407,26 @@ export class OpenAIProvider extends BaseAIProvider {
     }));
 
     try {
+      const model = options.model || session.metadata.model || "gpt-4o-mini";
+      const params = this.buildChatParams(model, options);
+
       const response = await this.client.chat.completions.create({
-        model: options.model || session.metadata.model || "gpt-4o-mini",
+        ...params,
         messages: openaiMessages,
         tools,
         tool_choice: "auto",
-        temperature: options.temperature || session.metadata.temperature,
       });
 
       const message = response.choices[0]?.message;
       if (!message) {
+        logger.error(`❌ OpenAI returned no message: choices=${response.choices?.length || 0}`);
         throw new AIServiceError(
           "No response received",
           this.name,
           "EMPTY_RESPONSE",
         );
       }
+
 
       const functionCalls: FunctionCall[] = [];
 

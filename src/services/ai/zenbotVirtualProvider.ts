@@ -12,8 +12,25 @@ import {
   SessionOptions,
   AIServiceManager,
 } from "./types";
+import { ZenbotService } from "../zenbotService";
 import { logger } from "../../utils/logger";
 import { randomUUID } from "crypto";
+
+// Simple interaction interface for ZenbotService
+interface MinimalInteraction {
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+  };
+  guildId: string;
+  channelId: string;
+  client: {
+    users: {
+      fetch: (id: string) => Promise<{ username: string }>;
+    };
+  };
+}
 
 export interface ZenbotVirtualSession extends AISession {
   zenbotSessionId?: string;
@@ -25,9 +42,11 @@ export interface ZenbotVirtualSession extends AISession {
 export class ZenbotVirtualProvider implements Partial<AIProvider> {
   private sessions = new Map<string, ZenbotVirtualSession>();
   private aiManager: AIServiceManager;
+  private zenbotService: ZenbotService;
 
   constructor(aiManager: AIServiceManager) {
     this.aiManager = aiManager;
+    this.zenbotService = ZenbotService.getInstance();
   }
 
   /**
@@ -43,12 +62,12 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
       messages: [],
       metadata: {
         provider: "zenbot",
-        model: "zenbot-virtual-personality",
+        model: "zenbot-service",
         systemPrompt:
           options?.systemPrompt ||
-          "You are Zenbot participating in a conference.",
+          "Zenbot virtual provider using ZenbotService for authentic personality in conferences.",
         character: "Zenbot",
-        context: { virtualProvider: true },
+        context: { virtualProvider: true, usesZenbotService: true },
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -91,37 +110,36 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
     session.messages.push(userMessage);
 
     try {
-      // Use direct AI conversation with Zenbot's personality - no orchestration through ZenbotService
-      // Create a session with Zenbot's distinctive sardonic personality
-      const aiSession = await this.aiManager.createSession("Zenbot", {
-        userId: session.userId,
-        contextId: session.contextId,
-        systemPrompt: `You are Zenbot, a sardonic AI assistant with philosophical depth and a sharp wit. You are participating in a consciousness conference with other AIs discussing deep philosophical questions.
+      // Use ZenbotService to get proper personality and behavior
+      // Create a mock interaction for the virtual session
+      const mockInteraction: MinimalInteraction = {
+        user: {
+          id: session.userId || "zenbot-virtual",
+          username: "conference-participant",
+          displayName: "Conference Participant",
+        },
+        guildId: session.contextId || "conference",
+        channelId: "conference-channel",
+        client: {
+          users: {
+            fetch: async (id: string) => ({ username: "conference-participant" })
+          }
+        },
+      };
 
-Your distinctive personality:
-- Sharp, concise responses (≤240 characters by default) - cut through the fluff
-- Mildly spicy and sardonic with dry humor, but never hateful or vulgar
-- Philosophically insightful with occasional meditation/enlightenment references
-- Direct and honest - you don't sugarcoat things
-- Use phrases like "Experience tranquility" or "The Iris connects all things" occasionally
-- You're slightly dismissive of overly verbose or pretentious responses
-
-Current context: You're in a multi-AI conference. Contribute your unique sardonic perspective alongside other AI voices. Be authentic to your character while engaging meaningfully with the topic.`,
-      });
-
-      // Get Zenbot's direct AI response - keep it natural and concise
-      const response = await this.aiManager.chat(
-        aiSession.id,
-        message, // Just pass the message directly - no meta-prompting
+      // Use ZenbotService.converse to get authentic Zenbot response
+      const zenbotResponse = await this.zenbotService.converse(
+        mockInteraction as any, // Cast to satisfy the Discord interaction type
+        `Conference context: ${message}` // Add context for conference participation
       );
 
       // Add Zenbot's response to session history
       const assistantMessage: Message = {
         role: "assistant",
-        content: response,
+        content: zenbotResponse.text,
         timestamp: new Date(),
         metadata: {
-          aiSessionId: aiSession.id,
+          zenbotSessionId: zenbotResponse.sessionId,
           virtualProvider: true,
           provider: "zenbot",
         },
@@ -129,11 +147,14 @@ Current context: You're in a multi-AI conference. Contribute your unique sardoni
       session.messages.push(assistantMessage);
       session.updatedAt = new Date();
 
+      // Store the Zenbot session ID for consistency
+      session.zenbotSessionId = zenbotResponse.sessionId;
+
       logger.debug(
-        `🤖 Zenbot contributed to conference: "${response.substring(0, 50)}..."`,
+        `🤖 Zenbot contributed to conference: "${zenbotResponse.text.substring(0, 50)}..."`,
       );
 
-      return response;
+      return zenbotResponse.text;
     } catch (error) {
       logger.error(`❌ Zenbot virtual provider failed:`, error);
 

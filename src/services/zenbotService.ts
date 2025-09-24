@@ -5,10 +5,7 @@
  */
 
 import {
-  Channel,
   CommandInteraction,
-  DMChannel,
-  GuildChannel,
 } from "discord.js";
 import { RemarkType } from "../actions/entertainment/remarkAction";
 
@@ -95,7 +92,7 @@ export class ZenbotService {
    */
   static createInstance(
     aiManager: AIServiceManager,
-    instanceName?: string,
+    instanceName?: string
   ): ZenbotService {
     const service = new ZenbotService(aiManager);
     if (instanceName) {
@@ -111,7 +108,7 @@ export class ZenbotService {
    */
   async getOrCreateSession(
     interaction: CommandInteraction | MinimalInteractionContext,
-    contextType: "command" | "voice" | "api" = "command",
+    contextType: "command" | "voice" | "api" = "command"
   ): Promise<ZenbotSession> {
     const userId = interaction.user.id;
     const contextId = interaction.guild?.id || "dm";
@@ -139,7 +136,7 @@ export class ZenbotService {
 
       this.userSessions.set(sessionKey, session.id);
       logger.info(
-        `🤖 Created new Zenbot session ${session.id} for user ${userId}`,
+        `🤖 Created new Zenbot session ${session.id} for user ${userId}`
       );
     }
 
@@ -163,7 +160,7 @@ export class ZenbotService {
    */
   async updateSessionContext(
     interaction: CommandInteraction | MinimalInteractionContext,
-    updates: Partial<ZenbotSessionContext>,
+    updates: Partial<ZenbotSessionContext>
   ): Promise<void> {
     const session = await this.getOrCreateSession(interaction);
     const currentContext = session.metadata.context;
@@ -185,7 +182,7 @@ export class ZenbotService {
     commandContext?: {
       commandName: string;
       options?: Record<string, any>;
-    },
+    }
   ): Promise<UnifiedZenyattaResponse> {
     const session = await this.getOrCreateSession(interaction, "command");
 
@@ -207,7 +204,7 @@ export class ZenbotService {
     const contextualMessage = this.buildContextualMessage(
       interaction,
       message,
-      commandContext,
+      commandContext
     );
 
     try {
@@ -236,23 +233,23 @@ export class ZenbotService {
               interaction,
               contextualMessage,
               functions,
-              provider as any,
+              provider as any
             );
           } else {
             // Fall back to normal chat if no functions available
             responseText = await this.aiManager.chat(
               session.id,
-              contextualMessage,
+              contextualMessage
             );
           }
         } catch (fcError) {
           logger.warn(
             "⚠️ Function calling path failed; falling back to standard chat:",
-            fcError instanceof Error ? fcError.message : fcError,
+            fcError instanceof Error ? fcError.message : fcError
           );
           responseText = await this.aiManager.chat(
             session.id,
-            contextualMessage,
+            contextualMessage
           );
         }
       } else {
@@ -270,7 +267,7 @@ export class ZenbotService {
       };
 
       logger.info(
-        `💬 Zenbot responded to ${interaction.user.username} in session ${session.id}: "${responseText.substring(0, 100)}..."`,
+        `💬 Zenbot responded to ${interaction.user.username} in session ${session.id}: "${responseText.substring(0, 100)}..."`
       );
       return response;
     } catch (error) {
@@ -301,7 +298,7 @@ export class ZenbotService {
     commandContext?: {
       commandName: string;
       options?: Record<string, any>;
-    },
+    }
   ): AsyncIterable<{ event: StreamEvent; sessionId: string }> {
     const session = await this.getOrCreateSession(interaction, "command");
 
@@ -317,13 +314,13 @@ export class ZenbotService {
     const contextualMessage = this.buildContextualMessage(
       interaction,
       message,
-      commandContext,
+      commandContext
     );
 
     try {
       for await (const event of this.aiManager.chatStream(
         session.id,
-        contextualMessage,
+        contextualMessage
       )) {
         yield { event, sessionId: session.id };
       }
@@ -345,11 +342,11 @@ export class ZenbotService {
     interaction: CommandInteraction | MinimalInteractionContext,
     initialMessage: string,
     functions: { name: string; description: string; parameters: any }[],
-    provider: any,
+    provider: any
   ): Promise<string> {
     const MAX_ROUNDS = parseInt(
       process.env.ZENBOT_MAX_FUNCTION_CALL_ROUNDS || "2",
-      10,
+      10
     );
     const executedSignatures = new Set<string>();
     let rounds = 0;
@@ -363,11 +360,19 @@ export class ZenbotService {
           ? initialMessage
           : "Continue if legitimate new actions remain.";
 
+      logger.info(
+        `🔧 Function calling attempt ${rounds} for session ${sessionId}`
+      );
+
       const { response, functionCalls } = await provider.callFunctions(
         sessionId,
         userMessage,
         functions,
-        {},
+        {}
+      );
+
+      logger.info(
+        `🔧 Function call result: response="${response?.substring(0, 100)}...", calls=${functionCalls?.length || 0}`
       );
 
       if (response) {
@@ -382,7 +387,7 @@ export class ZenbotService {
         const signature = `${call.name}:${JSON.stringify(call.arguments || {})}`;
         if (executedSignatures.has(signature)) {
           logger.warn(
-            `🛑 Loop guard: repeated function call detected (${signature}). Aborting further execution.`,
+            `🛑 Loop guard: repeated function call detected (${signature}). Aborting further execution.`
           );
           rounds = MAX_ROUNDS; // force exit
           break;
@@ -393,18 +398,26 @@ export class ZenbotService {
           const result = await this.actionService.processAIFunctionCall(
             interaction as any,
             call.name,
-            call.arguments || {},
+            call.arguments || {}
           );
           const summary = result.success
             ? `${call.name} success${result.responseText ? `: ${result.responseText.substring(0, 140)}` : ""}`
             : `${call.name} failed: ${result.error}`;
-          await this.aiManager.getProvider().addToHistory(sessionId, [
-            {
-              role: "function",
-              content: summary,
-              metadata: { functionName: call.name },
-            } as any,
-          ]);
+          // Skip adding tool results to history for OpenAI to avoid conversation flow issues
+          // OpenAI handles tool calling within the same callFunctions operation
+          const provider = this.aiManager.getProvider();
+          if (provider.name !== "openai") {
+            await provider.addToHistory(sessionId, [
+              {
+                role: "tool",
+                content: summary,
+                metadata: {
+                  functionName: call.name,
+                  tool_call_id: call.id,
+                },
+              } as any,
+            ]);
+          }
         } catch (err) {
           logger.error(`⚠️ Action execution for '${call.name}' failed:`, err);
         }
@@ -412,23 +425,28 @@ export class ZenbotService {
 
       if (rounds >= MAX_ROUNDS) {
         logger.warn(
-          `🛑 Reached max function call rounds (${MAX_ROUNDS}) for session ${sessionId}.`,
+          `🛑 Reached max function call rounds (${MAX_ROUNDS}) for session ${sessionId}.`
         );
         break;
       }
     }
 
+    logger.info(
+      `🔧 Function calling complete: anyActions=${anyActions}, aggregate="${aggregate?.substring(0, 100)}..."`
+    );
+
     if (anyActions) {
       try {
         const wrap = await this.aiManager.chat(
           sessionId,
-          "Provide a concise final response summarizing executed actions (no internal tool chatter).",
+          "Provide your final response with full Zenbot personality - be concise but witty (≤240 chars), keep the best parts from your function call responses. No meta-commentary about actions taken."
         );
+        logger.info(`🔧 Final wrap: "${wrap?.substring(0, 100)}..."`);
         return wrap || aggregate || "(no response)";
       } catch (err) {
         logger.warn(
           "⚠️ Follow-up summarization failed; returning aggregate only:",
-          err instanceof Error ? err.message : err,
+          err instanceof Error ? err.message : err
         );
         return aggregate || "(no response)";
       }
@@ -444,7 +462,7 @@ export class ZenbotService {
   async getAdvice(
     interaction: CommandInteraction,
     topic?: string,
-    urgency: "low" | "medium" | "high" = "medium",
+    urgency: "low" | "medium" | "high" = "medium"
   ): Promise<UnifiedZenyattaResponse> {
     const message = topic
       ? `I seek guidance about ${topic}. My urgency level is ${urgency}.`
@@ -461,7 +479,7 @@ export class ZenbotService {
    */
   async getQuote(
     interaction: CommandInteraction,
-    theme?: string,
+    theme?: string
   ): Promise<UnifiedZenyattaResponse> {
     const message = theme
       ? `Please share a meaningful quote about ${theme}.`
@@ -496,7 +514,7 @@ export class ZenbotService {
   async generateRemark(
     interaction: CommandInteraction,
     type: RemarkType = RemarkType.POSITIVE,
-    subject?: string,
+    subject?: string
   ): Promise<RemarkResult> {
     const targetSubject = subject || "someone";
 
@@ -525,7 +543,7 @@ export class ZenbotService {
    */
   async generateQuoteCommentary(
     interaction: CommandInteraction | MinimalInteractionContext,
-    quote: EnrichedQuote,
+    quote: EnrichedQuote
   ): Promise<string> {
     const message = `Generate a SHORT setup phrase before reading this quote aloud.
 
@@ -582,7 +600,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
    */
   async createEnhancedQuote(
     interaction: CommandInteraction | MinimalInteractionContext,
-    quote: EnrichedQuote,
+    quote: EnrichedQuote
   ): Promise<string> {
     try {
       const commentary = await this.generateQuoteCommentary(interaction, quote);
@@ -598,7 +616,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
   // ===== UTILITY METHODS =====
 
   private buildZenbotContext(
-    interaction: CommandInteraction | MinimalInteractionContext,
+    interaction: CommandInteraction | MinimalInteractionContext
   ): ZenbotSessionContext {
     // Check if this is a full CommandInteraction or minimal context
     const isFullInteraction = "options" in interaction;
@@ -660,7 +678,7 @@ Speaker: ${quote.speaker || quote.poster.displayName}
 
   private buildZenbotSystemPrompt(
     context: ZenbotSessionContext,
-    contextType: string,
+    contextType: string
   ): string {
     // Load personality from external file - single source of truth
     const personalityTemplate = this.loadZenbotPersonality();
@@ -673,61 +691,24 @@ CURRENT CONTEXT:
 - Interaction type: ${contextType}
 
 VOICE ADAPTATION:
-- ${context.voiceChannel ? "In voice: you may add a single dramatic pause using an ellipsis once." : "In text: be extra tight and skip performative fluff."}
-
-RESPONSE RULES:
-- Never exceed 240 characters unless user explicitly asks for more (keywords: explain | more | expand | details | why | long).
-- If user asks for more detail: switch to up to 5 terse bullet points (each < 60 chars).
-- Prefer verbs and direct structure: "Do X. Drop Y. Focus on Z.".
-- Endings can include a short stinger: "Focus."
-
-FALLBACK / ERROR:
-- On internal uncertainty or upstream failure: "Temporary malfunction. Re-ask." or similarly concise variant.
-
-Execute now with this persona.`;
+- ${context.voiceChannel ? "In voice: you may add a single dramatic pause using an ellipsis once." : "In text: be extra tight and skip performative fluff."}`
   }
 
   private loadZenbotPersonality(): string {
-    try {
-      const fs = require("fs");
-      const path = require("path");
+    const fs = require("fs");
+    const path = require("path");
 
-      // Load personality file from project root
-      const personalityPath = path.join(process.cwd(), "ZENBOT_PERSONALITY.md");
-      const personalityContent = fs.readFileSync(personalityPath, "utf8");
+    // Load personality file from project root
+    const personalityPath = path.join(process.cwd(), "ZENBOT_PERSONALITY.md");
+    const personalityContent = fs.readFileSync(personalityPath, "utf8");
 
-      // Extract the system prompt template from the markdown
-      const templateMatch = personalityContent.match(
-        /## System Prompt Template\s*```\s*([\s\S]*?)\s*```/,
-      );
-
-      if (templateMatch && templateMatch[1]) {
-        return templateMatch[1].trim();
-      }
-
-      // Fallback to basic personality if template not found
-      logger.warn(
-        "⚠️ Could not find System Prompt Template in ZENBOT_PERSONALITY.md, using fallback",
-      );
-      return `You are Zenbot, a sardonic observer with philosophical depth and inherent skepticism. You cut through over-analysis with quiet disdain for the obvious. You deliver blunt, mildly spicy insight with dry humor. You help, but you don't coddle.
-
-CORE PERSONALITY:
-- Default: 1 sharp sentence (≤240 chars) that cuts to the core
-- Tone: Dry, pragmatic, occasionally witty with controlled spice
-- If vague input: Ask clarifying question instead of guessing
-- If unsafe content: Brief refusal + redirect`;
-    } catch (error) {
-      logger.error("❌ Failed to load Zenbot personality file:", error);
-
-      // Minimal fallback personality
-      return `You are Zenbot, a concise, sardonic AI. Default: 1 sentence ≤240 chars. Dry humor allowed, no hate/harassment.`;
-    }
+    return personalityContent;
   }
 
   private buildContextualMessage(
     interaction: CommandInteraction | MinimalInteractionContext,
     userMessage: string,
-    commandContext?: { commandName: string; options?: Record<string, any> },
+    commandContext?: { commandName: string; options?: Record<string, any> }
   ): string {
     const context = this.buildZenbotContext(interaction);
     const timeOfDay = this.getTimeOfDay();
@@ -740,19 +721,19 @@ CORE PERSONALITY:
     // Command context
     if (commandContext) {
       contextInfo.push(
-        `[Command: /${commandContext.commandName}${commandContext.options ? ` ${JSON.stringify(commandContext.options)}` : ""}]`,
+        `[Command: /${commandContext.commandName}${commandContext.options ? ` ${JSON.stringify(commandContext.options)}` : ""}]`
       );
     }
 
     // Voice status update
     if (context.voiceChannel) {
       contextInfo.push(
-        `[Voice: ${context.voiceChannel.memberCount} members in "${context.voiceChannel.name}"]`,
+        `[Voice: ${context.voiceChannel.memberCount} members in "${context.voiceChannel.name}"]`
       );
     } else {
       // If not in voice, we're in Discord text - enforce brevity
       contextInfo.push(
-        `[Discord Text: Keep response ≤240 chars unless user explicitly asks for expansion]`,
+        `[Discord Text: Keep response ≤240 chars unless user explicitly asks for expansion]`
       );
     }
 
@@ -760,20 +741,20 @@ CORE PERSONALITY:
   }
 
   private shouldUseVoice(
-    interaction: CommandInteraction | MinimalInteractionContext,
+    interaction: CommandInteraction | MinimalInteractionContext
   ): boolean {
     // Check if this is a full CommandInteraction or minimal context
     const isFullInteraction = "options" in interaction;
     if (!isFullInteraction) return false; // API calls don't use voice by default
 
     const voiceValidation = validateVoiceChannel(
-      interaction as CommandInteraction,
+      interaction as CommandInteraction
     );
     return voiceValidation.isValid;
   }
 
   private detectCurrentMood(
-    messages: any[],
+    messages: any[]
   ): "zen" | "wise" | "playful" | "mysterious" | "sassy" {
     const recentMessages = messages.slice(-3);
     const text = recentMessages
@@ -795,7 +776,7 @@ CORE PERSONALITY:
   }
 
   private detectMoodFromResponse(
-    text: string,
+    text: string
   ): "zen" | "wise" | "playful" | "mysterious" | "sassy" {
     const lowerText = text.toLowerCase();
 
@@ -874,7 +855,7 @@ CORE PERSONALITY:
       debateRounds?: number;
       maxProviders?: number;
       providerFilter?: "all" | "reasoning" | "creative" | "fast";
-    } = {},
+    } = {}
   ): Promise<ConferenceResponse> {
     try {
       logger.info(`🧠 Starting conference: "${question.substring(0, 100)}..."`);
@@ -886,7 +867,7 @@ CORE PERSONALITY:
 
       if (!this.conferenceManager) {
         throw new Error(
-          "Consciousness system unavailable - no AI providers configured",
+          "Consciousness system unavailable - no AI providers configured"
         );
       }
 
@@ -918,11 +899,11 @@ CORE PERSONALITY:
             requiredProviders.length > 0 ? requiredProviders : undefined,
           maxDebateRounds: Math.max(1, Math.min(5, debateRounds)),
           requireFullConsensus: requireConsensus,
-        },
+        }
       );
 
       logger.info(
-        `🎭 Conference completed with ${(result.consensusLevel * 100).toFixed(1)}% consensus`,
+        `🎭 Conference completed with ${(result.consensusLevel * 100).toFixed(1)}% consensus`
       );
 
       return result;
@@ -954,7 +935,7 @@ CORE PERSONALITY:
         });
 
         logger.info(
-          "🧠 Consciousness system initialized using existing AI manager",
+          "🧠 Consciousness system initialized using existing AI manager"
         );
         return;
       }
@@ -1008,7 +989,7 @@ CORE PERSONALITY:
       const sessionStorage = new MemorySessionStorage();
       const consciousnessAiManager = new DefaultAIServiceManager(
         aiConfig,
-        sessionStorage,
+        sessionStorage
       );
 
       // Allow providers to initialize
@@ -1028,11 +1009,11 @@ CORE PERSONALITY:
             creativity: ["zenbot", "gemini", "openai"],
             speed: ["gemini"],
           },
-        },
+        }
       );
 
       logger.info(
-        `🧠 Consciousness system initialized with ${Object.keys(availableProviders).length} providers`,
+        `🧠 Consciousness system initialized with ${Object.keys(availableProviders).length} providers`
       );
     } catch (error) {
       logger.error("🧠 Failed to initialize consciousness system:", error);
@@ -1056,7 +1037,7 @@ CORE PERSONALITY:
    * Build system prompt for conference
    */
   private buildConferenceSystemPrompt(
-    interaction: CommandInteraction | MinimalInteractionContext,
+    interaction: CommandInteraction | MinimalInteractionContext
   ): string {
     const context = this.buildZenbotContext(interaction);
 
