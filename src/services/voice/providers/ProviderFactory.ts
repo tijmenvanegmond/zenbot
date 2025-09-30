@@ -1,6 +1,6 @@
 import { VoiceProvider, ProviderStatus } from "../types";
 import { SystemProvider } from "./SystemProvider";
-import { LinuxProvider } from "./LinuxProvider";
+import { EspeakProvider } from "./EspeakProvider";
 import { logger } from "../../../utils/logger";
 
 /**
@@ -27,7 +27,7 @@ export class ProviderFactory {
   private loadProviders(): void {
     const providers = [
       new SystemProvider(),
-      new LinuxProvider(),
+      new EspeakProvider(),
     ];
 
     for (const provider of providers) {
@@ -57,8 +57,8 @@ export class ProviderFactory {
    * Get best available provider for platform
    */
   getBestProvider(): VoiceProvider {
-    // Preference order: linux > system
-    const preferenceOrder = ["linux", "system"];
+    // Preference order: espeak > system
+    const preferenceOrder = ["espeak", "system"];
 
     for (const name of preferenceOrder) {
       const provider = this.providers.get(name);
@@ -112,8 +112,8 @@ export class ProviderFactory {
     switch (name) {
       case "system":
         return process.platform;
-      case "linux":
-        return "linux";
+      case "espeak":
+        return "linux"; // Platform detection for eSpeak
       default:
         return "unknown";
     }
@@ -126,7 +126,7 @@ export class ProviderFactory {
     switch (name) {
       case "system":
         return ["offline", "platform-native", "fast"];
-      case "linux":
+      case "espeak":
         return [
           "offline",
           "voice-tweaking",

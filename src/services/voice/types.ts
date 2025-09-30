@@ -28,7 +28,7 @@ export interface VoiceResult {
  * Voice configuration for a profile
  */
 export interface VoiceConfig {
-  provider: "system" | "linux";
+  provider: "system" | "espeak";
 
   // System TTS settings (Windows/macOS)
   system?: {
@@ -36,8 +36,8 @@ export interface VoiceConfig {
     speed: number;
   };
 
-  // Linux eSpeak-NG settings
-  linux?: {
+  // eSpeak-NG settings
+  espeak?: {
     variant: string; // e.g., 'en+m2'
     pitch: number; // 0-99
     amplitude: number; // 0-200

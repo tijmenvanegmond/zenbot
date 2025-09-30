@@ -23,7 +23,7 @@ export class Config {
 
   // Voice Configuration
   static readonly VOICE_CONFIG = {
-    TTS_PROVIDER: Config.getEnv("TTS_PROVIDER", "openai"), // "openai", "local", or "linux"
+    TTS_PROVIDER: Config.getEnv("TTS_PROVIDER", "espeak"), // "espeak" or "system"
     TTS_MODEL: "gpt-4o-mini-tts",
     TTS_VOICE: "echo",
     TTS_FORMAT: "mp3" as const,

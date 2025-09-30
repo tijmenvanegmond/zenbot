@@ -17,5 +17,6 @@ COPY personalities personalities
 # Create directories for TTS files
 RUN mkdir -p /tmp/zenbot && chmod 777 /tmp/zenbot
 
-EXPOSE 8080
+# Port will be set via environment variable (default 3001)
+EXPOSE 3001
 CMD ["node", "dist/app.js"]

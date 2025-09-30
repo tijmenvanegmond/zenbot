@@ -11,15 +11,15 @@ import { VoiceProvider, VoiceConfig } from "../types";
 import { logger } from "../../../utils/logger";
 
 /**
- * Linux eSpeak-NG voice provider
+ * eSpeak-NG voice provider
  * Provides advanced voice tweaking and personality profiles
  */
-export class LinuxProvider implements VoiceProvider {
-  name = "linux";
+export class EspeakProvider implements VoiceProvider {
+  name = "espeak";
   private readonly tempDir = "/tmp/zenbot";
 
   /**
-   * Check if Linux eSpeak-NG is available
+   * Check if eSpeak-NG is available
    */
   isAvailable(): boolean {
     return process.platform === "linux";
@@ -29,17 +29,17 @@ export class LinuxProvider implements VoiceProvider {
    * Create audio using eSpeak-NG
    */
   async createAudio(text: string, config: VoiceConfig): Promise<AudioResource> {
-    if (!config.linux) {
+    if (!config.espeak) {
       throw new Error("Linux configuration required for LinuxProvider");
     }
 
     logger.info(
-      `🐧 Creating Linux TTS: "${text.substring(0, 50)}..." (${config.linux.variant})`,
+      `🐧 Creating Linux TTS: "${text.substring(0, 50)}..." (${config.espeak.variant})`,
     );
 
     try {
       await this.ensureTempDir();
-      const buffer = await this.generateTTS(text, config.linux);
+      const buffer = await this.generateTTS(text, config.espeak);
 
       if (buffer.length === 0) {
         throw new Error("eSpeak-NG generated empty audio buffer");
@@ -67,7 +67,7 @@ export class LinuxProvider implements VoiceProvider {
    */
   private async generateTTS(
     text: string,
-    config: VoiceConfig["linux"],
+    config: VoiceConfig["espeak"],
   ): Promise<Buffer> {
     const tempFile = this.getTempFilename();
     const args = this.buildESpeakArgs(config!, tempFile, text);
@@ -115,7 +115,7 @@ export class LinuxProvider implements VoiceProvider {
    * Build eSpeak-NG command arguments
    */
   private buildESpeakArgs(
-    config: VoiceConfig["linux"],
+    config: VoiceConfig["espeak"],
     outputFile: string,
     text: string,
   ): string[] {
@@ -178,8 +178,8 @@ export class LinuxProvider implements VoiceProvider {
   async test(text: string): Promise<{ success: boolean; audioSize: number }> {
     try {
       const config: VoiceConfig = {
-        provider: "linux",
-        linux: {
+        provider: "espeak",
+        espeak: {
           variant: "en+m2",
           pitch: 55,
           amplitude: 100,

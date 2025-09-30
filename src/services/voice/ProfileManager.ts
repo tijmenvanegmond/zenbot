@@ -39,8 +39,8 @@ export class ProfileManager {
 
     // Default balanced voice - improved clarity
     this.profiles.set("zenbot-default", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb",
         pitch: 48,
         amplitude: 105,
@@ -54,8 +54,8 @@ export class ProfileManager {
 
     // Sardonic personality - enhanced for better quality and character
     this.profiles.set("zenbot-sardonic", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb-x-rp", // Received Pronunciation for more sophisticated sound
         pitch: 38, // Lower pitch for gravitas
         amplitude: 110, // Slightly louder for clarity
@@ -69,8 +69,8 @@ export class ProfileManager {
 
     // Wise personality - deeper, more thoughtful
     this.profiles.set("zenbot-wise", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb-x-rp", // Received Pronunciation for distinguished sound
         pitch: 38,
         amplitude: 110,
@@ -84,8 +84,8 @@ export class ProfileManager {
 
     // Excited personality - higher energy
     this.profiles.set("zenbot-excited", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-us",
         pitch: 52,
         amplitude: 115,
@@ -99,8 +99,8 @@ export class ProfileManager {
 
     // Calm personality - very smooth and relaxed
     this.profiles.set("zenbot-calm", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb-scotland", // Scottish English for softer tones
         pitch: 40,
         amplitude: 95,
@@ -114,8 +114,8 @@ export class ProfileManager {
 
     // NEW: Deep philosopher voice - enhanced for wisdom
     this.profiles.set("zenbot-deep", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb-x-rp",
         pitch: 32, // Slightly higher for better clarity
         amplitude: 115, // Reduced for more intimate feel
@@ -129,8 +129,8 @@ export class ProfileManager {
 
     // NEW: Crisp and clear for important announcements - optimized
     this.profiles.set("zenbot-crisp", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-us",
         pitch: 48, // Slightly lower for authority
         amplitude: 120, // Balanced volume
@@ -144,8 +144,8 @@ export class ProfileManager {
 
     // NEW: Smooth radio-like voice - enhanced for warmth
     this.profiles.set("zenbot-smooth", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb-x-rp",
         pitch: 42, // Lower for warmth
         amplitude: 105, // Gentle volume
@@ -159,8 +159,8 @@ export class ProfileManager {
 
     // NEW: Mysterious/dramatic voice - enhanced atmosphere
     this.profiles.set("zenbot-mysterious", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb",
         pitch: 33, // Slightly higher for intrigue
         amplitude: 95, // Whisper-like but audible
@@ -174,8 +174,8 @@ export class ProfileManager {
 
     // NEW: Energetic and upbeat voice
     this.profiles.set("zenbot-energetic", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-us",
         pitch: 55, // Higher for energy
         amplitude: 118, // Lively volume
@@ -189,8 +189,8 @@ export class ProfileManager {
 
     // NEW: Professional and authoritative
     this.profiles.set("zenbot-professional", {
-      provider: "linux",
-      linux: {
+      provider: "espeak",
+      espeak: {
         variant: "en-gb-x-rp",
         pitch: 40, // Professional tone
         amplitude: 112, // Clear and present
@@ -242,7 +242,7 @@ export class ProfileManager {
     const provider = VOICE_CONFIG.TTS_PROVIDER;
 
     switch (provider) {
-      case "linux":
+      case "espeak":
         return this.profiles.get("zenbot-default")!;
       case "local":
       case "system":
@@ -262,7 +262,7 @@ export class ProfileManager {
 
     // First part is voice variant
     if (parts[0]) {
-      config.linux!.variant = parts[0];
+      config.espeak!.variant = parts[0];
     }
 
     // Parse parameters
@@ -274,24 +274,24 @@ export class ProfileManager {
         switch (key.toLowerCase()) {
           case "pitch":
           case "p":
-            config.linux!.pitch = Math.max(0, Math.min(99, numValue));
+            config.espeak!.pitch = Math.max(0, Math.min(99, numValue));
             break;
           case "amp":
           case "amplitude":
           case "a":
-            config.linux!.amplitude = Math.max(0, Math.min(200, numValue));
+            config.espeak!.amplitude = Math.max(0, Math.min(200, numValue));
             break;
           case "speed":
           case "s":
-            config.linux!.speed = Math.max(80, Math.min(400, numValue));
+            config.espeak!.speed = Math.max(80, Math.min(400, numValue));
             break;
           case "gap":
           case "g":
-            config.linux!.wordGap = Math.max(0, Math.min(100, numValue));
+            config.espeak!.wordGap = Math.max(0, Math.min(100, numValue));
             break;
           case "capital":
           case "k":
-            config.linux!.capitalEmphasis = Math.max(0, Math.min(40, numValue));
+            config.espeak!.capitalEmphasis = Math.max(0, Math.min(40, numValue));
             break;
         }
       }
@@ -330,9 +330,9 @@ export class ProfileManager {
     switch (config.provider) {
       case "system":
         return `System ${config.system!.voice} voice`;
-      case "linux":
-        const linux = config.linux!;
-        return `Linux ${linux.variant} (pitch=${linux.pitch}, speed=${linux.speed})`;
+      case "espeak":
+        const espeak = config.espeak!;
+        return `eSpeak ${espeak.variant} (pitch=${espeak.pitch}, speed=${espeak.speed})`;
       default:
         return "Unknown configuration";
     }
