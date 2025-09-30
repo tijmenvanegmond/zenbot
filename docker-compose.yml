@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  zenbot:
+    build: .
+    container_name: zenbot
+    ports:
+      - "3001:8080"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - TTS_PROVIDER=linux
+      - LINUX_VOICE_PROFILE=zenbot-default
+      - LINUX_VOICE_HQ=true
+      - LINUX_VOICE_DEBUG=false
+    restart: unless-stopped
+    volumes:
+      - /tmp/zenbot:/tmp/zenbot

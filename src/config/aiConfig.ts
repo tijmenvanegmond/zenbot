@@ -7,13 +7,13 @@ import { AIServiceConfig } from "../services/ai";
 import { logger } from "../utils/logger";
 
 // Load environment variables
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_KEY = undefined; // process.env.OPENAI_API_KEY; // Disabled to avoid token usage
 const ANTHROPIC_API_KEY = undefined; // process.env.ANTHROPIC_API_KEY; // Disabled for now
 const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY;
 
 // Validate required API keys
 if (!OPENAI_API_KEY) {
-  logger.warn("⚠️ OPENAI_API_KEY not found - OpenAI provider will be disabled");
+  logger.warn("⚠️ OPENAI_API_KEY disabled - OpenAI provider will be disabled");
 }
 
 if (!ANTHROPIC_API_KEY) {
@@ -34,11 +34,11 @@ if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY && !GOOGLE_AI_API_KEY) {
   );
 }
 
-// Determine default provider based on available keys - prefer OpenAI gpt-4o for best responses
+// Determine default provider based on available keys - using Gemini since OpenAI is disabled
 const getDefaultProvider = (): string => {
-  if (OPENAI_API_KEY) return "openai";
   if (GOOGLE_AI_API_KEY) return "gemini";
   if (ANTHROPIC_API_KEY) return "anthropic";
+  if (OPENAI_API_KEY) return "openai";
   throw new Error("No AI provider available");
 };
 
@@ -47,14 +47,15 @@ export const AI_CONFIG: AIServiceConfig = {
 
   // Provider-specific configurations
   providers: {
-    ...(OPENAI_API_KEY && {
-      openai: {
-        apiKey: OPENAI_API_KEY,
-        defaultModel: "gpt-4o",
-        maxTokens: 1000,
-        temperature: 0.7,
-      },
-    }),
+    // OpenAI provider disabled to avoid token usage
+    // ...(OPENAI_API_KEY && {
+    //   openai: {
+    //     apiKey: OPENAI_API_KEY,
+    //     defaultModel: "gpt-4o",
+    //     maxTokens: 1000,
+    //     temperature: 0.7,
+    //   },
+    // }),
 
     // Anthropic provider disabled
     // ...(ANTHROPIC_API_KEY && {
@@ -84,36 +85,36 @@ export const AI_CONFIG: AIServiceConfig = {
     storage: "memory", // Use memory storage for now
   },
 
-  // Provider routing for different capabilities - prioritize OpenAI gpt-4o
+  // Provider routing for different capabilities - prioritize Gemini since OpenAI is disabled
   routing: {
-    simple: OPENAI_API_KEY
-      ? "openai"
-      : GOOGLE_AI_API_KEY
-        ? "gemini"
-        : "anthropic", // Simple text generation
-    conversation: OPENAI_API_KEY
-      ? "openai"
-      : GOOGLE_AI_API_KEY
-        ? "gemini"
-        : "anthropic", // Conversations with memory
-    functions: OPENAI_API_KEY
-      ? "openai"
+    simple: GOOGLE_AI_API_KEY
+      ? "gemini"
       : ANTHROPIC_API_KEY
         ? "anthropic"
-        : "gemini", // Function calling (keep OpenAI first for functions)
-    streaming: OPENAI_API_KEY
-      ? "openai"
-      : GOOGLE_AI_API_KEY
-        ? "gemini"
-        : "anthropic", // Streaming responses
+        : "openai", // Simple text generation
+    conversation: GOOGLE_AI_API_KEY
+      ? "gemini"
+      : ANTHROPIC_API_KEY
+        ? "anthropic"
+        : "openai", // Conversations with memory
+    functions: GOOGLE_AI_API_KEY
+      ? "gemini"
+      : ANTHROPIC_API_KEY
+        ? "anthropic"
+        : "openai", // Function calling
+    streaming: GOOGLE_AI_API_KEY
+      ? "gemini"
+      : ANTHROPIC_API_KEY
+        ? "anthropic"
+        : "openai", // Streaming responses
   },
 
-  // Fallback configuration - safe linear chains
+  // Fallback configuration - safe linear chains (OpenAI disabled)
   fallbacks: {
     providers: {
-      openai: ["gemini", "anthropic"], // OpenAI → Gemini → Anthropic
-      anthropic: ["gemini", "openai"], // Anthropic → Gemini → OpenAI
-      gemini: ["openai", "anthropic"], // Gemini → OpenAI → Anthropic
+      openai: ["gemini", "anthropic"], // OpenAI → Gemini → Anthropic (if somehow enabled)
+      anthropic: ["gemini"], // Anthropic → Gemini (skip OpenAI)
+      gemini: ["anthropic"], // Gemini → Anthropic (skip OpenAI)
     },
     maxRetries: 2,
     circuitBreakerThreshold: 3,

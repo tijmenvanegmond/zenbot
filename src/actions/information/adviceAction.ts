@@ -153,8 +153,8 @@ export class AdviceAction implements ZenAction {
         adviceText = `Regarding ${topic}: ${adviceText}`;
       }
 
-      // Determine if we should use voice
-      const shouldUseVoice = use_voice && context.voiceChannel;
+      // Determine if we should use voice (but avoid duplicate TTS in AI sessions)
+      const shouldUseVoice = use_voice && context.voiceChannel && context.source !== "ai";
 
       // If user wants voice and is in voice channel, play TTS
       if (shouldUseVoice) {
@@ -170,6 +170,10 @@ export class AdviceAction implements ZenAction {
             error,
           );
         }
+      } else if (context.source === "ai" && use_voice) {
+        logger.debug(
+          "🎭 Skipping TTS in advice action - AI interaction likely handling TTS separately"
+        );
       }
 
       return {

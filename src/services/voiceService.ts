@@ -13,6 +13,9 @@ import https from "https";
 import http from "http";
 import { logger } from "../utils/logger";
 import { OpenAIService } from "./openaiService";
+import { LocalTTSService } from "./localTtsService";
+import { LinuxVoiceService } from "./linuxVoiceService";
+import { VOICE_CONFIG, LINUX_VOICE_CONFIG } from "../config";
 import {
   VoiceLineData,
   VoiceLineCategories,
@@ -32,22 +35,36 @@ export class VoiceService {
   // ===== TTS METHODS =====
 
   /**
-   * Creates TTS stream with Zenyatta-style voice
+   * Creates TTS stream with Zenyatta-style voice (supports both OpenAI and local TTS)
    */
   static async createTTSStream(input: string): Promise<AudioResource> {
     try {
-      const buffer = await OpenAIService.createTTSStream(input);
+      // Check which TTS provider to use
+      if (VOICE_CONFIG.TTS_PROVIDER === "linux" && LinuxVoiceService.isAvailable()) {
+        logger.info("Using Linux voice service provider");
+        const profile = LINUX_VOICE_CONFIG.CUSTOM_VOICE_CONFIG || LINUX_VOICE_CONFIG.VOICE_PROFILE;
+        return await LinuxVoiceService.createTTSStream(input, profile);
+      } else if (VOICE_CONFIG.TTS_PROVIDER === "local") {
+        logger.info("Using local TTS provider");
+        return await LocalTTSService.createTTSStream(input, {
+          voice: VOICE_CONFIG.LOCAL_TTS_VOICE,
+          speed: VOICE_CONFIG.LOCAL_TTS_SPEED,
+        });
+      } else {
+        logger.info("Using OpenAI TTS provider");
+        const buffer = await OpenAIService.createTTSStream(input);
 
-      const stream = new Readable();
-      stream.push(buffer);
-      stream.push(null);
+        const stream = new Readable();
+        stream.push(buffer);
+        stream.push(null);
 
-      const resource = createAudioResource(stream, {
-        inputType: StreamType.Arbitrary,
-      });
+        const resource = createAudioResource(stream, {
+          inputType: StreamType.Arbitrary,
+        });
 
-      logger.info(`Created audio resource successfully`);
-      return resource;
+        logger.info(`Created audio resource successfully`);
+        return resource;
+      }
     } catch (error) {
       logger.error("Error creating TTS stream:", error);
       throw error;

@@ -17,7 +17,9 @@
       "Bash(node:*)",
       "Bash(PORT=8080 node dist/app.js)",
       "Bash(taskkill:*)",
-      "Bash(PORT=3002 node dist/app.js)"
+      "Bash(PORT=3002 node dist/app.js)",
+      "Bash(npm run test:multi-personality:*)",
+      "Bash(npm run demo:multi-personality:*)"
     ],
     "deny": [],
     "ask": []

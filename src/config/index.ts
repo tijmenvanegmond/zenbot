@@ -23,12 +23,52 @@ export class Config {
 
   // Voice Configuration
   static readonly VOICE_CONFIG = {
+    TTS_PROVIDER: Config.getEnv("TTS_PROVIDER", "openai"), // "openai", "local", or "linux"
     TTS_MODEL: "gpt-4o-mini-tts",
     TTS_VOICE: "echo",
     TTS_FORMAT: "mp3" as const,
     LEGACY_TTS_MODEL: "tts-1",
     LEGACY_TTS_VOICE: "nova",
     LEGACY_TTS_FORMAT: "opus" as const,
+    // Local TTS options (legacy)
+    LOCAL_TTS_VOICE: Config.getEnv("LOCAL_TTS_VOICE",
+      process.platform === 'darwin' ? 'Alex' :
+      process.platform === 'win32' ? 'Microsoft Zira Desktop' :
+      process.platform === 'linux' ? 'en+m2:pitch=55:amp=100' : 'default'
+    ),
+    LOCAL_TTS_SPEED: parseFloat(Config.getEnv("LOCAL_TTS_SPEED", "1.0")),
+  } as const;
+
+  // Linux Voice Service Configuration
+  static readonly LINUX_VOICE_CONFIG = {
+    // Primary voice profile selection
+    VOICE_PROFILE: Config.getEnv("LINUX_VOICE_PROFILE", "zenbot-default"),
+
+    // Custom voice configuration (overrides profile if set)
+    CUSTOM_VOICE_CONFIG: Config.getEnv("LINUX_CUSTOM_VOICE", ""),
+
+    // Personality-based voice profiles
+    PERSONALITY_PROFILES: {
+      default: "zenbot-default",
+      sardonic: "zenbot-sardonic",
+      wise: "zenbot-wise",
+      excited: "zenbot-excited",
+      calm: "zenbot-calm",
+      female: "zenbot-female",
+    } as const,
+
+    // Audio quality settings
+    ENABLE_HIGH_QUALITY: Config.getEnv("LINUX_VOICE_HQ", "true") === "true",
+    TEMP_DIR: Config.getEnv("LINUX_VOICE_TEMP_DIR",
+      process.env.NODE_ENV === 'production' ? '/tmp/zenbot' : './temp/linux-voice'
+    ),
+
+    // Advanced settings
+    ENABLE_VOICE_CACHE: Config.getEnv("LINUX_VOICE_CACHE", "false") === "true",
+    MAX_TEXT_LENGTH: parseInt(Config.getEnv("LINUX_VOICE_MAX_LENGTH", "1000")),
+
+    // Debug and logging
+    ENABLE_DEBUG_LOGS: Config.getEnv("LINUX_VOICE_DEBUG", "false") === "true",
   } as const;
 
   // AI Configuration
@@ -124,6 +164,7 @@ export const {
   LOG_LEVEL,
   CHANNEL_TYPES,
   VOICE_CONFIG,
+  LINUX_VOICE_CONFIG,
   AI_CONFIG,
   EXCLUDED_VOICE_CHANNELS,
   QUOTE_CHANNEL_NAMES,

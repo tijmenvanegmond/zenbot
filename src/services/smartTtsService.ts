@@ -6,7 +6,7 @@ import {
   StreamType,
   AudioPlayerStatus,
 } from "@discordjs/voice";
-import { OpenAIService } from "./openaiService";
+import { VoiceService } from "./voiceService";
 import { VoiceSessionManager } from "./voiceSessionManager";
 import { logger } from "../utils/logger";
 import { Readable } from "stream";
@@ -70,14 +70,9 @@ export class SmartTtsService {
       }
 
       // Generate TTS audio
-      const audioBuffer = await OpenAIService.createTTSStream(text);
-      const audioStream = Readable.from(audioBuffer);
-
-      // Create audio player and resource
+      const resource = await VoiceService.createTTSStream(text);
+      // Create audio player
       const player = createAudioPlayer();
-      const resource = createAudioResource(audioStream, {
-        inputType: StreamType.Arbitrary,
-      });
 
       // Subscribe connection to player
       session.connection.subscribe(player);
@@ -138,14 +133,9 @@ export class SmartTtsService {
       );
 
       // Generate TTS audio
-      const audioBuffer = await OpenAIService.createTTSStream(text);
-      const audioStream = Readable.from(audioBuffer);
-
-      // Create audio player and resource
+      const resource = await VoiceService.createTTSStream(text);
+      // Create audio player
       const player = createAudioPlayer();
-      const resource = createAudioResource(audioStream, {
-        inputType: StreamType.Arbitrary,
-      });
 
       // Subscribe connection to player
       session.connection.subscribe(player);

@@ -60,4 +60,10 @@ const fastify = Fastify({
 // Register all API routes - true self flows through many forms
 registerApiRoutes(fastify, discordClient);
 
-fastify.listen({ host: "0.0.0.0", port: Number(PORT) });
+fastify.listen({ host: "0.0.0.0", port: Number(PORT) }, (err, address) => {
+  if (err) {
+    logger.error("❌ Failed to start API server:", err);
+    process.exit(1);
+  }
+  logger.info(`🌐 API server listening on ${address} - the path to enlightenment is open`);
+});

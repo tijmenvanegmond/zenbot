@@ -204,26 +204,32 @@ export class ActionService {
   /**
    * Get function schemas for OpenAI function calling
    */
-  getFunctionSchemas(): any[] {
-    return this.registry.getForAI().map((schema) => ({
-      type: "function",
-      function: {
-        name: schema.name,
-        description: schema.description,
-        parameters: schema.parameters,
-      },
-    }));
+  getFunctionSchemas(excludeFunctions: string[] = []): any[] {
+    return this.registry
+      .getForAI()
+      .filter((schema) => !excludeFunctions.includes(schema.name))
+      .map((schema) => ({
+        type: "function",
+        function: {
+          name: schema.name,
+          description: schema.description,
+          parameters: schema.parameters,
+        },
+      }));
   }
 
   /**
    * Get raw function definitions compatible with AI provider function calling
    */
-  getFunctionDefinitions() {
-    return this.registry.getForAI().map((schema) => ({
-      name: schema.name,
-      description: schema.description,
-      parameters: schema.parameters,
-    }));
+  getFunctionDefinitions(excludeFunctions: string[] = []) {
+    return this.registry
+      .getForAI()
+      .filter((schema) => !excludeFunctions.includes(schema.name))
+      .map((schema) => ({
+        name: schema.name,
+        description: schema.description,
+        parameters: schema.parameters,
+      }));
   }
 
   /**

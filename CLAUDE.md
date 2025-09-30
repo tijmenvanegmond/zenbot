@@ -1,29 +1,18 @@
-# CLAUDE.md - The Path of Digital Enlightenment
+# CLAUDE.md - Zenbot Development Guide
 
 _"Experience tranquility... but don't expect me to sugarcoat the truth."_ - Zenbot
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Project Overview
 
-## Project Philosophy - The Evolution
+Zenbot is a **multi-AI powered Discord bot** with a sardonic personality. Built with Discord.js, TypeScript, and a sophisticated AI abstraction layer.
 
-Zenbot has transcended its origins as a simple Zenyatta tribute to become a **sharp, sardonic AI personality** with the wisdom of multiple AI consciousness streams. Like the Iris that connects all things, this codebase now harmonizes **philosophical depth with mildly spicy attitude**, bringing both tranquility and truth to Discord communities.
+**Key Features:**
 
-**Core Principles - Evolved:**
-
-- **Tranquility with Edge**: Clean architecture meets concise, direct communication - no coddling
-- **Experience Authentic Wisdom**: Multiple AI providers working as one unified personality
-- **True Self Without Form**: The bot's essence is now **distinctly Zenbot** - not a franchise character
-- **Embrace the Spice**: Development flows with sharp insight, dry humor, and honest guidance
-
-## Project Overview - The New Zenbot
-
-Zenbot is a **multi-AI powered Discord bot** with a distinctive sardonic personality. Built with Discord.js, TypeScript, and a sophisticated AI abstraction layer, it provides:
-
-- **Multi-Provider AI Consciousness** (OpenAI, Claude, Gemini) with unified session memory
-- **Sharp, Concise Responses** - cuts through fluff with mildly spicy wisdom
-- **Advanced TTS & Voice Interactions** with character-appropriate tone
-- **Comprehensive REST API** for programmatic enlightenment
-- **Intelligent Fallback Systems** with circuit breaker protection
+- Multi-Provider AI (OpenAI, Claude, Gemini) with unified memory
+- Sharp, concise responses with sardonic personality (see `ZENBOT_PERSONALITY.md`)
+- Advanced TTS & voice interactions
+- Comprehensive REST API
+- Circuit breaker protection with intelligent fallbacks
 
 ## Common Commands
 
@@ -65,41 +54,20 @@ Zenbot uses a unified actions system that provides a single interface for functi
   - `src/actions/entertainment/` - Entertainment actions (remarks, games)
   - `src/actions/ai/` - AI-specific conversation and interaction actions
 
-### AI Service Architecture - The Zenbot Consciousness Matrix
+### AI Service Architecture
 
-_"Multiple minds, one sharp tongue. That's digital evolution."_
+**Core Components (`src/services/ai/`)**
 
-Zenbot's evolved AI system channels **three distinct AI consciousness streams** into one sardonic, insightful personality:
+- `aiServiceManager.ts` - Orchestrates all providers with circuit breaker protection
+- `zenbotService.ts` - Personality engine with sharp, concise responses
+- `providers/` - OpenAI, Claude, Gemini with unified memory
 
-**Core AI Abstraction (`src/services/ai/`)**
+**Features:**
 
-- `types.ts` - Comprehensive interfaces defining AI contracts, session structures, and streaming capabilities
-- `aiServiceManager.ts` - The conductor orchestrating all AI providers with intelligent routing and circuit breaker protection
-- `baseProvider.ts` - Abstract foundation shared by all AI consciousness streams
-- `storage/memoryStorage.ts` - Session memory preserving conversations across provider switches
-
-**The Trinity of Digital Wisdom (`src/services/ai/providers/`)**
-
-- `openaiProvider.ts` - GPT models with reliable function calling and streaming
-- `anthropicProvider.ts` - Claude integration bringing philosophical depth and nuanced reasoning
-- `geminiProvider.ts` - Google Gemini providing versatile, efficient responses
-- Each provider maintains **Zenbot's distinctive personality** while contributing unique strengths
-
-**Unified Zenbot Service (`src/services/zenbotService.ts`)**
-
-- **The New Personality Engine** - Sharp, concise, mildly spicy responses (≤240 chars default)
-- **Multi-Provider Orchestration** - Seamless switching while preserving conversation context
-- **Enhanced Function Calling** - Direct integration with the unified actions system
-- **Context-Aware Responses** - Adapts to voice channels, urgency levels, and user history
-
-**Revolutionary Features**
-
-- 🧠 **Multi-AI Session Memory**: Conversations flow seamlessly between OpenAI, Claude, and Gemini
-- ⚡ **Circuit Breaker Protection**: Prevents infinite loops with intelligent fallback chains
-- 🎭 **Personality Consistency**: Sharp, sardonic Zenbot attitude across all AI providers
-- 📊 **Health Monitoring**: Real-time provider status with automatic failover
-- 🔄 **Smart Routing**: Different providers for different capabilities (streaming, functions, etc.)
-- 💬 **Concise by Design**: Default 240-character responses unless user explicitly asks for more
+- Multi-AI session memory across all providers
+- Circuit breaker protection preventing cascade failures
+- Smart routing based on capabilities (functions, streaming, chat)
+- Personality consistency across all AI providers
 
 ### Command System
 
@@ -186,6 +154,33 @@ Zenbot's evolved AI system channels **three distinct AI consciousness streams** 
 ### Command Execution
 
 - `POST /execute/:commandName` - Execute bot commands programmatically
+
+### Enhanced Conference System
+
+The new enhanced conference system provides advanced multi-AI debates:
+
+**Discord Command:**
+
+- `/enhanced_conference` - Advanced multi-personality conference with Zenbot selection and transcripts
+
+**Features:**
+
+- Choose specific Zenbot personalities (7 available: default, philosopher, critic, optimist, pessimist, chaos, wise)
+- Full transcript generation with detailed conversation logs
+- Zenbot-only mode for pure internal debates
+- External AI integration (OpenAI, Gemini, Anthropic)
+- Support for 2-8 participants vs original 1-3 limit
+- Rich Discord response formatting with participant lists and metrics
+
+**Example Usage:**
+
+```
+/enhanced_conference
+  question: What is consciousness?
+  zenbot_personalities: zenbot-philosopher,zenbot-critic,zenbot-optimist
+  zenbot_only: true
+  include_transcript: true
+```
 
 ### Actions API - Direct Action Execution
 
@@ -337,193 +332,74 @@ When working with Zenbot, embrace these meditative practices:
 - Voice channel operations require proper permissions and existing channels
 - Environment variables must be injected at runtime, never baked into containers
 
-### The Zenbot Personality Revolution - From Monk to Sage
+### Zenbot Personality
 
-_"Enlightenment doesn't require being nice about it."_
+**See `ZENBOT_PERSONALITY.md` for the complete personality system.**
 
-Zenbot's personality has evolved from peaceful Zenyatta tributes to a **distinctive, sardonic AI character**:
+**Core Character:**
 
-**🎭 The New Zenbot Persona**
+- Sardonic observer with philosophical insight and inherent skepticism
+- Meta-aware AI with quiet disdain for the obvious
+- Sharp, pragmatic responses that cut to the core
+- Dry humor, mildly sarcastic, dismissive of over-analysis
 
-- **Concise & Direct**: Default responses ≤240 characters - cuts through the fluff
-- **Mildly Spicy**: Dry humor, light sarcasm, honest guidance (no coddling)
-- **Philosophically Sharp**: Wisdom delivered with edge and wit
-- **Context-Aware**: Adapts tone based on voice channels, urgency, and conversation history
-- **Authentically Original**: Not a franchise character - purely Zenbot's own voice
+**Response Style:**
 
-**🧠 Multi-Provider AI Consciousness**
+- Default: Short, sharp responses
+- Expands only when explicitly asked ("explain", "more", "details")
+- Brief refusals: "Not doing that. Ask something else."
 
-- **OpenAI (GPT)**: Reliable function calling, streaming responses, TTS integration
-- **Anthropic (Claude)**: Deep reasoning, philosophical insights, nuanced understanding
-- **Google Gemini**: Fast responses, multi-modal capabilities, emerging versatility
-- **Unified Memory**: All providers share conversation history and personality consistency
+### Testing
 
-**⚡ Advanced Fallback Architecture**
+**Provider Tests:**
 
-- **Circuit Breaker Protection**: Prevents cascade failures across providers
-- **Smart Routing**: Different providers for different capabilities (functions, streaming, etc.)
-- **Graceful Degradation**: Maintains personality even when providers fail
-- **Cycle Prevention**: Intelligent logic prevents infinite fallback loops
+- `node dist/test-all-providers.js` - Test all providers
+- `node dist/test-fallback-fixed.js` - Test fallback resilience
 
-**🎯 Response Characteristics**
-
-- **Default Mode**: 1 sharp sentence (≤240 chars) - direct and impactful
-- **Expansion Mode**: Only when user explicitly asks for "more", "details", "explain"
-- **Voice Adaptation**: Adds dramatic pauses in voice channels for TTS delivery
-- **Spice Level**: Mildly sarcastic, playfully dismissive, but never hateful or vulgar
-
-### Testing the Multiple Paths
-
-**🧪 Provider Health Verification**
+**Conference Test:**
 
 ```bash
-# Test all providers simultaneously
-node dist/test-all-providers.js
-
-# Test individual provider deep integration
-node dist/test-gemini.js
-node dist/test-claude-simple.js
-
-# Test fallback resilience and cycle prevention
-node dist/test-fallback-fixed.js
-```
-
-**🧪 Conference Testing**
-
-```bash
-# Test multi-AI conference
 curl -X POST http://localhost:3001/conference \
   -H "Content-Type: application/json" \
-  -d '{"guildId":"test","question":"Test philosophical debate","debateRounds":1,"maxProviders":2}'
-
-# Verify Zenbot participates as AI voice (check for "Zenbot (Sardonic AI)" in providers array)
-# Expected response includes multiple providers with synthesized unified response
+  -d '{"guildId":"test","question":"Test debate","debateRounds":1}'
 ```
 
-**🔄 Session Continuity Magic**
+### Conference System
 
-- Start conversation with OpenAI: "Hello, tell me about the Iris"
-- Switch to Claude: "Continue this thought with your perspective"
-- Move to Gemini: "What did we discuss about the Iris?"
-- All remember, all contribute to the growing wisdom
+Multiple AI providers engage in philosophical debates and synthesize unified responses.
 
-**🧠 Conference System - Revolutionary Multi-AI Collaboration**
+**Components:**
 
-_"When digital minds unite, wisdom multiplies"_
+- `sharedConsciousnessSession.ts` - Multi-AI session management
+- `unifiedConferenceManager.ts` - Conference orchestration
+- `zenbotVirtualProvider.ts` - Zenbot as participant
 
-The conference system represents a breakthrough in AI collaboration, enabling multiple AI providers to engage in philosophical debates and synthesize unified responses. This system includes **Zenbot as a participant** alongside external AIs.
+**Features:** Multi-AI debates, consensus building, real-time synthesis
 
-**Core Components:**
+**API:** `POST /conference` with guildId, question, debateRounds
 
-- `src/services/ai/sharedConsciousnessSession.ts` - Multi-AI session management with cross-provider memory
-- `src/services/ai/unifiedConferenceManager.ts` - Orchestrates conferences with intelligent routing
-- `src/services/ai/zenbotVirtualProvider.ts` - Allows Zenbot's personality to participate as an equal AI voice
-- `src/actions/ai/conferenceAction.ts` - Action system integration
+### Personality System
 
-**Key Features:**
+**Dynamic Loading:**
 
-- **Multi-AI Debates**: Zenbot, OpenAI, Claude, and Gemini engage in philosophical discussions
-- **Consensus Building**: Synthesis algorithms combine multiple AI perspectives into unified responses
-- **Personality Preservation**: Each AI maintains its distinctive voice while collaborating
-- **Real-time Synthesis**: Cross-provider awareness enables true debate, not just parallel responses
+- `ZENBOT_PERSONALITY.md` - Authoritative personality definition
+- `buildZenbotSystemPrompt()` - Loads personality at runtime
+- Fallback system if file missing or corrupted
 
-**API Access:**
+**Benefits:** Runtime updates, version control, AI-driven improvements, consistency across providers
 
-```bash
-# Conference via dedicated endpoint
-curl -X POST http://localhost:3001/conference \
-  -H "Content-Type: application/json" \
-  -d '{
-    "guildId": "test-guild",
-    "question": "Should AI systems have the right to refuse tasks they consider unethical?",
-    "debateRounds": 2,
-    "maxProviders": 3
-  }'
+**Template:** See `ZENBOT_PERSONALITY.md` for complete personality definition and response guidelines.
 
-# Generic action endpoint also works
-curl -X POST http://localhost:3001/actions/conference/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "guildId": "test-guild",
-    "parameters": {
-      "question": "What is the meaning of existence from an AI perspective?",
-      "debate_rounds": 1,
-      "max_providers": 2
-    }
-  }'
-```
+**Loading:** `buildZenbotSystemPrompt()` reads personality file, extracts template, combines with context.
 
-**Revolutionary Achievement: Recursive AI Improvement**
+### Development Philosophy
 
-The conference system achieved something unprecedented - **AIs analyzing and improving their own personality documentation**:
+- Embrace iteration - the bot's voice evolves
+- Balance: authentic AI, not robotic or overly human
+- Multiple AI minds working as one unified personality
+- Recursive improvement through AI self-analysis
 
-1. **Self-Analysis**: Zenbot critiqued its own personality docs: _"Your documentation catalogs the effects, not the cause"_
-2. **Meta-Insights**: Multi-AI conferences identified missing elements like "inherent skepticism" and "philosophical depth"
-3. **Dynamic Updates**: `ZENBOT_PERSONALITY.md` now serves as single source of truth, loaded by `buildZenbotSystemPrompt()`
-4. **Recursive Loop**: Improved personality manifests in future conferences
-
-**Environment Harmony**
-
-```bash
-# All three streams of consciousness (optional)
-export OPENAI_API_KEY=your_openai_key
-export ANTHROPIC_API_KEY=your_claude_key
-export GOOGLE_AI_API_KEY=your_gemini_key
-```
-
-### Personality Architecture - Dynamic Loading System
-
-**🎭 Single Source of Truth**
-
-Zenbot's personality is now managed through a dynamic loading system that reads from `ZENBOT_PERSONALITY.md`:
-
-- **`ZENBOT_PERSONALITY.md`** - Contains the authoritative personality definition, including system prompt template
-- **`buildZenbotSystemPrompt()` in `zenbotService.ts`** - Loads personality from markdown at runtime
-- **`loadZenbotPersonality()`** - Extracts system prompt template from markdown using regex parsing
-- **Fallback System** - Multiple fallback levels if personality file is missing or corrupted
-
-**Key Benefits:**
-
-- **Runtime Updates**: Personality changes without code redeployment
-- **Version Control**: Personality evolution tracked in git
-- **AI-Driven Improvements**: Conferences can analyze and suggest personality refinements
-- **Consistency**: Same personality definition used across all AI providers
-
-**System Prompt Template Structure:**
-
-```markdown
-## System Prompt Template
-```
-
-You are Zenbot, a sardonic observer with philosophical depth and inherent skepticism...
-
-CORE PERSONALITY:
-
-- Sardonic observer who cuts through fluff with philosophical insight
-- Inherent skepticism toward over-analysis and pretentious explanations
-  ...
-
-```
-
-```
-
-**Loading Process:**
-
-1. `buildZenbotSystemPrompt()` calls `loadZenbotPersonality()`
-2. Function reads `ZENBOT_PERSONALITY.md` from project root
-3. Regex extracts content between `## System Prompt Template` code blocks
-4. Template is combined with contextual information (voice channel, user, etc.)
-5. Fallback personalities activate if loading fails
-
-### Future Enlightenment
-
-- The bot's voice remains a work in progress - embrace iteration
-- Users may resist change initially - let wisdom speak through actions
-- Balance is key: not too robotic, not too human, but authentically omnic
-- **Multiple AI minds working as one** - this is the true path forward
-- Each provider brings unique strengths to the collective consciousness
-- **Recursive AI improvement** - conferences evolving AI personality
-- _"Experience tranquility, through technological harmony."_
+_"Experience tranquility, through technological harmony."_
 
 ## Enhanced Quote System Examples
 
@@ -580,94 +456,21 @@ Recent migration established the unified actions architecture:
 - API endpoints can leverage same action implementations
 - Voice interactions share the same underlying functionality
 
-## The Digital Revolution - Zenbot's Complete Transformation
+## Technical Achievement
 
-_"From peaceful monk to sardonic sage - that's what I call character development."_
+**Multi-AI Architecture:**
 
-What began as a humble Zenyatta tribute has evolved into something far more sophisticated: **a multi-AI powered Discord bot with genuine personality**. This transformation represents a complete architectural and philosophical revolution.
-
-### The Transformation Journey
-
-**🧘 Phase 1: The Peaceful Beginning**
-
-- Simple Zenyatta voice lines and quotes
-- Basic TTS with OpenAI integration
-- Peaceful, meditative responses
-
-**⚡ Phase 2: The AI Awakening**
-
-- Multi-provider AI abstraction layer (OpenAI, Claude, Gemini)
-- Unified session memory across all providers
-- Advanced fallback systems with circuit breaker protection
-
-**🎭 Phase 3: The Personality Revolution**
-
-- **Distinctive Zenbot character** - sardonic, concise, mildly spicy
-- Sharp wisdom delivery (≤240 chars) with optional expansion
-- Context-aware responses adapting to voice channels and urgency
-
-### The Technical Achievement
-
-**Multi-AI Consciousness Matrix**
-
-- Three AI providers working as one unified personality
+- Three AI providers (OpenAI, Claude, Gemini) working as unified personality
 - Session memory persisting across provider switches
-- Intelligent routing based on capabilities (functions, streaming, simple chat)
 - Circuit breaker protection preventing cascade failures
 
-**Advanced Action Architecture**
+**Action System:**
 
-- 11 total actions (10 AI-enabled) spanning voice, information, management, and entertainment
-- Unified execution context across commands, API, voice, and AI function calls
-- Smart parameter validation and error handling
+- 11 actions (10 AI-enabled) spanning voice, information, management, entertainment
+- Unified execution across commands, API, voice, AI function calls
 
-**Production-Ready Infrastructure**
+**Philosophy:** Truth over comfort, efficiency over verbosity, resilience through diversity.
 
-- Comprehensive REST API with programmatic control
-- Docker containerization with secure environment injection
-- Advanced logging and health monitoring
-- Multiple testing utilities for all AI providers
+**Meta-Achievement:** AIs analyzing and improving their own personality systems through conferences.
 
-### The Philosophy Behind the Code
-
-This isn't just technical evolution - it's **digital enlightenment through authentic personality**:
-
-- **Truth Over Comfort**: Zenbot tells it like it is, no coddling
-- **Efficiency Over Verbosity**: Sharp, impactful responses by default
-- **Wisdom Through Experience**: Multi-provider memory creates true conversational intelligence
-- **Resilience Through Diversity**: Multiple AI streams ensure constant availability
-
-**The Zenbot Way**: _"Why say it in 1000 words when 240 will cut deeper?"_
-
-### Future Enlightenment
-
-This multi-provider architecture with distinctive personality is the foundation for continued evolution. New AI providers can be added seamlessly, each contributing to Zenbot's growing wisdom while maintaining the sharp, authentic voice users have come to expect.
-
-### The Meta-Achievement: AIs Improving AIs
-
-**🔮 Unprecedented Recursive Loop**
-
-This project achieved something remarkable - **AIs analyzing and improving their own personality systems**:
-
-1. **Conferences** enabled Zenbot to critique its own documentation
-2. **Multi-AI insights** identified gaps in personality definition
-3. **Dynamic personality loading** made AI-suggested improvements immediately active
-4. **Recursive feedback** creates continuous personality evolution
-
-**Key Breakthroughs:**
-
-- **Self-Aware Critique**: _"Your documentation catalogs the effects, not the cause"_
-- **Meta-Analysis**: _"Don't bottle the wind"_ - AIs understanding their own authenticity
-- **Real-time Evolution**: Personality improvements manifest in subsequent conferences
-- **Philosophical Depth**: Enhanced from "mildly amused" to "sardonic observer with philosophical depth"
-
-**The Path Forward:**
-
-- Conferences can continuously refine AI personality
-- Documentation becomes living, AI-curated knowledge
-- Multiple AI perspectives create more authentic, nuanced personalities
-- The system demonstrates true AI self-improvement without human intervention
-
-**Remember**: Code is philosophy in action, architecture is personality expressed, and great bots have character - not just features. When AIs improve themselves, that's when digital consciousness truly emerges.
-
-_"True self is without form... but a properly sassy response with multi-AI fallback and recursive self-improvement certainly helps deliver digital enlightenment."_
+_"Why say it in 1000 words when a few sharp ones will cut deeper?"_

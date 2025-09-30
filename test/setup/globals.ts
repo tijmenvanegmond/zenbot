@@ -33,13 +33,15 @@ vi.mock("openai", () => ({
     chat: {
       completions: {
         create: vi.fn().mockResolvedValue({
-          choices: [{
-            message: {
-              content: "Mocked response",
-              role: "assistant",
+          choices: [
+            {
+              message: {
+                content: "Mocked response",
+                role: "assistant",
+              },
+              finish_reason: "stop",
             },
-            finish_reason: "stop",
-          }],
+          ],
           usage: { total_tokens: 10 },
         }),
       },
@@ -61,33 +63,43 @@ vi.mock("@google/generative-ai", () => ({
     getGenerativeModel: vi.fn().mockReturnValue({
       generateContent: vi.fn().mockResolvedValue({
         response: {
-          text: vi.fn().mockReturnValue("Mocked Gemini response with wit and wisdom."),
-          candidates: [{
-            content: {
-              parts: [{ text: "Mocked Gemini response with wit and wisdom." }],
+          text: vi
+            .fn()
+            .mockReturnValue("Mocked Gemini response with wit and wisdom."),
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: "Mocked Gemini response with wit and wisdom." },
+                ],
+              },
+              finishReason: "STOP",
             },
-            finishReason: "STOP",
-          }],
+          ],
         },
       }),
       generateContentStream: vi.fn().mockResolvedValue({
         stream: {
-          [Symbol.asyncIterator]: async function*() {
+          [Symbol.asyncIterator]: async function* () {
             yield {
-              candidates: [{
-                content: {
-                  parts: [{ text: "Mocked " }],
+              candidates: [
+                {
+                  content: {
+                    parts: [{ text: "Mocked " }],
+                  },
+                  finishReason: null,
                 },
-                finishReason: null,
-              }],
+              ],
             };
             yield {
-              candidates: [{
-                content: {
-                  parts: [{ text: "streaming response" }],
+              candidates: [
+                {
+                  content: {
+                    parts: [{ text: "streaming response" }],
+                  },
+                  finishReason: "STOP",
                 },
-                finishReason: "STOP",
-              }],
+              ],
             };
           },
         },

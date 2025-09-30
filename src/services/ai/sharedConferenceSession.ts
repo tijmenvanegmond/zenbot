@@ -301,61 +301,95 @@ export class SharedConferenceManager {
   }
 
   /**
-   * Enable providers to debate and refine their positions (but preserve Zenbot's natural voice)
+   * Enable providers to debate sequentially, creating a real conversation flow
    */
   private async facilitateDebate(
     session: SharedConferenceSession,
     initialContributions: ProviderContribution[],
     rounds: number,
   ): Promise<void> {
+    // Keep track of the conversation thread for sequential responses
+    const conversationThread: ProviderContribution[] = [
+      ...initialContributions,
+    ];
+
     for (let round = 0; round < rounds; round++) {
       logger.info(`🎭 Starting debate round ${round + 1}/${rounds}`);
 
-      // Let each provider see others' contributions and respond naturally
+      // In each round, let each provider respond to the most recent conversation
       for (const [providerId, providerSessionId] of session.providerSessions) {
         const provider = this.providers.get(providerId);
         if (!provider) continue;
 
-        // Build summary of other providers' contributions
-        const otherContributions = initialContributions
-          .filter((c) => c.providerId !== providerId)
-          .map((c) => `${c.providerName}: "${c.message.content}"`)
-          .join("\n");
+        // Build the recent conversation context (last 3-4 contributions)
+        const recentThread = conversationThread.slice(
+          -Math.min(4, conversationThread.length),
+        );
 
-        if (otherContributions) {
+        // Find the last contribution from someone else to respond to
+        const lastOtherContribution = recentThread
+          .slice()
+          .reverse()
+          .find((c) => c.providerId !== providerId);
+
+        if (lastOtherContribution) {
           let debatePrompt: string;
 
-          if (providerId === "zenbot") {
-            // Let Zenbot be naturally dismissive/critical
-            debatePrompt = `Other AIs said:\n${otherContributions}\n\nYour thoughts?`;
+          if (providerId.startsWith("zenbot")) {
+            // Let Zenbot personalities respond naturally to the last comment
+            debatePrompt = `${lastOtherContribution.providerName} just said: "${lastOtherContribution.message.content}"\n\nYour response?`;
           } else {
-            // Standard debate prompt for other providers
-            debatePrompt = `Other AI perspectives:\n${otherContributions}\n\nYour response or refinement?`;
+            // Standard response prompt for external providers
+            const conversationContext = recentThread
+              .map((c) => `${c.providerName}: ${c.message.content}`)
+              .join("\n\n");
+            debatePrompt = `Previous conversation:\n${conversationContext}\n\nYour thoughts on ${lastOtherContribution.providerName}'s point?`;
           }
 
           try {
-            const refinedResponse =
-              await provider.instance.continueConversation(
-                providerSessionId,
-                debatePrompt,
-              );
+            const response = await provider.instance.continueConversation(
+              providerSessionId,
+              debatePrompt,
+            );
 
-            // Update the original contribution with refined response
+            // Create a new contribution for this round
+            const newContribution: ProviderContribution = {
+              providerId,
+              providerName: provider.name,
+              timestamp: new Date(),
+              message: {
+                role: "assistant",
+                content: response,
+                timestamp: new Date(),
+                metadata: { provider: provider.name, round: round + 2 }, // +2 because round 1 was initial responses
+              },
+              confidence: this.calculateConfidence(response),
+              reasoning: `${provider.name} responding to ${lastOtherContribution.providerName} in round ${round + 2}`,
+            };
+
+            // Add to conversation thread and session history
+            conversationThread.push(newContribution);
+            session.conference.collaborationHistory.push(newContribution);
+
+            // Update the provider's initial contribution to their latest response
             const originalContribution = initialContributions.find(
               (c) => c.providerId === providerId,
             );
             if (originalContribution) {
-              originalContribution.message.content = refinedResponse;
-              originalContribution.reasoning += ` (natural response round ${round + 1})`;
+              originalContribution.message.content = response;
+              originalContribution.reasoning += ` (final response after ${round + 1} debate rounds)`;
               originalContribution.timestamp = new Date();
             }
 
             logger.info(
-              `🔄 ${provider.name} ${providerId === "zenbot" ? "critiqued" : "refined"} their position after debate`,
+              `🗣️ ${provider.name} responded to ${lastOtherContribution.providerName}: "${response.substring(0, 100)}..."`,
             );
+
+            // Small delay to prevent API rate limits
+            await new Promise((resolve) => setTimeout(resolve, 500));
           } catch (error) {
             logger.warn(
-              `⚠️ Provider ${provider.name} failed to participate in debate:`,
+              `⚠️ Provider ${provider.name} failed to respond in debate:`,
               error,
             );
           }

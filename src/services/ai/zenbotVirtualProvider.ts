@@ -43,10 +43,15 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
   private sessions = new Map<string, ZenbotVirtualSession>();
   private aiManager: AIServiceManager;
   private zenbotService: ZenbotService;
+  private personalityId: string;
 
-  constructor(aiManager: AIServiceManager) {
+  constructor(
+    aiManager: AIServiceManager,
+    personalityId: string = "zenbot-default",
+  ) {
     this.aiManager = aiManager;
     this.zenbotService = ZenbotService.getInstance();
+    this.personalityId = personalityId;
   }
 
   /**
@@ -122,15 +127,19 @@ export class ZenbotVirtualProvider implements Partial<AIProvider> {
         channelId: "conference-channel",
         client: {
           users: {
-            fetch: async (id: string) => ({ username: "conference-participant" })
-          }
+            fetch: async (id: string) => ({
+              username: "conference-participant",
+            }),
+          },
         },
       };
 
       // Use ZenbotService.converse to get authentic Zenbot response
       const zenbotResponse = await this.zenbotService.converse(
         mockInteraction as any, // Cast to satisfy the Discord interaction type
-        `Conference context: ${message}` // Add context for conference participation
+        `Conference context: ${message}`, // Add context for conference participation
+        undefined, // No command context
+        this.personalityId, // Use the specified personality
       );
 
       // Add Zenbot's response to session history

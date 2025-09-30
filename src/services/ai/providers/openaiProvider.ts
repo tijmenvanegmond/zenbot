@@ -18,11 +18,7 @@ import { logger } from "../../../utils/logger";
 
 export class OpenAIProvider extends BaseAIProvider {
   readonly name = "openai";
-  readonly supportedModels = [
-    "gpt-5",
-    "gpt-4o",
-    "gpt-4o-mini",
-  ];
+  readonly supportedModels = ["gpt-5", "gpt-4o", "gpt-4o-mini"];
   readonly supportsStreaming = true;
   readonly supportsFunctions = true;
   readonly supportsVision = true;
@@ -110,11 +106,11 @@ export class OpenAIProvider extends BaseAIProvider {
       const model = options.model || "gpt-4o-mini";
       const params = this.buildChatParams(model, options);
 
-      const stream = await this.client.chat.completions.create({
+      const stream = (await this.client.chat.completions.create({
         ...params,
         messages: [{ role: "user", content: prompt }],
         stream: true,
-      }) as any;
+      })) as any;
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
@@ -144,7 +140,10 @@ export class OpenAIProvider extends BaseAIProvider {
         return {
           role: "tool",
           content: msg.content,
-          tool_call_id: msg.metadata?.tool_call_id || msg.metadata?.functionName || "unknown",
+          tool_call_id:
+            msg.metadata?.tool_call_id ||
+            msg.metadata?.functionName ||
+            "unknown",
         };
       }
 
@@ -198,11 +197,11 @@ export class OpenAIProvider extends BaseAIProvider {
       const model = options.model || "gpt-4o-mini";
       const params = this.buildChatParams(model, options);
 
-      const stream = await this.client.chat.completions.create({
+      const stream = (await this.client.chat.completions.create({
         ...params,
         messages,
         stream: true,
-      }) as any;
+      })) as any;
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
@@ -419,14 +418,15 @@ export class OpenAIProvider extends BaseAIProvider {
 
       const message = response.choices[0]?.message;
       if (!message) {
-        logger.error(`❌ OpenAI returned no message: choices=${response.choices?.length || 0}`);
+        logger.error(
+          `❌ OpenAI returned no message: choices=${response.choices?.length || 0}`,
+        );
         throw new AIServiceError(
           "No response received",
           this.name,
           "EMPTY_RESPONSE",
         );
       }
-
 
       const functionCalls: FunctionCall[] = [];
 

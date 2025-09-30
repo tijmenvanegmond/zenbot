@@ -65,9 +65,9 @@ export function createMockInteraction(overrides: any = {}) {
     channelId: "test-channel",
     client: {
       users: {
-        fetch: async () => ({ username: "testuser" })
-      }
+        fetch: async () => ({ username: "testuser" }),
+      },
     },
-    ...overrides
+    ...overrides,
   };
 }

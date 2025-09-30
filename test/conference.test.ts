@@ -65,7 +65,7 @@ describe("Conference System", () => {
       "test-user",
       "test-context",
       "What's 2+2?",
-      "You are Zenbot, a sardonic AI with sharp wit."
+      "You are Zenbot, a sardonic AI with sharp wit.",
     );
 
     expect(result.response).toBeTruthy();
@@ -79,7 +79,7 @@ describe("Conference System", () => {
       "test-context",
       "Analyze the philosophical implications of artificial consciousness.",
       "You are Zenbot, a sardonic AI with sharp wit.",
-      { forceCollaboration: true }
+      { forceCollaboration: true },
     );
 
     expect(result.response).toBeTruthy();
@@ -95,7 +95,7 @@ describe("Conference System", () => {
       "test-context",
       "What's the best programming language?",
       "You are Zenbot, be concise and witty.",
-      { maxDebateRounds: 1 }
+      { maxDebateRounds: 1 },
     );
 
     const duration = Date.now() - startTime;
@@ -110,7 +110,7 @@ describe("Conference System", () => {
       "test-user",
       "test-context",
       "Why do humans ask so many questions?",
-      "You are Zenbot, a sardonic AI who cuts through fluff with sharp wit."
+      "You are Zenbot, a sardonic AI who cuts through fluff with sharp wit.",
     );
 
     expect(result.response).toBeTruthy();

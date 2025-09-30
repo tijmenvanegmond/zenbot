@@ -3,7 +3,12 @@
  * Supports Gemini models with conversation memory
  */
 
-import { GoogleGenerativeAI, GenerativeModel, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  GenerativeModel,
+  HarmBlockThreshold,
+  HarmCategory,
+} from "@google/generative-ai";
 import { BaseAIProvider } from "../baseProvider";
 import {
   GenerationOptions,
@@ -254,7 +259,6 @@ export class GeminiProvider extends BaseAIProvider {
           "EMPTY_RESPONSE",
         );
       }
-
 
       return text.trim();
     } catch (error) {
@@ -559,11 +563,14 @@ export class GeminiProvider extends BaseAIProvider {
 
       // Debug logging for empty responses
       if (!responseText && !functionCalls.length) {
-        logger.warn(`⚠️ Gemini returned empty response for session ${sessionId}`, {
-          candidatesCount: result.response.candidates?.length || 0,
-          finishReason: result.response.candidates?.[0]?.finishReason,
-          hasContent: !!result.response.candidates?.[0]?.content,
-        });
+        logger.warn(
+          `⚠️ Gemini returned empty response for session ${sessionId}`,
+          {
+            candidatesCount: result.response.candidates?.length || 0,
+            finishReason: result.response.candidates?.[0]?.finishReason,
+            hasContent: !!result.response.candidates?.[0]?.content,
+          },
+        );
       }
       session.messages.push(assistantMsg);
 

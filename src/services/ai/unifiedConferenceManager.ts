@@ -18,12 +18,26 @@ export interface ConferenceConfig {
   maxProvidersPerQuery: number;
   debateRounds: number;
   consensusThreshold: number;
+
+  // Advanced Provider Control
+  zenbotPersonalities?: string[]; // Multiple Zenbot personalities for debates
+  enabledProviders?: string[]; // Only these providers will be used (overrides defaults)
+  disabledProviders?: string[]; // These providers will be excluded
+  requireZenbot?: boolean; // Force Zenbot participation in all debates
+  zenbotOnly?: boolean; // Use only Zenbot personalities (no external providers)
+
+  // Provider Specialization
   specialization: {
     reasoning: string[]; // Providers best for complex reasoning
     functions: string[]; // Providers best for function calling
     creativity: string[]; // Providers best for creative tasks
     speed: string[]; // Providers best for quick responses
   };
+
+  // Runtime Configuration
+  allowRuntimePersonalityChanges?: boolean; // Allow adding/removing personalities during operation
+  autoRegisterHealthyProviders?: boolean; // Automatically include healthy providers
+  healthCheckInterval?: number; // How often to check provider health (minutes)
 }
 
 export interface ConferenceResponse {
@@ -34,6 +48,12 @@ export interface ConferenceResponse {
   consensusLevel: number;
   reasoning: string;
   synthesisTime: number;
+  // Individual contributions for transcript generation
+  individualContributions?: {
+    provider: string;
+    response: string;
+    confidence: number;
+  }[];
 }
 
 /**
@@ -43,7 +63,8 @@ export class UnifiedConferenceManager {
   private aiManager: AIServiceManager;
   private conferenceManager: SharedConferenceManager;
   private config: ConferenceConfig;
-  private zenbotVirtualProvider: ZenbotVirtualProvider | null = null;
+  private zenbotVirtualProviders: Map<string, ZenbotVirtualProvider> =
+    new Map();
 
   // Session mapping: userId:contextId -> shared session ID
   private userSharedSessions = new Map<string, string>();
@@ -61,23 +82,215 @@ export class UnifiedConferenceManager {
       maxProvidersPerQuery: conferenceConfig.maxProvidersPerQuery ?? 3,
       debateRounds: conferenceConfig.debateRounds ?? 2,
       consensusThreshold: conferenceConfig.consensusThreshold ?? 0.7,
+
+      // Advanced Provider Control with smart defaults
+      zenbotPersonalities: conferenceConfig.zenbotPersonalities ?? [
+        "zenbot-default",
+      ],
+      enabledProviders: conferenceConfig.enabledProviders, // undefined = use all healthy providers
+      disabledProviders: conferenceConfig.disabledProviders ?? [],
+      requireZenbot: conferenceConfig.requireZenbot ?? true,
+      zenbotOnly: conferenceConfig.zenbotOnly ?? false,
+
+      // Runtime Configuration
+      allowRuntimePersonalityChanges:
+        conferenceConfig.allowRuntimePersonalityChanges ?? true,
+      autoRegisterHealthyProviders:
+        conferenceConfig.autoRegisterHealthyProviders ?? true,
+      healthCheckInterval: conferenceConfig.healthCheckInterval ?? 15, // 15 minutes
+
       specialization: {
         reasoning: conferenceConfig.specialization?.reasoning ?? [
-          "zenbot",
+          "zenbot-default",
           "anthropic",
         ],
-        functions: conferenceConfig.specialization?.functions ?? ["openai"],
+        functions: conferenceConfig.specialization?.functions ?? ["gemini"],
         creativity: conferenceConfig.specialization?.creativity ?? [
-          "zenbot",
+          "zenbot-default",
           "gemini",
-          "openai",
         ],
         speed: conferenceConfig.specialization?.speed ?? ["gemini"],
       },
     };
 
-    // Note: initializeProviders is async and called on first use
+    // Validate configuration
+    this.validateConfig();
+
+    // Initialize ZenbotService if not already done
+    this.ensureZenbotServiceInitialized();
+
+    // Initialize providers eagerly instead of lazily
+    this.initializeProviders()
+      .then(() => {
+        logger.info(
+          "🧠 Unified Conference Manager fully initialized with all personalities",
+        );
+      })
+      .catch((error) => {
+        logger.error("❌ Failed to initialize conference providers:", error);
+      });
+
+    // Setup periodic health checks if enabled
+    if (
+      this.config.autoRegisterHealthyProviders &&
+      (this.config.healthCheckInterval ?? 0) > 0
+    ) {
+      this.setupPeriodicHealthChecks();
+    }
+
     logger.info("🧠 Unified Conference Manager initialized");
+  }
+
+  /**
+   * Ensure ZenbotService is initialized before creating virtual providers
+   */
+  private ensureZenbotServiceInitialized(): void {
+    try {
+      // Try to get the singleton instance
+      const { ZenbotService } = require("../zenbotService");
+      try {
+        ZenbotService.getInstance();
+      } catch (error) {
+        // If not initialized, initialize it now
+        logger.info("🤖 Initializing ZenbotService for conference system");
+        ZenbotService.initialize(this.aiManager);
+      }
+    } catch (error) {
+      logger.warn("⚠️ Could not ensure ZenbotService initialization:", error);
+    }
+  }
+
+  /**
+   * Validate conference configuration
+   */
+  private validateConfig(): void {
+    const config = this.config;
+
+    // Validation rules
+    if (config.maxProvidersPerQuery < 1) {
+      throw new Error("maxProvidersPerQuery must be at least 1");
+    }
+
+    if (config.debateRounds < 1) {
+      throw new Error("debateRounds must be at least 1");
+    }
+
+    if (config.consensusThreshold < 0 || config.consensusThreshold > 1) {
+      throw new Error("consensusThreshold must be between 0 and 1");
+    }
+
+    // Validate personality names
+    if (config.zenbotPersonalities) {
+      for (const personality of config.zenbotPersonalities) {
+        if (!personality.startsWith("zenbot-")) {
+          logger.warn(
+            `⚠️ Personality '${personality}' should start with 'zenbot-'`,
+          );
+        }
+      }
+    }
+
+    // Check for conflicting provider settings
+    if (
+      config.zenbotOnly &&
+      config.enabledProviders &&
+      config.enabledProviders.some((p) => !p.startsWith("zenbot"))
+    ) {
+      throw new Error(
+        "zenbotOnly=true conflicts with non-Zenbot enabledProviders",
+      );
+    }
+
+    if (config.enabledProviders && config.disabledProviders) {
+      const overlap = config.enabledProviders.filter((p) =>
+        config.disabledProviders!.includes(p),
+      );
+      if (overlap.length > 0) {
+        throw new Error(
+          `Providers cannot be both enabled and disabled: ${overlap.join(", ")}`,
+        );
+      }
+    }
+
+    logger.info("✅ Conference configuration validated successfully");
+  }
+
+  /**
+   * Setup periodic health checks for dynamic provider management
+   */
+  private setupPeriodicHealthChecks(): void {
+    const intervalMs = this.config.healthCheckInterval! * 60 * 1000; // Convert to milliseconds
+
+    setInterval(async () => {
+      try {
+        await this.refreshProviders();
+      } catch (error) {
+        logger.warn("⚠️ Periodic health check failed:", error);
+      }
+    }, intervalMs);
+
+    logger.info(
+      `🔄 Periodic health checks enabled every ${this.config.healthCheckInterval} minutes`,
+    );
+  }
+
+  /**
+   * Refresh provider registrations based on current health
+   */
+  private async refreshProviders(): Promise<void> {
+    if (!this.config.autoRegisterHealthyProviders) return;
+
+    const healthCheck = await this.aiManager.healthCheck();
+    const healthyProviders = Object.keys(healthCheck).filter(
+      (p) => healthCheck[p],
+    );
+    const stats = this.conferenceManager.getStats();
+    const currentProviders = new Set<string>(); // Will be populated by actual provider names
+
+    for (const provider of healthyProviders) {
+      if (!this.isProviderAllowed(provider)) continue;
+
+      if (!currentProviders.has(provider)) {
+        try {
+          const providerInstance = this.aiManager.getProvider(provider);
+          this.conferenceManager.registerProvider(
+            provider,
+            provider,
+            providerInstance,
+          );
+          logger.info(`✅ Auto-registered healthy provider: ${provider}`);
+        } catch (error) {
+          logger.warn(`⚠️ Failed to auto-register ${provider}:`, error);
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if a provider is allowed based on configuration
+   */
+  private isProviderAllowed(providerId: string): boolean {
+    const config = this.config;
+
+    // Check if disabled
+    if (config.disabledProviders?.includes(providerId)) {
+      return false;
+    }
+
+    // Check if zenbotOnly mode but provider is not Zenbot
+    if (config.zenbotOnly && !providerId.startsWith("zenbot")) {
+      return false;
+    }
+
+    // Check enabled providers whitelist
+    if (
+      config.enabledProviders &&
+      !config.enabledProviders.includes(providerId)
+    ) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -85,31 +298,51 @@ export class UnifiedConferenceManager {
    */
   private async initializeProviders(): Promise<void> {
     try {
-      // Initialize Zenbot virtual provider first
-      if (!this.zenbotVirtualProvider) {
-        try {
-          // Pass the AI manager directly to avoid orchestration through ZenbotService
-          this.zenbotVirtualProvider = new ZenbotVirtualProvider(
-            this.aiManager,
-          );
+      // Initialize Zenbot virtual providers
+      const personalities = this.config.zenbotPersonalities || [
+        "zenbot-default",
+      ];
 
-          // Register Zenbot as a conference participant
-          this.conferenceManager.registerProvider(
-            "zenbot",
-            "Zenbot (Sardonic AI)",
-            this.zenbotVirtualProvider,
-          );
-          logger.info(`🤖 Registered Zenbot as conference participant`);
-        } catch (error) {
-          logger.warn(`⚠️ Failed to register Zenbot virtual provider:`, error);
+      for (const personalityId of personalities) {
+        if (!this.zenbotVirtualProviders.has(personalityId)) {
+          try {
+            const provider = new ZenbotVirtualProvider(
+              this.aiManager,
+              personalityId,
+            );
+            this.zenbotVirtualProviders.set(personalityId, provider);
+
+            // Register each personality as a unique conference participant
+            const displayName = personalityId
+              .split("-")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ");
+
+            this.conferenceManager.registerProvider(
+              personalityId,
+              `${displayName} (Zenbot)`,
+              provider,
+            );
+            logger.info(
+              `🎭 Registered ${displayName} personality as conference participant`,
+            );
+          } catch (error) {
+            logger.error(
+              `❌ Failed to register ${personalityId} personality:`,
+              error,
+            );
+            if (error instanceof Error && error.stack) {
+              logger.error(`Stack trace:`, error.stack);
+            }
+          }
         }
       }
 
-      // Get all external providers from the AI manager
+      // Get all external providers from the AI manager (with filtering)
       const healthCheck = await this.aiManager.healthCheck();
 
       for (const [providerName, isHealthy] of Object.entries(healthCheck)) {
-        if (isHealthy) {
+        if (isHealthy && this.isProviderAllowed(providerName)) {
           try {
             const provider = this.aiManager.getProvider(providerName);
             this.conferenceManager.registerProvider(
@@ -121,6 +354,12 @@ export class UnifiedConferenceManager {
           } catch (error) {
             logger.warn(`⚠️ Failed to register ${providerName}:`, error);
           }
+        } else if (!isHealthy) {
+          logger.info(`⚠️ Skipping unhealthy provider: ${providerName}`);
+        } else {
+          logger.info(
+            `🚫 Filtered out provider: ${providerName} (not allowed by config)`,
+          );
         }
       }
     } catch (error) {
@@ -132,7 +371,7 @@ export class UnifiedConferenceManager {
   }
 
   /**
-   * Create or get a shared conference session for a user
+   * Create or get a shared conference session for a user (for persistent conversations)
    */
   async getOrCreateSharedSession(
     userId: string,
@@ -140,8 +379,8 @@ export class UnifiedConferenceManager {
     systemPrompt: string,
     enabledProviders?: string[],
   ): Promise<SharedConferenceSession> {
-    // Ensure providers are initialized first
-    await this.initializeProviders();
+    // Providers are now initialized eagerly in constructor
+    // await this.initializeProviders(); // Removed - done in constructor
 
     const sessionKey = `${userId}:${contextId}`;
     let sharedSessionId = this.userSharedSessions.get(sessionKey);
@@ -173,6 +412,32 @@ export class UnifiedConferenceManager {
   }
 
   /**
+   * Create a fresh conference session (for debates that need clean slate)
+   */
+  async createFreshConferenceSession(
+    userId: string,
+    contextId: string,
+    systemPrompt: string,
+    enabledProviders?: string[],
+  ): Promise<SharedConferenceSession> {
+    // Always create a new session for conferences
+    const session = await this.conferenceManager.createSharedSession(
+      userId,
+      `${contextId}-conference-${Date.now()}`, // Unique context for each conference
+      {
+        provider: "unified-conference",
+        model: "multi-provider",
+        systemPrompt,
+      },
+      enabledProviders,
+    );
+
+    logger.info(`🧠 Created fresh conference session ${session.id} for debate`);
+
+    return session;
+  }
+
+  /**
    * Intelligent conversation routing based on query complexity and type
    */
   async converse(
@@ -190,6 +455,9 @@ export class UnifiedConferenceManager {
 
     // Analyze query complexity and determine response strategy
     const strategy = this.determineResponseStrategy(message, options);
+    logger.info(
+      `🎯 Conference strategy: ${strategy} for query: "${message.substring(0, 50)}..."`,
+    );
 
     if (strategy === "individual" && !options.forceCollaboration) {
       // Use traditional single-provider response for simple queries
@@ -325,6 +593,9 @@ export class UnifiedConferenceManager {
       options.queryType,
       options.maxProviders,
     );
+    logger.info(
+      `🎭 Selected ${selectedProviders.length} participants for collaborative debate: ${selectedProviders}`,
+    );
     const sharedSession = await this.getOrCreateSharedSession(
       userId,
       contextId,
@@ -334,6 +605,9 @@ export class UnifiedConferenceManager {
 
     try {
       // Use collaborative conversation
+      logger.info(
+        `🗣️ Starting conference debate with ${this.config.debateRounds} rounds...`,
+      );
       const result = await this.conferenceManager.collaborativeConverse(
         sharedSession.id,
         message,
@@ -343,6 +617,9 @@ export class UnifiedConferenceManager {
             options.maxProviders || this.config.maxProvidersPerQuery,
           debateRounds: this.config.debateRounds,
         },
+      );
+      logger.info(
+        `✅ Conference debate completed with consensus level: ${result.consensusLevel.toFixed(2)}`,
       );
 
       const conferenceLevel =
@@ -385,7 +662,7 @@ export class UnifiedConferenceManager {
       case "reasoning":
         return specialization.reasoning[0] || "anthropic";
       case "functions":
-        return specialization.functions[0] || "openai";
+        return specialization.functions[0] || "gemini";
       case "creative":
         return specialization.creativity[0] || "gemini";
       case "speed":
@@ -479,7 +756,7 @@ export class UnifiedConferenceManager {
 
     logger.info(`🎭 Starting conference: "${question.substring(0, 100)}..."`);
 
-    const sharedSession = await this.getOrCreateSharedSession(
+    const sharedSession = await this.createFreshConferenceSession(
       userId,
       contextId,
       systemPrompt,
@@ -494,7 +771,7 @@ export class UnifiedConferenceManager {
         requireConsensus: false, // Don't force consensus - let Zenbot be naturally decisive
         maxProviders:
           options.requiredProviders?.length ?? this.config.maxProvidersPerQuery,
-        debateRounds: Math.max(1, (options.maxDebateRounds ?? this.config.debateRounds) - 1), // Reduce debate rounds to preserve wit
+        debateRounds: options.maxDebateRounds ?? this.config.debateRounds, // Full debate rounds for proper discussion
       },
     );
 
@@ -510,6 +787,12 @@ export class UnifiedConferenceManager {
       consensusLevel: result.consensusLevel,
       reasoning: `Natural responses from ${result.contributions.length} providers: ${result.synthesisReasoning}`,
       synthesisTime: Date.now() - startTime,
+      // Include individual contributions for transcript generation
+      individualContributions: result.contributions.map((c) => ({
+        provider: c.providerName,
+        response: c.message.content,
+        confidence: c.confidence || 0.8,
+      })),
     };
   }
 
@@ -594,5 +877,160 @@ export class UnifiedConferenceManager {
     }
 
     logger.info("🧠 Unified Conference Manager destroyed");
+  }
+
+  // ========== RUNTIME PERSONALITY MANAGEMENT ==========
+
+  /**
+   * Add a new Zenbot personality to the conference system
+   */
+  async addPersonality(personalityId: string): Promise<void> {
+    if (!this.config.allowRuntimePersonalityChanges) {
+      throw new Error("Runtime personality changes are disabled");
+    }
+
+    if (!personalityId.startsWith("zenbot-")) {
+      personalityId = `zenbot-${personalityId}`;
+    }
+
+    if (this.config.zenbotPersonalities?.includes(personalityId)) {
+      logger.warn(`⚠️ Personality ${personalityId} already registered`);
+      return;
+    }
+
+    try {
+      const provider = new ZenbotVirtualProvider(this.aiManager, personalityId);
+      this.zenbotVirtualProviders.set(personalityId, provider);
+
+      const displayName = personalityId
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+      this.conferenceManager.registerProvider(
+        `zenbot-${personalityId}`,
+        `${displayName} (Zenbot)`,
+        provider,
+      );
+
+      // Update config
+      if (!this.config.zenbotPersonalities) {
+        this.config.zenbotPersonalities = [];
+      }
+      this.config.zenbotPersonalities.push(personalityId);
+
+      logger.info(`🎭 Added personality: ${displayName}`);
+    } catch (error) {
+      logger.error(`❌ Failed to add personality ${personalityId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a Zenbot personality from the conference system
+   */
+  async removePersonality(personalityId: string): Promise<void> {
+    if (!this.config.allowRuntimePersonalityChanges) {
+      throw new Error("Runtime personality changes are disabled");
+    }
+
+    if (!personalityId.startsWith("zenbot-")) {
+      personalityId = `zenbot-${personalityId}`;
+    }
+
+    const provider = this.zenbotVirtualProviders.get(personalityId);
+    if (!provider) {
+      logger.warn(`⚠️ Personality ${personalityId} not found`);
+      return;
+    }
+
+    try {
+      // Remove from virtual providers
+      this.zenbotVirtualProviders.delete(personalityId);
+
+      // Update config
+      if (this.config.zenbotPersonalities) {
+        this.config.zenbotPersonalities =
+          this.config.zenbotPersonalities.filter((p) => p !== personalityId);
+      }
+
+      logger.info(`🗑️ Removed personality: ${personalityId}`);
+    } catch (error) {
+      logger.error(`❌ Failed to remove personality ${personalityId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all active personalities
+   */
+  getActivePersonalities(): string[] {
+    return this.config.zenbotPersonalities || [];
+  }
+
+  /**
+   * Enable/disable a provider at runtime
+   */
+  async toggleProvider(providerId: string, enabled: boolean): Promise<void> {
+    if (!this.config.allowRuntimePersonalityChanges) {
+      throw new Error("Runtime provider changes are disabled");
+    }
+
+    if (enabled) {
+      // Remove from disabled list if present
+      if (this.config.disabledProviders) {
+        this.config.disabledProviders = this.config.disabledProviders.filter(
+          (p) => p !== providerId,
+        );
+      }
+
+      // Add to enabled list if it exists
+      if (
+        this.config.enabledProviders &&
+        !this.config.enabledProviders.includes(providerId)
+      ) {
+        this.config.enabledProviders.push(providerId);
+      }
+
+      // Try to register the provider if it's healthy
+      try {
+        const healthCheck = await this.aiManager.healthCheck();
+        if (healthCheck[providerId] && this.isProviderAllowed(providerId)) {
+          const provider = this.aiManager.getProvider(providerId);
+          this.conferenceManager.registerProvider(
+            providerId,
+            providerId,
+            provider,
+          );
+          logger.info(`✅ Enabled provider: ${providerId}`);
+        }
+      } catch (error) {
+        logger.warn(`⚠️ Failed to enable provider ${providerId}:`, error);
+      }
+    } else {
+      // Add to disabled list
+      if (!this.config.disabledProviders) {
+        this.config.disabledProviders = [];
+      }
+      if (!this.config.disabledProviders.includes(providerId)) {
+        this.config.disabledProviders.push(providerId);
+      }
+
+      // Remove from enabled list if present
+      if (this.config.enabledProviders) {
+        this.config.enabledProviders = this.config.enabledProviders.filter(
+          (p) => p !== providerId,
+        );
+      }
+
+      logger.info(`🚫 Disabled provider: ${providerId}`);
+    }
+  }
+
+  /**
+   * Get current configuration (for inspection/debugging)
+   */
+  getCurrentConfig(): ConferenceConfig {
+    return { ...this.config }; // Return a copy to prevent mutations
   }
 }

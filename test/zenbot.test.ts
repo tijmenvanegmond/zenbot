@@ -29,7 +29,7 @@ describe("Zenbot Service", () => {
   test("should provide advice with personality", async () => {
     const response = await zenbotService.getAdvice(
       mockInteraction,
-      "How to be more productive?"
+      "How to be more productive?",
     );
 
     expect(response.text).toBeTruthy();
@@ -40,14 +40,14 @@ describe("Zenbot Service", () => {
   test("should maintain conversation context", async () => {
     const response1 = await zenbotService.converse(
       mockInteraction,
-      "My name is Alice and I'm learning programming."
+      "My name is Alice and I'm learning programming.",
     );
 
     expect(response1.text).toBeTruthy();
 
     const response2 = await zenbotService.converse(
       mockInteraction,
-      "What did I tell you about myself?"
+      "What did I tell you about myself?",
     );
 
     expect(response2.text).toBeTruthy();
@@ -55,10 +55,7 @@ describe("Zenbot Service", () => {
   }, 20000);
 
   test("should handle quotes with personality", async () => {
-    const response = await zenbotService.getQuote(
-      mockInteraction,
-      "wisdom"
-    );
+    const response = await zenbotService.getQuote(mockInteraction, "wisdom");
 
     expect(response.text).toBeTruthy();
     expect(response.sessionId).toBeTruthy();
@@ -67,7 +64,7 @@ describe("Zenbot Service", () => {
   test("should be concise by default", async () => {
     const response = await zenbotService.converse(
       mockInteraction,
-      "Tell me about artificial intelligence."
+      "Tell me about artificial intelligence.",
     );
 
     expect(response.text).toBeTruthy();
@@ -77,7 +74,7 @@ describe("Zenbot Service", () => {
   test("should expand when requested", async () => {
     const response = await zenbotService.converse(
       mockInteraction,
-      "Tell me about artificial intelligence. Explain more details."
+      "Tell me about artificial intelligence. Explain more details.",
     );
 
     expect(response.text).toBeTruthy();
@@ -88,7 +85,7 @@ describe("Zenbot Service", () => {
   test("should handle gaming topics appropriately", async () => {
     const response = await zenbotService.getAdvice(
       mockInteraction,
-      "How to find gaming partners in multiplayer games?"
+      "How to find gaming partners in multiplayer games?",
     );
 
     expect(response.text).toBeTruthy();

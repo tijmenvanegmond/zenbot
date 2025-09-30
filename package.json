@@ -13,6 +13,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:multi-personality": "vitest run test/multi-personality.test.ts",
+    "demo:multi-personality": "ts-node src/demo-multi-personality.ts",
     "coverage": "vitest run --coverage",
     "build": "tsc",
     "lint": "prettier --write ."
@@ -27,7 +29,8 @@
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
     "openai": "^5.19.1",
-    "opusscript": "^0.0.8"
+    "opusscript": "^0.0.8",
+    "say": "^0.16.0"
   },
   "devDependencies": {
     "@types/node": "^22",

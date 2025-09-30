@@ -72,11 +72,15 @@ describe("AI Provider Integration", () => {
     const session = await aiManager.createSession("TestBot", {
       userId: "test-user",
       contextId: "test-context",
-      systemPrompt: "You are a helpful AI assistant. Remember what users tell you.",
+      systemPrompt:
+        "You are a helpful AI assistant. Remember what users tell you.",
     });
 
     await aiManager.chat(session.id, "My name is Alex and I like philosophy.");
-    const response = await aiManager.chat(session.id, "What did I tell you about my interests?");
+    const response = await aiManager.chat(
+      session.id,
+      "What did I tell you about my interests?",
+    );
 
     expect(response.toLowerCase()).toContain("philosophy");
   }, 20000);
@@ -88,7 +92,9 @@ describe("AI Provider Integration", () => {
     expect(typeof healthStatus).toBe("object");
 
     // At least one provider should be healthy
-    const healthyProviders = Object.values(healthStatus).filter(healthy => healthy);
+    const healthyProviders = Object.values(healthStatus).filter(
+      (healthy) => healthy,
+    );
     expect(healthyProviders.length).toBeGreaterThan(0);
   }, 10000);
 
