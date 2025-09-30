@@ -31,10 +31,15 @@ export class Config {
     LEGACY_TTS_VOICE: "nova",
     LEGACY_TTS_FORMAT: "opus" as const,
     // Local TTS options (legacy)
-    LOCAL_TTS_VOICE: Config.getEnv("LOCAL_TTS_VOICE",
-      process.platform === 'darwin' ? 'Alex' :
-      process.platform === 'win32' ? 'Microsoft Zira Desktop' :
-      process.platform === 'linux' ? 'en+m2:pitch=55:amp=100' : 'default'
+    LOCAL_TTS_VOICE: Config.getEnv(
+      "LOCAL_TTS_VOICE",
+      process.platform === "darwin"
+        ? "Alex"
+        : process.platform === "win32"
+          ? "Microsoft Zira Desktop"
+          : process.platform === "linux"
+            ? "en+m2:pitch=55:amp=100"
+            : "default",
     ),
     LOCAL_TTS_SPEED: parseFloat(Config.getEnv("LOCAL_TTS_SPEED", "1.0")),
   } as const;
@@ -59,8 +64,11 @@ export class Config {
 
     // Audio quality settings
     ENABLE_HIGH_QUALITY: Config.getEnv("LINUX_VOICE_HQ", "true") === "true",
-    TEMP_DIR: Config.getEnv("LINUX_VOICE_TEMP_DIR",
-      process.env.NODE_ENV === 'production' ? '/tmp/zenbot' : './temp/linux-voice'
+    TEMP_DIR: Config.getEnv(
+      "LINUX_VOICE_TEMP_DIR",
+      process.env.NODE_ENV === "production"
+        ? "/tmp/zenbot"
+        : "./temp/linux-voice",
     ),
 
     // Advanced settings

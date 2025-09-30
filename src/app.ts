@@ -65,5 +65,7 @@ fastify.listen({ host: "0.0.0.0", port: Number(PORT) }, (err, address) => {
     logger.error("❌ Failed to start API server:", err);
     process.exit(1);
   }
-  logger.info(`🌐 API server listening on ${address} - the path to enlightenment is open`);
+  logger.info(
+    `🌐 API server listening on ${address} - the path to enlightenment is open`,
+  );
 });

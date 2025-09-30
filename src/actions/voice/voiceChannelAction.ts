@@ -4,6 +4,7 @@ import {
   ActionParameters,
   ActionResult,
 } from "../actionTypes";
+import { VoiceChannel } from "discord.js";
 import { VoiceSessionManager } from "../../services/voiceSessionManager";
 import { logger } from "../../utils/logger";
 
@@ -107,23 +108,50 @@ export class VoiceChannelAction implements ZenAction {
         }
 
         case "join": {
-          if (!context.voiceChannel) {
+          // If user is already in voice channel context, we're good
+          if (context.voiceChannel) {
             return {
-              success: false,
-              error: "Voice channel is required to join",
+              success: true,
+              message: "Already have voice channel access",
               shouldRespond: true,
-              responseText:
-                "I need to know which voice channel to join. Please specify a channel or join one yourself.",
+              responseText: `I can access ${context.voiceChannel.name}.`,
             };
           }
 
-          // This would typically be handled by starting an activity
-          // For now, we'll just report the capability
+          // Try to find user's current voice channel
+          const member = context.interaction?.guild?.members.cache.get(
+            context.user.id,
+          );
+          if (
+            !member?.voice.channel ||
+            !member.voice.channel.isVoiceBased() ||
+            !("speakable" in member.voice.channel)
+          ) {
+            return {
+              success: false,
+              error: "User not in voice channel",
+              shouldRespond: true,
+              responseText:
+                "You need to join a voice channel first, then I can join you.",
+            };
+          }
+
+          // Update context with found voice channel for subsequent actions
+          const userVoiceChannel = member.voice.channel as VoiceChannel;
+          logger.info(
+            `🎭 Found user ${context.user.username} in voice channel: ${userVoiceChannel.name}`,
+          );
+
           return {
             success: true,
-            message: "Ready to join voice channel",
+            message: `Found voice channel: ${userVoiceChannel.name}`,
+            data: {
+              channelId: userVoiceChannel.id,
+              channelName: userVoiceChannel.name,
+              memberCount: userVoiceChannel.members.size,
+            },
             shouldRespond: true,
-            responseText: `I can join ${context.voiceChannel.name}. Please use a command like /listen or /tts to start an activity.`,
+            responseText: `Found you in ${userVoiceChannel.name}. Ready to speak!`,
           };
         }
 

@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { Client, VoiceChannel } from "discord.js";
 import { joinVoiceChannel, getVoiceConnection } from "@discordjs/voice";
-import { VoiceService } from "../../services/voiceService";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
 import { GuildService } from "../../services/guildService";
 import { logger } from "../../utils/logger";
 import { CHANNEL_TYPES } from "../../config";
@@ -206,7 +206,7 @@ export default async function voiceRoutes(
     "/guilds/:guildId/voice-channels/:channelId/tts",
     async function handler(request: any, reply) {
       const { guildId, channelId } = request.params;
-      const { text, voice = "nova" } = request.body;
+      const { text, profile } = request.body;
 
       if (!text) {
         reply.code(400).send({ error: "Text is required" });
@@ -227,7 +227,13 @@ export default async function voiceRoutes(
 
       try {
         // Play TTS directly in voice channel
-        await VoiceService.playTTSInChannel(channel as VoiceChannel, text);
+        const voiceService = UnifiedVoiceService.getInstance();
+        await voiceService.speak({
+          text,
+          profile,
+          voiceChannel: channel as VoiceChannel,
+          activityType: "tts",
+        });
 
         logger.info(`API: TTS played in ${channel.name}: "${text}"`);
 
@@ -255,7 +261,7 @@ export default async function voiceRoutes(
     "/guilds/:guildId/tts",
     async function handler(request: any, reply) {
       const { guildId } = request.params;
-      const { text, voice = "nova" } = request.body;
+      const { text, profile } = request.body;
 
       if (!text) {
         reply.code(400).send({ error: "Text is required" });
@@ -286,10 +292,13 @@ export default async function voiceRoutes(
 
       try {
         // Play TTS directly in current voice channel
-        await VoiceService.playTTSInChannel(
-          currentChannel as VoiceChannel,
+        const voiceService = UnifiedVoiceService.getInstance();
+        await voiceService.speak({
           text,
-        );
+          profile,
+          voiceChannel: currentChannel as VoiceChannel,
+          activityType: "tts",
+        });
 
         logger.info(
           `API: TTS played in current channel ${currentChannel.name}: "${text}"`,

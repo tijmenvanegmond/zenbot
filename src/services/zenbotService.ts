@@ -412,7 +412,10 @@ export class ZenbotService {
         }
 
         // Special handling for TTS actions - prevent multiple TTS calls in same session
-        const isTTSAction = call.name.includes('tts') || call.name === 'play_tts' || call.name === 'enhanced_tts';
+        const isTTSAction =
+          call.name.includes("tts") ||
+          call.name === "play_tts" ||
+          call.name === "enhanced_tts";
         if (isTTSAction) {
           // For TTS actions, only allow ONE TTS call per function calling session
           const ttsActionType = call.name;
@@ -762,7 +765,12 @@ CURRENT CONTEXT:
 - Interaction type: ${contextType}
 
 VOICE ADAPTATION:
-- ${context.voiceChannel ? "In voice: you may add a single dramatic pause using an ellipsis once." : "In text: be extra tight and skip performative fluff."}`;
+- ${context.voiceChannel ? "In voice: you may add a single dramatic pause using an ellipsis once." : "In text: be extra tight and skip performative fluff."}
+
+VOICE CHANNEL MANAGEMENT:
+- If you want to speak but there's no voice channel context, call 'voice_channel_control' with action 'join' FIRST
+- Then call 'speak' to deliver your response
+- Always join before speaking when voice output is desired but no voice channel is available`;
   }
 
   private loadZenbotPersonality(

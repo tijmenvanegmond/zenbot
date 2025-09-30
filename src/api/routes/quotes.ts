@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { Client, VoiceChannel, TextChannel } from "discord.js";
-import { VoiceService } from "../../services/voiceService";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
 import { GuildService } from "../../services/guildService";
 import { logger } from "../../utils/logger";
 import {
@@ -180,10 +180,12 @@ export default async function quotesRoutes(
         );
 
         // Play enhanced TTS in the specified voice channel
-        await VoiceService.playTTSInChannel(
-          voiceChannel as VoiceChannel,
-          enhancedText,
-        );
+        const voiceService = UnifiedVoiceService.getInstance();
+        await voiceService.speak({
+          text: enhancedText,
+          voiceChannel: voiceChannel as VoiceChannel,
+          activityType: "quote-tts",
+        });
 
         logger.info(
           `API: Enhanced quote TTS played in ${voiceChannel.name}: "${enhancedText.substring(0, 100)}..."`,

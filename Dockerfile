@@ -1,7 +1,7 @@
 FROM node:22
 WORKDIR /app
 
-# Install eSpeak-NG TTS for local text-to-speech support with voice tweaking
+# Install TTS dependencies: eSpeak-NG for local voice synthesis
 RUN apt-get update && apt-get install -y \
     espeak-ng \
     alsa-utils \
@@ -14,7 +14,7 @@ RUN npm ci
 COPY dist dist
 COPY personalities personalities
 
-# Create temp directory for TTS files
+# Create directories for TTS files
 RUN mkdir -p /tmp/zenbot && chmod 777 /tmp/zenbot
 
 EXPOSE 8080

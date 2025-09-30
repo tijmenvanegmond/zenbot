@@ -19,50 +19,74 @@ export const TTS: Command = {
     )
     .addStringOption((option) =>
       option
-        .setName("style")
-        .setDescription("Voice style for delivery")
+        .setName("profile")
+        .setDescription("Voice profile to use")
         .setRequired(false)
         .addChoices(
-          { name: "Normal", value: "normal" },
-          { name: "Wisdom", value: "wisdom" },
-          { name: "Meditation", value: "meditation" },
-          { name: "Encouragement", value: "encouragement" },
+          { name: "🎭 Sardonic (default)", value: "zenbot-sardonic" },
+          { name: "Default", value: "zenbot-default" },
+          { name: "Wise", value: "zenbot-wise" },
+          { name: "Excited", value: "zenbot-excited" },
+          { name: "Calm", value: "zenbot-calm" },
+          { name: "🧠 Deep Philosopher", value: "zenbot-deep" },
+          { name: "📢 Crisp & Clear", value: "zenbot-crisp" },
+          { name: "📻 Smooth Radio", value: "zenbot-smooth" },
+          { name: "🎪 Mysterious", value: "zenbot-mysterious" },
+          { name: "⚡ Energetic", value: "zenbot-energetic" },
+          { name: "👔 Professional", value: "zenbot-professional" },
+          { name: "🎙️ ElevenLabs Rachel", value: "elevenlabs-rachel" },
+          { name: "🎙️ ElevenLabs Adam", value: "elevenlabs-adam" },
+          { name: "🎙️ ElevenLabs Antoni", value: "elevenlabs-antoni" },
+          { name: "🎙️ ElevenLabs Arnold", value: "elevenlabs-arnold" },
+          { name: "🎙️ ElevenLabs Domi", value: "elevenlabs-domi" },
+          { name: "🤖 ElevenLabs Rocco Robot", value: "elevenlabs-rocco" },
+          { name: "OpenAI", value: "openai-default" },
+          { name: "System", value: "system-default" },
         ),
+    )
+    .addBooleanOption((option) =>
+      option
+        .setName("interrupt")
+        .setDescription("Interrupt any currently playing audio")
+        .setRequired(false),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
     try {
       const text = interaction.options?.get("text")?.value as string;
-      const style =
-        (interaction.options?.get("style")?.value as string) || "normal";
+      const profile = interaction.options?.get("profile")?.value as string;
+      const interrupt =
+        (interaction.options?.get("interrupt")?.value as boolean) || false;
 
       logger.info(
-        `${interaction.user.username} requesting TTS: "${text.substring(0, 50)}..." (style: ${style})`,
+        `${interaction.user.username} requesting TTS: "${text.substring(0, 50)}..." (profile: ${profile || "default"})`,
       );
 
-      // Use the action system
+      // Use the unified voice system
       const actionService = ActionService.getInstance();
       const result = await actionService.executeFromCommand(
         interaction,
-        "enhanced_tts",
+        "speak",
         {
           text,
-          voice_style: style,
-          interrupt_existing: false,
+          profile: profile || undefined, // Let ProfileManager handle default
+          interrupt,
+          activity_type: "tts",
         },
       );
 
       // Handle the result
       if (result.success) {
+        const profileText = profile || "default";
         await interaction.editReply(
           createSuccessResponse(
-            `🎵 TTS delivered successfully in voice channel with ${style} style`,
+            `🎵 Speech delivered successfully with ${profileText} voice profile`,
           ),
         );
       } else {
         await interaction.editReply(
           createErrorResponse(
-            result.error || "An error occurred while trying to perform TTS.",
+            result.error || "An error occurred while trying to speak.",
           ),
         );
       }

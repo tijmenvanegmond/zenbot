@@ -5,8 +5,8 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { ZenbotService } from "../../services/zenbotService";
-import { VoiceService } from "../../services/voiceService";
-import { SmartTtsService } from "../../services/smartTtsService";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
+import { getContextualAdvice } from "../../voice/voiceLineData";
 import { logger } from "../../utils/logger";
 
 export class AdviceAction implements ZenAction {
@@ -127,7 +127,7 @@ export class AdviceAction implements ZenAction {
           logger.debug(`🎭 Falling back to predefined wisdom`);
 
           // Fall back to predefined advice
-          const voiceLine = VoiceService.getContextualAdvice("philosophical");
+          const voiceLine = getContextualAdvice("philosophical");
           adviceText = voiceLine.text;
         }
       } else {
@@ -142,9 +142,7 @@ export class AdviceAction implements ZenAction {
 
         logger.debug(`🎭 Selected advice category: ${adviceCategory}`);
 
-        const voiceLine = VoiceService.getContextualAdvice(
-          adviceCategory as any,
-        );
+        const voiceLine = getContextualAdvice(adviceCategory as any);
         adviceText = voiceLine.text;
       }
 
@@ -154,13 +152,19 @@ export class AdviceAction implements ZenAction {
       }
 
       // Determine if we should use voice (but avoid duplicate TTS in AI sessions)
-      const shouldUseVoice = use_voice && context.voiceChannel && context.source !== "ai";
+      const shouldUseVoice =
+        use_voice && context.voiceChannel && context.source !== "ai";
 
       // If user wants voice and is in voice channel, play TTS
       if (shouldUseVoice) {
         try {
-          const smartTts = SmartTtsService.getInstance();
-          await smartTts.playTTS(context.voiceChannel!, adviceText, "advice");
+          const voiceService = UnifiedVoiceService.getInstance();
+          await voiceService.speak({
+            text: adviceText,
+            profile: "zenbot-wise", // Use wise voice for advice
+            voiceChannel: context.voiceChannel!,
+            activityType: "advice",
+          });
           logger.info(
             `🎭 Advice delivered via TTS: "${adviceText.substring(0, 50)}..." (type: ${advice_type})`,
           );
@@ -172,7 +176,7 @@ export class AdviceAction implements ZenAction {
         }
       } else if (context.source === "ai" && use_voice) {
         logger.debug(
-          "🎭 Skipping TTS in advice action - AI interaction likely handling TTS separately"
+          "🎭 Skipping TTS in advice action - AI interaction likely handling TTS separately",
         );
       }
 

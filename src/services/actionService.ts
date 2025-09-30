@@ -5,10 +5,9 @@ import { logger } from "../utils/logger";
 import { validateVoiceChannel } from "../utils/commandHelpers";
 
 // Import core actions
-import { PlayTtsAction } from "../actions/voice/playTtsAction";
+import { SpeakAction } from "../actions/voice/speakAction";
 import { VoiceChannelAction } from "../actions/voice/voiceChannelAction";
 import { ListenControlAction } from "../actions/voice/listenControlAction";
-import { EnhancedTtsAction } from "../actions/voice/enhancedTtsAction";
 import { AdviceAction } from "../actions/information/adviceAction";
 import { StopAction } from "../actions/voice/stopAction";
 import { ChannelManagementAction } from "../actions/management/channelManagementAction";
@@ -41,10 +40,9 @@ export class ActionService {
    */
   private registerCoreActions(): void {
     // Voice actions
-    this.registry.register(new PlayTtsAction());
+    this.registry.register(new SpeakAction());
     this.registry.register(new VoiceChannelAction());
     this.registry.register(new ListenControlAction());
-    this.registry.register(new EnhancedTtsAction());
     this.registry.register(new StopAction());
 
     // Information actions

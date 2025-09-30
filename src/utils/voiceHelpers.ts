@@ -1,6 +1,6 @@
 import { VoiceChannel } from "discord.js";
 import { AudioResource } from "@discordjs/voice";
-import { VoiceService } from "../services/voiceService";
+import { UnifiedVoiceService } from "../services/voice/UnifiedVoiceService";
 import { logger } from "./logger";
 
 /**
@@ -10,7 +10,12 @@ export async function playTTSInChannel(
   channel: VoiceChannel,
   text: string,
 ): Promise<void> {
-  return VoiceService.playTTSInChannel(channel, text);
+  const voiceService = UnifiedVoiceService.getInstance();
+  await voiceService.speak({
+    text,
+    voiceChannel: channel,
+    activityType: "tts",
+  });
 }
 
 /**
@@ -20,7 +25,10 @@ export async function playResourceInChannel(
   channel: VoiceChannel,
   resource: AudioResource,
 ): Promise<void> {
-  return VoiceService.playResourceInChannel(channel, resource);
+  // This method is deprecated - use UnifiedVoiceService directly
+  throw new Error(
+    "playResourceInChannel is deprecated - use UnifiedVoiceService.speak() instead",
+  );
 }
 
 /**
