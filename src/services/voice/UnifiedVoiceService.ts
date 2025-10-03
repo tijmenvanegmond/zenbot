@@ -57,12 +57,10 @@ export class UnifiedVoiceService {
         logger.warn(`🎤 Provider ${config.provider} unavailable, attempting fallback:`, error instanceof Error ? error.message : error);
 
         try {
-          // Try to get best available provider
+          // Try to get best available provider (piper or system)
           provider = this.providerFactory.getBestProvider();
           // Get a config appropriate for the fallback provider
-          if (provider.name === "espeak") {
-            actualConfig = this.profileManager.getConfig("zenbot-sardonic");
-          } else if (provider.name === "system") {
+          if (provider.name === "system") {
             actualConfig = this.profileManager.getConfig("system-default");
           } else {
             actualConfig = this.profileManager.getConfig(); // Generic fallback

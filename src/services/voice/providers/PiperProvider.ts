@@ -92,7 +92,7 @@ export class PiperProvider implements VoiceProvider {
     }
 
     logger.info(
-      `🎙️ Creating Piper TTS: "${text.substring(0, 50)}..." (${config.piper.voice})`,
+      `🎙️ Creating Piper TTS: "${text.substring(0, 50)}..." (voice: ${config.piper.voice}, speed: ${config.piper.speed})`,
     );
 
     try {
@@ -143,7 +143,7 @@ export class PiperProvider implements VoiceProvider {
       // Build URL with voice and speed parameters
       const params = new URLSearchParams({
         text: text,
-        voice: config!.voice || "danny", // Default to danny (robotic)
+        voice: config!.voice || "john", // Default to john
         speed: (config!.speed || 1.0).toString(),
       });
 

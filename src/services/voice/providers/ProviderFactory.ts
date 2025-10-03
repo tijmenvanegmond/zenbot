@@ -1,6 +1,5 @@
 import { VoiceProvider, ProviderStatus } from "../types";
 import { SystemProvider } from "./SystemProvider";
-import { EspeakProvider } from "./EspeakProvider";
 import { PiperProvider } from "./PiperProvider";
 import { logger } from "../../../utils/logger";
 
@@ -28,8 +27,8 @@ export class ProviderFactory {
   private loadProviders(): void {
     const providers = [
       new SystemProvider(),
-      new EspeakProvider(),
       new PiperProvider(),
+      // EspeakProvider removed - garbage quality
     ];
 
     for (const provider of providers) {
@@ -68,8 +67,8 @@ export class ProviderFactory {
    * Get best available provider for platform
    */
   getBestProvider(): VoiceProvider {
-    // Preference order: piper > espeak > system
-    const preferenceOrder = ["piper", "espeak", "system"];
+    // Preference order: piper > system (espeak removed)
+    const preferenceOrder = ["piper", "system"];
 
     for (const name of preferenceOrder) {
       const provider = this.providers.get(name);

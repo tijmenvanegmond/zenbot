@@ -214,15 +214,7 @@ export class ProfileManager {
       },
     });
 
-    // Normal speed Danny
-    this.profiles.set("piper-danny", {
-      provider: "piper",
-      piper: {
-        voice: "danny",
-        speed: 1.0,
-        speaker: undefined,
-      },
-    });
+    // Danny voice removed - terrible quality
 
     // Lessac - clear female voice
     this.profiles.set("piper-lessac", {
@@ -274,17 +266,17 @@ export class ProfileManager {
       },
     });
 
-    // Sardonic Piper voice - danny slowed down
+    // Sardonic Piper voice - john at normal speed
     this.profiles.set("piper-sardonic", {
       provider: "piper",
       piper: {
-        voice: "danny",
-        speed: 0.85, // Slower for robotic deliberate delivery
+        voice: "john",
+        speed: 1.0, // Normal speed, balanced delivery
         speaker: undefined,
       },
     });
 
-    // Fast and energetic
+    // Fast and energetic - ryan
     this.profiles.set("piper-energetic", {
       provider: "piper",
       piper: {
@@ -294,12 +286,42 @@ export class ProfileManager {
       },
     });
 
-    // Calm and measured
+    // Calm and measured - lessac
     this.profiles.set("piper-calm", {
       provider: "piper",
       piper: {
         voice: "lessac",
         speed: 0.85, // Slower for calm delivery
+        speaker: undefined,
+      },
+    });
+
+    // Sharp and analytical - ryan normal
+    this.profiles.set("piper-sharp", {
+      provider: "piper",
+      piper: {
+        voice: "ryan",
+        speed: 0.9, // Slightly slower for precision
+        speaker: undefined,
+      },
+    });
+
+    // Fast chaotic - amy fast
+    this.profiles.set("piper-fast", {
+      provider: "piper",
+      piper: {
+        voice: "amy",
+        speed: 1.3, // Very fast
+        speaker: undefined,
+      },
+    });
+
+    // Deep and heavy - joe slow
+    this.profiles.set("piper-deep", {
+      provider: "piper",
+      piper: {
+        voice: "joe",
+        speed: 0.7, // Very slow and heavy
         speaker: undefined,
       },
     });

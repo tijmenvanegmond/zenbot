@@ -6,6 +6,7 @@ import {
 } from "../actionTypes";
 import { VoiceChannel } from "discord.js";
 import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
+import { getVoiceForPersonality } from "../../config/voicePersonalityMap";
 import { logger } from "../../utils/logger";
 
 /**
@@ -33,10 +34,15 @@ export class SpeakAction implements ZenAction {
           type: "string" as const,
           description: "The text to convert to speech and play",
         },
+        speaker: {
+          type: "string" as const,
+          description:
+            "Personality/speaker name (e.g., 'zenbot-philosopher', 'zenbot-critic'). Voice will be auto-selected based on personality. Takes precedence over 'profile'.",
+        },
         profile: {
           type: "string" as const,
           description:
-            "Voice profile: 'piper-john' (DEFAULT - high quality neural male voice), 'piper-danny' (robotic), 'piper-joe' (deep male), 'piper-ryan' (clear male), 'piper-lessac' (female), 'piper-amy' (soft female), or eSpeak profiles like 'zenbot-sardonic'. Omit to use default (piper-john). Can append ':speed=0.2' for custom speed.",
+            "Manual voice profile override: 'piper-john', 'piper-danny', 'piper-joe', etc. Only use if 'speaker' is not provided. Can append ':speed=0.2' for custom speed.",
         },
         activity_type: {
           type: "string" as const,
@@ -59,10 +65,16 @@ export class SpeakAction implements ZenAction {
     try {
       const {
         text,
+        speaker,
         profile,
         activity_type = "tts",
         interrupt = false,
       } = parameters;
+
+      // Auto-select voice based on speaker/personality
+      const selectedProfile = speaker
+        ? getVoiceForPersonality(speaker)
+        : profile;
 
       if (!text || typeof text !== "string" || text.trim().length === 0) {
         return {
@@ -108,7 +120,7 @@ export class SpeakAction implements ZenAction {
 
       const result = await voiceService.speak({
         text,
-        profile,
+        profile: selectedProfile,
         voiceChannel: voiceChannel,
         activityType: activity_type,
         interruptExisting: interrupt,
@@ -125,7 +137,7 @@ export class SpeakAction implements ZenAction {
       }
 
       logger.info(
-        `🎭 Speak action completed: "${text.substring(0, 50)}..." in ${voiceChannel.name} (profile: ${profile || "default"}, provider: ${result.provider})`,
+        `🎭 Speak action completed: "${text.substring(0, 50)}..." in ${voiceChannel.name} (speaker: ${speaker || "none"}, profile: ${selectedProfile || "default"}, provider: ${result.provider})`,
       );
 
       return {
@@ -133,7 +145,8 @@ export class SpeakAction implements ZenAction {
         message: `Speech delivered successfully`,
         data: {
           text,
-          profile: profile || "default",
+          speaker: speaker || "default",
+          profile: selectedProfile || "default",
           provider: result.provider,
           duration: result.duration,
           channel: voiceChannel.name,
