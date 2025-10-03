@@ -80,6 +80,10 @@ export default async function commandsRoutes(
           },
         },
         deferReply: async () => {},
+        editReply: async (content: any) => {
+          logger.info(`API Command Response:`, content);
+          return content;
+        },
         followUp: async (content: any) => {
           logger.info(`API Command Response:`, content);
           return content;

@@ -266,7 +266,7 @@ export class ProfileManager {
       },
     });
 
-    // Omnic voice - robot effect (default sardonic)
+    // Omnic voice - robot effect (default sardonic) - clean, minimal processing
     this.profiles.set("piper-omnic", {
       provider: "piper",
       piper: {
@@ -274,7 +274,7 @@ export class ProfileManager {
         speed: 0.9,
         speaker: undefined,
         effect: "omnic",
-        pitch: -1,
+        // No pitch shift - cleaner sound
       },
     });
 
@@ -286,7 +286,7 @@ export class ProfileManager {
         speed: 0.75, // Slower, more contemplative
         speaker: undefined,
         effect: "omnic",
-        pitch: -1,
+        // No pitch shift - keep it clean
       },
     });
 
@@ -297,7 +297,7 @@ export class ProfileManager {
         speed: 1.1, // Faster, more urgent
         speaker: undefined,
         effect: "omnic",
-        pitch: -2, // Slightly lower for intensity
+        pitch: -1, // Just slight pitch for intensity
       },
     });
 
@@ -308,7 +308,7 @@ export class ProfileManager {
         speed: 0.7, // Very slow, deliberate
         speaker: undefined,
         effect: "omnic",
-        pitch: -3, // Deeper for gravitas
+        pitch: -1, // Reduced from -3, just slight depth
       },
     });
 
@@ -319,7 +319,7 @@ export class ProfileManager {
         speed: 1.0, // Normal pace
         speaker: undefined,
         effect: "omnic",
-        pitch: 0, // No pitch shift, lighter
+        // No pitch shift for lighter tone
       },
     });
 

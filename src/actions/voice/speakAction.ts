@@ -115,11 +115,21 @@ export class SpeakAction implements ZenAction {
         };
       }
 
+      // Strip markdown formatting before TTS (asterisks, underscores, etc.)
+      const cleanText = text
+        .replace(/\*\*/g, "") // Remove bold **text**
+        .replace(/\*/g, "") // Remove italic *text*
+        .replace(/__/g, "") // Remove bold __text__
+        .replace(/_/g, "") // Remove italic _text_
+        .replace(/~~(.+?)~~/g, "$1") // Remove strikethrough ~~text~~
+        .replace(/`(.+?)`/g, "$1") // Remove inline code `text`
+        .trim();
+
       // Use unified voice service
       const voiceService = UnifiedVoiceService.getInstance();
 
       const result = await voiceService.speak({
-        text,
+        text: cleanText,
         profile: selectedProfile,
         voiceChannel: voiceChannel,
         activityType: activity_type,
