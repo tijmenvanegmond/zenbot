@@ -115,3 +115,5 @@ vitest.config.js
 # Test coverage
 coverage/
 html-coverage/
+
+.playwright-mcp/
