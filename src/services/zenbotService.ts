@@ -415,7 +415,8 @@ export class ZenbotService {
         const isTTSAction =
           call.name.includes("tts") ||
           call.name === "play_tts" ||
-          call.name === "enhanced_tts";
+          call.name === "enhanced_tts" ||
+          call.name === "speak";
         if (isTTSAction) {
           // For TTS actions, only allow ONE TTS call per function calling session
           const ttsActionType = call.name;

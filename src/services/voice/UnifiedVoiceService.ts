@@ -47,11 +47,34 @@ export class UnifiedVoiceService {
       const config = this.profileManager.getConfig(request.profile);
       logger.debug(`🎤 Using voice config:`, config);
 
-      // Get TTS provider
-      const provider = this.providerFactory.getProvider(config.provider);
+      // Get TTS provider with fallback logic
+      let provider;
+      let actualConfig = config;
+      try {
+        provider = this.providerFactory.getProvider(config.provider);
+      } catch (error) {
+        // If requested provider is unavailable, try to fall back
+        logger.warn(`🎤 Provider ${config.provider} unavailable, attempting fallback:`, error instanceof Error ? error.message : error);
+
+        try {
+          // Try to get best available provider
+          provider = this.providerFactory.getBestProvider();
+          // Get a config appropriate for the fallback provider
+          if (provider.name === "espeak") {
+            actualConfig = this.profileManager.getConfig("zenbot-sardonic");
+          } else if (provider.name === "system") {
+            actualConfig = this.profileManager.getConfig("system-default");
+          } else {
+            actualConfig = this.profileManager.getConfig(); // Generic fallback
+          }
+          logger.info(`🎤 Using fallback provider: ${provider.name} with profile: ${actualConfig.provider}`);
+        } catch (fallbackError) {
+          throw new Error(`No voice providers available. Original error: ${error instanceof Error ? error.message : error}`);
+        }
+      }
 
       // Generate audio
-      const audioResource = await provider.createAudio(request.text, config);
+      const audioResource = await provider.createAudio(request.text, actualConfig);
 
       // Play in voice channel if specified
       if (request.voiceChannel) {
@@ -67,9 +90,9 @@ export class UnifiedVoiceService {
       return {
         success: true,
         audioResource,
-        config,
+        config: actualConfig,
         duration,
-        provider: config.provider,
+        provider: actualConfig.provider,
       };
     } catch (error) {
       const duration = Date.now() - startTime;

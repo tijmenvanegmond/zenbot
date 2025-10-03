@@ -149,18 +149,8 @@ export class ChannelQuoteAction implements ZenAction {
         responseContent += `"${randomQuote.content}" (by ${randomQuote.poster.displayName})`;
       }
 
-      // Determine if we should use voice
-      const shouldUseVoice =
-        use_voice && context.isVoiceInteraction && context.voiceChannel;
-
-      // Play TTS if appropriate
-      if (shouldUseVoice) {
-        try {
-          await playTTSInChannel(context.voiceChannel!, enhancedText);
-        } catch (error) {
-          logger.error("🎭 Failed to play quote TTS:", error);
-        }
-      }
+      // Voice playback is handled by the AI assistant's speak function
+      // No need to call TTS here as it would be duplicate
 
       logger.info(
         `🎭 Channel quote action: Retrieved quote from #${quoteChannel.name}`,
@@ -177,7 +167,7 @@ export class ChannelQuoteAction implements ZenAction {
         },
         shouldRespond: true,
         responseText: responseContent,
-        useVoice: shouldUseVoice,
+        useVoice: false, // AI handles voice via speak function
       };
     } catch (error) {
       logger.error("🎭 Channel quote action failed:", error);

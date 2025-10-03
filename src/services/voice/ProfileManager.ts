@@ -202,7 +202,107 @@ export class ProfileManager {
       },
     });
 
+    // Piper profiles - high-quality neural TTS with multiple voice options
 
+    // Default: Slow John - male voice
+    this.profiles.set("piper-default", {
+      provider: "piper",
+      piper: {
+        voice: "john",
+        speed: 0.75, // Slower for more deliberate delivery
+        speaker: undefined,
+      },
+    });
+
+    // Normal speed Danny
+    this.profiles.set("piper-danny", {
+      provider: "piper",
+      piper: {
+        voice: "danny",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
+    // Lessac - clear female voice
+    this.profiles.set("piper-lessac", {
+      provider: "piper",
+      piper: {
+        voice: "lessac",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
+    // Ryan - clear male voice
+    this.profiles.set("piper-ryan", {
+      provider: "piper",
+      piper: {
+        voice: "ryan",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
+    // Amy - soft female voice
+    this.profiles.set("piper-amy", {
+      provider: "piper",
+      piper: {
+        voice: "amy",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
+    // Joe - deep male voice
+    this.profiles.set("piper-joe", {
+      provider: "piper",
+      piper: {
+        voice: "joe",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
+    // John - male voice (default voice)
+    this.profiles.set("piper-john", {
+      provider: "piper",
+      piper: {
+        voice: "john",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
+    // Sardonic Piper voice - danny slowed down
+    this.profiles.set("piper-sardonic", {
+      provider: "piper",
+      piper: {
+        voice: "danny",
+        speed: 0.85, // Slower for robotic deliberate delivery
+        speaker: undefined,
+      },
+    });
+
+    // Fast and energetic
+    this.profiles.set("piper-energetic", {
+      provider: "piper",
+      piper: {
+        voice: "ryan",
+        speed: 1.2, // Faster
+        speaker: undefined,
+      },
+    });
+
+    // Calm and measured
+    this.profiles.set("piper-calm", {
+      provider: "piper",
+      piper: {
+        voice: "lessac",
+        speed: 0.85, // Slower for calm delivery
+        speaker: undefined,
+      },
+    });
 
     logger.info(`🎭 Loaded ${this.profiles.size} voice profiles`);
   }
@@ -213,6 +313,11 @@ export class ProfileManager {
   getConfig(profile?: string): VoiceConfig {
     if (!profile) {
       return this.getDefaultConfig();
+    }
+
+    // Check for profile with speed override (e.g., "piper-default:speed=0.8")
+    if (profile.includes(":speed=")) {
+      return this.parseProfileWithSpeedOverride(profile);
     }
 
     // Check if it's a predefined profile
@@ -231,11 +336,57 @@ export class ProfileManager {
   }
 
   /**
-   * Get default configuration based on environment
+   * Parse profile with speed override (e.g., "piper-default:speed=0.75")
+   */
+  private parseProfileWithSpeedOverride(profileString: string): VoiceConfig {
+    const [profileName, ...params] = profileString.split(":");
+
+    // Get base profile
+    let config: VoiceConfig;
+    if (this.profiles.has(profileName)) {
+      config = JSON.parse(JSON.stringify(this.profiles.get(profileName)!)); // Deep clone
+    } else {
+      logger.warn(`🎭 Unknown base profile '${profileName}', using default`);
+      config = JSON.parse(JSON.stringify(this.getDefaultConfig()));
+    }
+
+    // Parse speed parameter
+    for (const param of params) {
+      if (param.startsWith("speed=")) {
+        const speed = parseFloat(param.split("=")[1]);
+        if (!isNaN(speed) && speed >= 0.1 && speed <= 3.0) {
+          // Apply speed to appropriate provider
+          if (config.piper) {
+            config.piper.speed = speed;
+          } else if (config.espeak) {
+            // For espeak, speed is WPM, so adjust proportionally
+            const baseSpeed = config.espeak.speed || 160;
+            config.espeak.speed = Math.round(baseSpeed * speed);
+          } else if (config.system) {
+            config.system.speed = speed;
+          }
+          logger.info(`🎭 Applied speed override: ${speed}x to profile ${profileName}`);
+        }
+      }
+    }
+
+    return config;
+  }
+
+  /**
+   * Get default configuration based on environment and provider availability
    */
   private getDefaultConfig(): VoiceConfig {
-    // Default to sardonic Linux voice (free, no API costs)
+    // Always prefer Piper John voice (high-quality neural TTS)
+    // UnifiedVoiceService will handle fallback if Piper is unavailable
+    if (this.profiles.has("piper-default")) {
+      logger.debug("🎤 Returning piper-default as default config");
+      return this.profiles.get("piper-default")!;
+    }
+
+    // Fallback to sardonic Linux voice (free, no API costs)
     if (this.profiles.has("zenbot-sardonic")) {
+      logger.debug("🎤 Returning zenbot-sardonic as fallback default");
       return this.profiles.get("zenbot-sardonic")!;
     }
 
@@ -333,6 +484,9 @@ export class ProfileManager {
       case "espeak":
         const espeak = config.espeak!;
         return `eSpeak ${espeak.variant} (pitch=${espeak.pitch}, speed=${espeak.speed})`;
+      case "piper":
+        const piper = config.piper!;
+        return `Piper ${piper.voice} (speed=${piper.speed})`;
       default:
         return "Unknown configuration";
     }

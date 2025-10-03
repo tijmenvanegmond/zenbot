@@ -63,13 +63,6 @@ export class AdviceAction implements ZenAction {
     parameters: ActionParameters,
   ): Promise<ActionResult> {
     try {
-      logger.debug(`🎭 AdviceAction.execute started`, {
-        source: context.source,
-        hasInteraction: !!context.interaction,
-        user: context.user.username,
-        parametersReceived: Object.keys(parameters),
-      });
-
       const {
         topic,
         advice_type = "ai_contextual",
@@ -77,109 +70,25 @@ export class AdviceAction implements ZenAction {
         use_voice = true,
       } = parameters;
 
-      logger.debug(`🎭 Parsed advice parameters:`, {
-        topic: topic || "none",
-        advice_type,
-        urgency,
-        use_voice,
-        willUseAI: advice_type === "ai_contextual" && !!context.interaction,
-      });
-
       logger.info(
-        `🎭 Advice request: type=${advice_type}, topic="${topic}", urgency=${urgency}`,
+        `🎭 Advice request: type=${advice_type}, topic="${topic || "general"}", urgency=${urgency}`,
       );
 
-      let adviceText: string;
-      let isAIGenerated = false;
+      // STEP 1: Generate advice text (AI or curated)
+      const { adviceText, isAIGenerated } = await this.generateAdvice(
+        advice_type,
+        context,
+        topic,
+        urgency,
+      );
 
-      if (advice_type === "ai_contextual" && context.interaction) {
-        logger.debug(`🎭 Using AI contextual advice via ZenbotService`);
+      // STEP 2: Don't play voice here - AI already handled it during function calling
+      // The action should only return text; voice is handled by AI's speak action
+      logger.debug(
+        "🎭 Skipping voice in adviceAction - AI handles TTS via speak action during function calling",
+      );
 
-        // Use unified Zenyatta service for contextual advice with conversation memory
-        try {
-          const zenyatta = ZenbotService.getInstance();
-
-          logger.debug(`🎭 Calling zenyatta.getAdvice()`, {
-            hasTopic: !!topic,
-            urgency,
-          });
-
-          const response = await zenyatta.getAdvice(
-            context.interaction,
-            topic,
-            urgency as any,
-          );
-
-          adviceText = response.text;
-          isAIGenerated = true;
-
-          logger.debug(`🎭 AI advice generated successfully`, {
-            responseLength: response.text.length,
-            mood: response.mood,
-            shouldUseVoice: response.shouldUseVoice,
-            sessionId: response.sessionId,
-          });
-        } catch (error) {
-          logger.warn(
-            "🧘 AI advice failed, falling back to predefined wisdom:",
-            error,
-          );
-          logger.debug(`🎭 Falling back to predefined wisdom`);
-
-          // Fall back to predefined advice
-          const voiceLine = getContextualAdvice("philosophical");
-          adviceText = voiceLine.text;
-        }
-      } else {
-        logger.debug(`🎭 Using predefined wisdom`, {
-          advice_type,
-          randomCategory: advice_type === "random",
-        });
-
-        // Use predefined wisdom
-        const adviceCategory =
-          advice_type === "random" ? this.getRandomCategory() : advice_type;
-
-        logger.debug(`🎭 Selected advice category: ${adviceCategory}`);
-
-        const voiceLine = getContextualAdvice(adviceCategory as any);
-        adviceText = voiceLine.text;
-      }
-
-      // Enhance advice with topic context if provided
-      if (topic && !isAIGenerated) {
-        adviceText = `Regarding ${topic}: ${adviceText}`;
-      }
-
-      // Determine if we should use voice (but avoid duplicate TTS in AI sessions)
-      const shouldUseVoice =
-        use_voice && context.voiceChannel && context.source !== "ai";
-
-      // If user wants voice and is in voice channel, play TTS
-      if (shouldUseVoice) {
-        try {
-          const voiceService = UnifiedVoiceService.getInstance();
-          await voiceService.speak({
-            text: adviceText,
-            profile: "zenbot-wise", // Use wise voice for advice
-            voiceChannel: context.voiceChannel!,
-            activityType: "advice",
-          });
-          logger.info(
-            `🎭 Advice delivered via TTS: "${adviceText.substring(0, 50)}..." (type: ${advice_type})`,
-          );
-        } catch (error) {
-          logger.warn(
-            "🎭 TTS failed for advice, continuing with text response:",
-            error,
-          );
-        }
-      } else if (context.source === "ai" && use_voice) {
-        logger.debug(
-          "🎭 Skipping TTS in advice action - AI interaction likely handling TTS separately",
-        );
-      }
-
+      // STEP 3: Return result
       return {
         success: true,
         message: `Advice provided: ${advice_type}${isAIGenerated ? " (AI)" : " (curated)"}`,
@@ -189,11 +98,11 @@ export class AdviceAction implements ZenAction {
           type: advice_type,
           urgency,
           source: isAIGenerated ? "ai" : "curated",
-          voiceEnabled: shouldUseVoice,
+          voiceEnabled: false, // Voice handled by AI
         },
         shouldRespond: true,
         responseText: adviceText,
-        useVoice: shouldUseVoice,
+        useVoice: false, // Don't voice - AI already did via speak action
       };
     } catch (error) {
       logger.error("🎭 Advice action failed:", error);
@@ -202,8 +111,79 @@ export class AdviceAction implements ZenAction {
         error: error instanceof Error ? error.message : "Unknown error",
         shouldRespond: true,
         responseText:
-          "I encountered difficulty accessing the wisdom of the Iris. Please try again, and we shall find the path together.",
+          "I encountered difficulty accessing the wisdom of the Iris. Please try again.",
       };
+    }
+  }
+
+  /**
+   * Generate advice text (AI-powered or curated)
+   */
+  private async generateAdvice(
+    advice_type: string,
+    context: ActionContext,
+    topic?: string,
+    urgency: string = "medium",
+  ): Promise<{ adviceText: string; isAIGenerated: boolean }> {
+    // Use AI for contextual advice
+    if (advice_type === "ai_contextual" && context.interaction) {
+      try {
+        const zenyatta = ZenbotService.getInstance();
+        const response = await zenyatta.getAdvice(
+          context.interaction,
+          topic,
+          urgency as any,
+        );
+
+        logger.info(
+          `🎭 AI advice generated (mood: ${response.mood}, length: ${response.text.length})`,
+        );
+
+        return { adviceText: response.text, isAIGenerated: true };
+      } catch (error) {
+        logger.warn("🎭 AI advice failed, falling back to curated wisdom:", error);
+        // Fall through to curated advice
+      }
+    }
+
+    // Use curated wisdom
+    const adviceCategory =
+      advice_type === "random" ? this.getRandomCategory() : advice_type;
+
+    const voiceLine = getContextualAdvice(adviceCategory as any);
+    let adviceText = voiceLine.text;
+
+    // Add topic context for curated advice
+    if (topic) {
+      adviceText = `Regarding ${topic}: ${adviceText}`;
+    }
+
+    logger.info(`🎭 Using curated wisdom (category: ${adviceCategory})`);
+
+    return { adviceText, isAIGenerated: false };
+  }
+
+  /**
+   * Play advice as voice in voice channel
+   */
+  private async playAdviceVoice(
+    text: string,
+    voiceChannel: any,
+    advice_type: string,
+  ): Promise<void> {
+    try {
+      const voiceService = UnifiedVoiceService.getInstance();
+      await voiceService.speak({
+        text,
+        profile: undefined, // Use default profile (piper-john)
+        voiceChannel,
+        activityType: "advice",
+      });
+      logger.info(
+        `🎭 Advice delivered via TTS: "${text.substring(0, 50)}..." (type: ${advice_type})`,
+      );
+    } catch (error) {
+      logger.warn("🎭 TTS failed for advice, continuing with text response:", error);
     }
   }
 

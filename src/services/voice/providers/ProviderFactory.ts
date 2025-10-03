@@ -1,6 +1,7 @@
 import { VoiceProvider, ProviderStatus } from "../types";
 import { SystemProvider } from "./SystemProvider";
 import { EspeakProvider } from "./EspeakProvider";
+import { PiperProvider } from "./PiperProvider";
 import { logger } from "../../../utils/logger";
 
 /**
@@ -28,6 +29,7 @@ export class ProviderFactory {
     const providers = [
       new SystemProvider(),
       new EspeakProvider(),
+      new PiperProvider(),
     ];
 
     for (const provider of providers) {
@@ -35,6 +37,15 @@ export class ProviderFactory {
       const status = provider.isAvailable() ? "✅" : "❌";
       logger.info(`🎤 Voice provider ${provider.name}: ${status}`);
     }
+
+    // For Piper, give it a moment to initialize in Docker environment
+    setTimeout(() => {
+      const piperProvider = this.providers.get("piper");
+      if (piperProvider && !piperProvider.isAvailable()) {
+        // Force a recheck after startup delay
+        piperProvider.isAvailable();
+      }
+    }, 3000); // Check again after 3 seconds
   }
 
   /**
@@ -57,8 +68,8 @@ export class ProviderFactory {
    * Get best available provider for platform
    */
   getBestProvider(): VoiceProvider {
-    // Preference order: espeak > system
-    const preferenceOrder = ["espeak", "system"];
+    // Preference order: piper > espeak > system
+    const preferenceOrder = ["piper", "espeak", "system"];
 
     for (const name of preferenceOrder) {
       const provider = this.providers.get(name);
@@ -114,6 +125,8 @@ export class ProviderFactory {
         return process.platform;
       case "espeak":
         return "linux"; // Platform detection for eSpeak
+      case "piper":
+        return "docker"; // Piper runs in container
       default:
         return "unknown";
     }
@@ -132,6 +145,14 @@ export class ProviderFactory {
           "voice-tweaking",
           "personality-profiles",
           "customizable",
+        ];
+      case "piper":
+        return [
+          "neural-tts",
+          "high-quality",
+          "multi-language",
+          "natural-sounding",
+          "docker-based",
         ];
       default:
         return [];

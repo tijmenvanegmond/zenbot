@@ -34,15 +34,27 @@ export const TTS: Command = {
           { name: "🎪 Mysterious", value: "zenbot-mysterious" },
           { name: "⚡ Energetic", value: "zenbot-energetic" },
           { name: "👔 Professional", value: "zenbot-professional" },
-          { name: "🎙️ ElevenLabs Rachel", value: "elevenlabs-rachel" },
-          { name: "🎙️ ElevenLabs Adam", value: "elevenlabs-adam" },
-          { name: "🎙️ ElevenLabs Antoni", value: "elevenlabs-antoni" },
-          { name: "🎙️ ElevenLabs Arnold", value: "elevenlabs-arnold" },
-          { name: "🎙️ ElevenLabs Domi", value: "elevenlabs-domi" },
-          { name: "🤖 ElevenLabs Rocco Robot", value: "elevenlabs-rocco" },
-          { name: "OpenAI", value: "openai-default" },
           { name: "System", value: "system-default" },
+          // Piper TTS profiles - high-quality neural voices
+          { name: "👨 Piper John (default)", value: "piper-default" },
+          { name: "👨 Piper John (normal)", value: "piper-john" },
+          { name: "🤖 Piper Danny (robotic)", value: "piper-danny" },
+          { name: "👩 Piper Lessac (female)", value: "piper-lessac" },
+          { name: "👨 Piper Ryan (male)", value: "piper-ryan" },
+          { name: "👩‍🦰 Piper Amy (soft)", value: "piper-amy" },
+          { name: "👨‍💼 Piper Joe (deep)", value: "piper-joe" },
+          { name: "🎭 Piper Extra Slow", value: "piper-sardonic" },
+          { name: "⚡ Piper Energetic", value: "piper-energetic" },
+          { name: "🧘 Piper Calm", value: "piper-calm" },
         ),
+    )
+    .addNumberOption((option) =>
+      option
+        .setName("speed")
+        .setDescription("Speed multiplier (0.1 = very slow, 3.0 = very fast)")
+        .setRequired(false)
+        .setMinValue(0.1)
+        .setMaxValue(3.0),
     )
     .addBooleanOption((option) =>
       option
@@ -54,13 +66,23 @@ export const TTS: Command = {
   execute: async (client: Client, interaction: CommandInteraction) => {
     try {
       const text = interaction.options?.get("text")?.value as string;
-      const profile = interaction.options?.get("profile")?.value as string;
+      let profile = interaction.options?.get("profile")?.value as string;
+      const speed = interaction.options?.get("speed")?.value as number;
       const interrupt =
         (interaction.options?.get("interrupt")?.value as boolean) || false;
 
-      logger.info(
-        `${interaction.user.username} requesting TTS: "${text.substring(0, 50)}..." (profile: ${profile || "default"})`,
-      );
+      // If speed is specified, append it to the profile
+      if (speed) {
+        const baseProfile = profile || "piper-default";
+        profile = `${baseProfile}:speed=${speed}`;
+        logger.info(
+          `${interaction.user.username} requesting TTS with custom speed: "${text.substring(0, 50)}..." (profile: ${baseProfile}, speed: ${speed})`,
+        );
+      } else {
+        logger.info(
+          `${interaction.user.username} requesting TTS: "${text.substring(0, 50)}..." (profile: ${profile || "default"})`,
+        );
+      }
 
       // Use the unified voice system
       const actionService = ActionService.getInstance();

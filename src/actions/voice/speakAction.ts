@@ -36,7 +36,7 @@ export class SpeakAction implements ZenAction {
         profile: {
           type: "string" as const,
           description:
-            "Voice profile: 'zenbot-default', 'zenbot-sardonic', 'zenbot-wise', 'zenbot-excited', 'zenbot-calm', 'zenbot-deep', 'zenbot-crisp', 'zenbot-smooth', 'zenbot-mysterious', 'openai-default', 'system-default', or custom like 'en-gb:pitch=45:amp=110'",
+            "Voice profile: 'piper-john' (DEFAULT - high quality neural male voice), 'piper-danny' (robotic), 'piper-joe' (deep male), 'piper-ryan' (clear male), 'piper-lessac' (female), 'piper-amy' (soft female), or eSpeak profiles like 'zenbot-sardonic'. Omit to use default (piper-john). Can append ':speed=0.2' for custom speed.",
         },
         activity_type: {
           type: "string" as const,

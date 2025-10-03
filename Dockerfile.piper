@@ -1,0 +1,59 @@
+# Custom Piper TTS HTTP Server with Multiple Voices
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install piper-tts
+RUN pip install --no-cache-dir piper-tts flask
+
+# Download multiple voice models from HuggingFace
+RUN mkdir -p /app/voices
+
+# Download en_US-lessac-medium (clear female voice)
+RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx \
+    -O /app/voices/en_US-lessac-medium.onnx && \
+    wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json \
+    -O /app/voices/en_US-lessac-medium.onnx.json
+
+# Download en_US-ryan-medium (clear male voice)
+RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/medium/en_US-ryan-medium.onnx \
+    -O /app/voices/en_US-ryan-medium.onnx && \
+    wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/medium/en_US-ryan-medium.onnx.json \
+    -O /app/voices/en_US-ryan-medium.onnx.json
+
+# Download en_US-danny-low (robotic male - perfect for Zenbot!)
+RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/danny/low/en_US-danny-low.onnx \
+    -O /app/voices/en_US-danny-low.onnx && \
+    wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/danny/low/en_US-danny-low.onnx.json \
+    -O /app/voices/en_US-danny-low.onnx.json
+
+# Download en_US-amy-medium (soft female voice)
+RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx \
+    -O /app/voices/en_US-amy-medium.onnx && \
+    wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json \
+    -O /app/voices/en_US-amy-medium.onnx.json
+
+# Download en_US-joe-medium (deep male voice)
+RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/joe/medium/en_US-joe-medium.onnx \
+    -O /app/voices/en_US-joe-medium.onnx && \
+    wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/joe/medium/en_US-joe-medium.onnx.json \
+    -O /app/voices/en_US-joe-medium.onnx.json
+
+# Download en_US-john-medium (male voice - new default)
+RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/john/medium/en_US-john-medium.onnx \
+    -O /app/voices/en_US-john-medium.onnx && \
+    wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/john/medium/en_US-john-medium.onnx.json \
+    -O /app/voices/en_US-john-medium.onnx.json
+
+# Copy HTTP server script
+COPY piper-server.py /app/server.py
+
+EXPOSE 8080
+CMD ["python", "/app/server.py"]

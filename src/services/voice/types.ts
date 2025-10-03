@@ -28,7 +28,7 @@ export interface VoiceResult {
  * Voice configuration for a profile
  */
 export interface VoiceConfig {
-  provider: "system" | "espeak";
+  provider: "system" | "espeak" | "piper";
 
   // System TTS settings (Windows/macOS)
   system?: {
@@ -46,6 +46,13 @@ export interface VoiceConfig {
     capitalEmphasis: number; // 0-40
     punctuation: boolean;
     ssml: boolean;
+  };
+
+  // Piper TTS settings
+  piper?: {
+    voice: string; // e.g., 'en_US-lessac-medium', 'en_GB-alan-medium'
+    speed: number; // 0.5 - 2.0 (multiplier)
+    speaker?: number; // Optional speaker ID for multi-speaker models
   };
 
 }

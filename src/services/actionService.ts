@@ -312,16 +312,9 @@ export class ActionService {
         functionArgs,
       );
 
-      // Handle TTS responses for AI actions
-      if (result.success && result.useVoice && result.responseText) {
-        const context = this.createContextFromInteraction(interaction, "ai");
-        if (context.voiceChannel) {
-          await this.registry.execute("play_tts", context, {
-            text: result.responseText,
-            activity_type: "ai-response",
-          });
-        }
-      }
+      // REMOVED: Automatic TTS trigger - AI handles voice via speak action
+      // This was causing duplicate voice calls after function calling
+      // Actions return useVoice: false when source is "ai" to let AI handle TTS
 
       return result;
     } catch (error) {

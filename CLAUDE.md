@@ -27,12 +27,20 @@ Zenbot is a **multi-AI powered Discord bot** with a sardonic personality. Built 
 
 ### Environment Setup
 
-The bot requires:
-
+**Required:**
 - `DISCORD_API_TOKEN` - Discord bot token
-- `OPENAI_API_KEY` - OpenAI API key for TTS functionality
-- `PORT` - HTTP server port (optional, defaults to 3001)
+- OpenAI API key - AI service (optional for voice-only mode)
+
+**Optional:**
+- `PORT` - HTTP server port (defaults to 3001)
 - `LOG_LEVEL` - Set to "DEBUG" for verbose logging
+- `PIPER_URL` - Piper TTS endpoint (defaults to `http://localhost:8080`)
+- `TTS_PROVIDER` - Override default provider: `piper`, `espeak`, or `system`
+
+**Docker Setup:**
+```bash
+docker-compose up -d  # Starts Piper TTS container
+```
 
 ## Architecture
 
@@ -84,13 +92,34 @@ Zenbot uses a unified actions system that provides a single interface for functi
   - `onVoiceChannelUpdate.ts` - Voice state changes
   - `onPlayerUpdate.ts` - Audio player events
 
-### Voice Features - The Omnic's Voice
+### Voice System - Unified Architecture
 
-- `src/voice/` - Voice-related functionality channeling Zenyatta's wisdom
-  - `playInVoiceChannel.ts` - Core voice playback logic with proper logging for audio tranquility
-  - `tts.ts` - OpenAI TTS integration using gpt-4o-mini-tts model with "echo" voice for Zenyatta character
-  - `voiceLineData.ts` - Voice line management
-  - `zenVoiceLines.json` - Audio file mappings
+**Core Services (`src/services/voice/`):**
+
+- `UnifiedVoiceService.ts` - Single entry point for all TTS operations
+- `ProfileManager.ts` - Voice profile management (20+ profiles: Piper, eSpeak, System TTS)
+- `AudioManager.ts` - Voice channel sessions, playback queue, auto-leave on idle
+- `types.ts` - Voice interfaces and configuration types
+
+**TTS Providers (`src/services/voice/providers/`):**
+
+- `ProviderFactory.ts` - Provider selection with intelligent fallback
+- `PiperProvider.ts` - **Primary**: Neural TTS via HTTP API (john, danny, lessac, ryan, amy, joe voices)
+- `EspeakProvider.ts` - **Fallback**: Free Linux TTS (10+ voice profiles)
+- `SystemProvider.ts` - Windows/macOS native TTS
+
+**Voice Profiles:**
+
+- **Piper** (Neural, high-quality): `piper-default` (john 0.75x), `piper-sardonic` (danny 0.85x), `piper-energetic`, `piper-calm`
+- **eSpeak** (Linux): `zenbot-sardonic`, `zenbot-wise`, `zenbot-deep`, `zenbot-crisp`, `zenbot-smooth`, `zenbot-mysterious`
+- **System**: `system-default` (Microsoft David/Alex)
+- Custom format: `"profile-name:speed=0.8"` or `"en-gb:pitch=40:speed=120"`
+
+**Default Behavior:**
+1. Piper (if available) → 2. eSpeak sardonic → 3. System TTS
+
+**Legacy (`src/voice/`):**
+- `voiceLineData.ts`, `zenVoiceLines.json` - Pre-recorded voice lines
 
 ### REST API
 
@@ -108,9 +137,12 @@ Zenbot uses a unified actions system that provides a single interface for functi
 ### Key Dependencies
 
 - Discord.js v14 with voice support (@discordjs/voice)
-- OpenAI API for text-to-speech (gpt-4o-mini-tts model, "echo" voice, MP3 format)
+- Piper TTS (neural, self-hosted, primary voice provider)
+- eSpeak-NG (Linux TTS, free fallback)
+- System TTS (Windows/macOS, last resort)
 - Fastify for REST API server
 - FFmpeg for audio processing
+- Docker for Piper container deployment
 
 ## REST API Endpoints
 
@@ -267,12 +299,34 @@ New commands should:
 3. Use `executeFromCommand()` for consistent behavior
 4. Handle only Discord-specific response formatting
 
-### Voice Features - The Path to Audio Harmony
+### Voice System Implementation
 
-- Voice functionality requires proper Discord voice permissions and FFmpeg installation for audio processing
-- TTS uses OpenAI's gpt-4o-mini-tts model with "echo" voice and MP3 format for Discord.js compatibility
-- Audio resources use `StreamType.Arbitrary` for proper playback
-- Voice character instructions help maintain Zenyatta's calm, wise, and serene tone
+**Architecture:**
+- `UnifiedVoiceService.speak()` - Main entry point for all TTS requests
+- Provider selection with automatic fallback: Piper → eSpeak → System
+- Profile-based configuration supports speed overrides (`"piper-default:speed=0.8"`)
+- `AudioManager` handles voice sessions with 1-minute idle timeout and auto-leave
+
+**Setup:**
+- Piper: Docker container at `http://localhost:8080` (set `PIPER_URL` to override)
+- eSpeak: Native Linux install (`sudo apt install espeak-ng`)
+- System: Built-in Windows/macOS TTS
+
+**Usage:**
+```typescript
+const voiceService = UnifiedVoiceService.getInstance();
+await voiceService.speak({
+  text: "Your message",
+  profile: "piper-sardonic", // Optional
+  voiceChannel: channel,      // Optional
+  interruptExisting: false    // Optional
+});
+```
+
+**Testing:**
+- `npm run tts` - CLI testing utility for voice profiles
+- Check Docker: `docker ps` to verify Piper container is running
+- Audio resources use `StreamType.Arbitrary` for Discord.js compatibility
 
 ### Quote System Architecture
 
@@ -312,10 +366,21 @@ When working with Zenbot, embrace these meditative practices:
 
 ### TTS Voice Wisdom
 
-- Current optimal voice configuration: gpt-4o-mini-tts model with "echo" voice
-- Instructions parameter may cause the model to read prompts aloud - use sparingly
-- MP3 format ensures Discord.js compatibility over Opus
-- Test voice changes iteratively, as character balance is delicate
+**Current Stack:**
+- **Primary**: Piper neural TTS (self-hosted, Docker) - Best quality, no API costs
+- **Fallback**: eSpeak-NG (Linux native) - Free, robotic but reliable
+- **Last Resort**: System TTS (Windows/macOS) - Better than silence
+
+**Profile Selection:**
+- Default preference: `piper-default` (slow john @ 0.75x for gravitas)
+- Sardonic mode: `piper-sardonic` (danny @ 0.85x for robotic snark)
+- Test profiles with `npm run tts` before deploying
+- Speed overrides: `"piper-danny:speed=0.6"` for extra slow delivery
+
+**Troubleshooting:**
+- Silent audio? Check Piper container health: `docker exec zenbot-piper curl http://localhost:8080/health`
+- Provider fallback messages in logs indicate Piper unavailable
+- eSpeak quality issues? Adjust pitch/speed in ProfileManager profiles
 
 ### Code Tranquility
 

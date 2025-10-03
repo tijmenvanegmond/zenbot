@@ -124,18 +124,8 @@ export class RemarkAction implements ZenAction {
         };
       }
 
-      // Determine if we should use voice
-      const shouldUseVoice =
-        use_voice && context.isVoiceInteraction && context.voiceChannel;
-
-      // Play TTS if appropriate
-      if (shouldUseVoice) {
-        try {
-          await playTTSInChannel(context.voiceChannel!, remarkText);
-        } catch (voiceError) {
-          logger.error("🎭 Failed to play remark TTS:", voiceError);
-        }
-      }
+      // Voice playback is handled by the AI assistant's speak function
+      // No need to call TTS here as it would be duplicate
 
       // Create response with appropriate emoji
       const emojiMap: Record<RemarkType, string> = {
@@ -166,7 +156,7 @@ export class RemarkAction implements ZenAction {
         },
         shouldRespond: true,
         responseText,
-        useVoice: shouldUseVoice,
+        useVoice: false, // AI handles voice via speak function
       };
     } catch (error) {
       logger.error("🎭 Remark action failed:", error);
