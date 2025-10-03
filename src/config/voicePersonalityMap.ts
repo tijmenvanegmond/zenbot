@@ -11,10 +11,10 @@ export interface PersonalityVoiceMapping {
  * Default voice profile mappings for each Zenbot personality
  */
 export const PERSONALITY_VOICE_MAP: PersonalityVoiceMapping = {
-  // Default Zenbot (sardonic, wise)
-  "zenbot-default": "piper-sardonic", // john @ 1.0x - balanced, great voice
-  zenbot: "piper-sardonic",
-  default: "piper-john", // john @ 1.0x - balanced
+  // Default Zenbot (sardonic omnic monk)
+  "zenbot-default": "piper-omnic", // john @ 0.9x with omnic robot effect
+  zenbot: "piper-omnic",
+  default: "piper-john", // john @ 1.0x - balanced clean voice
 
   // Conference personalities
   "zenbot-philosopher": "piper-calm", // lessac @ 0.85x - slow, contemplative female
@@ -29,7 +29,8 @@ export const PERSONALITY_VOICE_MAP: PersonalityVoiceMapping = {
 };
 
 /**
- * Get voice profile for a given personality
+ * Get voice profile for a given personality with optional mood modifier
+ * Format: "personality:mood" (e.g., "zenbot-sardonic:calm")
  */
 export function getVoiceForPersonality(personality?: string): string {
   if (!personality) {
@@ -38,6 +39,21 @@ export function getVoiceForPersonality(personality?: string): string {
 
   // Normalize personality name
   const normalized = personality.toLowerCase().trim();
+
+  // Check for mood modifier (personality:mood format)
+  if (normalized.includes(":")) {
+    const [basePerson, mood] = normalized.split(":");
+
+    // Try exact match for personality:mood
+    if (PERSONALITY_VOICE_MAP[normalized]) {
+      return PERSONALITY_VOICE_MAP[normalized];
+    }
+
+    // Try base personality with mood suffix
+    const moodProfile = `${PERSONALITY_VOICE_MAP[basePerson]}-${mood}`;
+    // Check if that profile exists (we'll validate this exists in ProfileManager)
+    return moodProfile;
+  }
 
   // Direct lookup
   if (PERSONALITY_VOICE_MAP[normalized]) {

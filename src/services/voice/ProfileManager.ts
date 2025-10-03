@@ -266,13 +266,60 @@ export class ProfileManager {
       },
     });
 
-    // Sardonic Piper voice - john at normal speed
-    this.profiles.set("piper-sardonic", {
+    // Omnic voice - robot effect (default sardonic)
+    this.profiles.set("piper-omnic", {
       provider: "piper",
       piper: {
         voice: "john",
-        speed: 1.0, // Normal speed, balanced delivery
+        speed: 0.9,
         speaker: undefined,
+        effect: "omnic",
+        pitch: -1,
+      },
+    });
+
+    // Omnic mood variations
+    this.profiles.set("piper-omnic-calm", {
+      provider: "piper",
+      piper: {
+        voice: "john",
+        speed: 0.75, // Slower, more contemplative
+        speaker: undefined,
+        effect: "omnic",
+        pitch: -1,
+      },
+    });
+
+    this.profiles.set("piper-omnic-intense", {
+      provider: "piper",
+      piper: {
+        voice: "john",
+        speed: 1.1, // Faster, more urgent
+        speaker: undefined,
+        effect: "omnic",
+        pitch: -2, // Slightly lower for intensity
+      },
+    });
+
+    this.profiles.set("piper-omnic-wise", {
+      provider: "piper",
+      piper: {
+        voice: "john",
+        speed: 0.7, // Very slow, deliberate
+        speaker: undefined,
+        effect: "omnic",
+        pitch: -3, // Deeper for gravitas
+      },
+    });
+
+    this.profiles.set("piper-omnic-playful", {
+      provider: "piper",
+      piper: {
+        voice: "john",
+        speed: 1.0, // Normal pace
+        speaker: undefined,
+        effect: "omnic",
+        pitch: 0, // No pitch shift, lighter
       },
     });
 

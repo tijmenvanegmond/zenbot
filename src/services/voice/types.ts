@@ -53,6 +53,14 @@ export interface VoiceConfig {
     voice: string; // e.g., 'en_US-lessac-medium', 'en_GB-alan-medium'
     speed: number; // 0.5 - 2.0 (multiplier)
     speaker?: number; // Optional speaker ID for multi-speaker models
+
+    // Audio effects
+    effect?: string; // Preset: omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone
+    reverb?: number; // 0-1
+    pitch?: number; // -12 to +12 semitones
+    distortion?: number; // 1-50 gain
+    echo?: number; // delay in ms
+    bitcrush?: number; // 1-16 bit depth
   };
 
 }

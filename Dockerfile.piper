@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install piper-tts
-RUN pip install --no-cache-dir piper-tts flask
+# Install piper-tts and audio processing libraries
+RUN pip install --no-cache-dir piper-tts flask numpy scipy
 
 # Download multiple voice models from HuggingFace
 RUN mkdir -p /app/voices
@@ -52,8 +52,8 @@ RUN wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/jo
     wget -q https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/john/medium/en_US-john-medium.onnx.json \
     -O /app/voices/en_US-john-medium.onnx.json
 
-# Copy HTTP server script
-COPY piper-server.py /app/server.py
+# Copy piper-server directory
+COPY piper-server/ /app/
 
 EXPOSE 8080
 CMD ["python", "/app/server.py"]

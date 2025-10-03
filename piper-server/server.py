@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Custom Piper TTS HTTP Server
-Provides simple HTTP API for text-to-speech with multiple voice support
+Custom Piper TTS HTTP Server with Audio Effects
+Provides simple HTTP API for text-to-speech with multiple voice support and audio effects
 """
 
 from flask import Flask, request, Response, jsonify
 import subprocess
 import os
 import sys
+import numpy as np
+import struct
+from effects import AudioEffects
 
 app = Flask(__name__)
 
@@ -23,18 +26,35 @@ VOICES = {
 
 DEFAULT_VOICE = "john"  # Male voice as default
 
+# Initialize audio effects processor
+audio_effects = AudioEffects(sample_rate=22050)
+
 @app.route('/api/tts', methods=['GET'])
 def synthesize():
     """
     Generate TTS audio from text
     Query parameters:
       - text: Text to synthesize (required)
-      - voice: Voice to use (optional, default: danny)
+      - voice: Voice to use (optional, default: john)
       - speed: Speed multiplier (optional, default: 1.0)
+      - effect: Effect preset (optional): omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone
+      - reverb: Reverb amount 0-1 (optional)
+      - pitch: Pitch shift in semitones -12 to +12 (optional)
+      - distortion: Distortion gain 1-50 (optional)
+      - echo: Echo delay in ms (optional)
+      - bitcrush: Bit depth 1-16 (optional)
     """
     text = request.args.get('text', '')
     voice_name = request.args.get('voice', DEFAULT_VOICE)
     speed = float(request.args.get('speed', 1.0))
+
+    # Effect parameters
+    effect_preset = request.args.get('effect', None)
+    reverb = request.args.get('reverb', None)
+    pitch = request.args.get('pitch', None)
+    distortion = request.args.get('distortion', None)
+    echo = request.args.get('echo', None)
+    bitcrush = request.args.get('bitcrush', None)
 
     if not text:
         return jsonify({"error": "Missing 'text' parameter"}), 400
@@ -68,9 +88,41 @@ def synthesize():
             timeout=30
         )
 
-        # Return raw audio as WAV
-        # Piper outputs 22050Hz 16-bit mono PCM by default
-        wav_data = create_wav_header(len(result.stdout)) + result.stdout
+        # Convert PCM data to numpy array for processing
+        pcm_data = result.stdout
+        audio = np.frombuffer(pcm_data, dtype=np.int16).astype(np.float32) / 32768.0
+
+        # Apply effect preset if specified
+        if effect_preset:
+            audio = audio_effects.apply_preset(audio, effect_preset)
+
+        # Apply individual effects if specified
+        if reverb is not None:
+            reverb_amount = float(reverb)
+            audio = audio_effects.apply_reverb(audio, room_size=0.5, wet=reverb_amount)
+
+        if pitch is not None:
+            semitones = float(pitch)
+            audio = audio_effects.apply_pitch_shift(audio, semitones)
+
+        if distortion is not None:
+            gain = float(distortion)
+            audio = audio_effects.apply_distortion(audio, gain)
+
+        if echo is not None:
+            delay_ms = float(echo)
+            audio = audio_effects.apply_echo(audio, delay_ms)
+
+        if bitcrush is not None:
+            bits = int(bitcrush)
+            audio = audio_effects.apply_bitcrush(audio, bits)
+
+        # Convert back to PCM
+        audio = np.clip(audio, -1.0, 1.0)
+        pcm_processed = (audio * 32767).astype(np.int16).tobytes()
+
+        # Create WAV with processed audio
+        wav_data = create_wav_header(len(pcm_processed)) + pcm_processed
 
         return Response(
             wav_data,

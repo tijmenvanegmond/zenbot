@@ -140,12 +140,20 @@ export class PiperProvider implements VoiceProvider {
       // Encode text for URL
       const encodedText = encodeURIComponent(text);
 
-      // Build URL with voice and speed parameters
+      // Build URL with voice, speed, and effects parameters
       const params = new URLSearchParams({
         text: text,
         voice: config!.voice || "john", // Default to john
         speed: (config!.speed || 1.0).toString(),
       });
+
+      // Add audio effects if specified
+      if (config!.effect) params.append("effect", config!.effect);
+      if (config!.reverb !== undefined) params.append("reverb", config!.reverb.toString());
+      if (config!.pitch !== undefined) params.append("pitch", config!.pitch.toString());
+      if (config!.distortion !== undefined) params.append("distortion", config!.distortion.toString());
+      if (config!.echo !== undefined) params.append("echo", config!.echo.toString());
+      if (config!.bitcrush !== undefined) params.append("bitcrush", config!.bitcrush.toString());
 
       const response = await fetch(
         `${this.piperUrl}/api/tts?${params.toString()}`,

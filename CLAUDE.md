@@ -92,31 +92,55 @@ Zenbot uses a unified actions system that provides a single interface for functi
   - `onVoiceChannelUpdate.ts` - Voice state changes
   - `onPlayerUpdate.ts` - Audio player events
 
-### Voice System - Unified Architecture
+### Voice System - Unified Architecture with Audio Effects
 
 **Core Services (`src/services/voice/`):**
 
 - `UnifiedVoiceService.ts` - Single entry point for all TTS operations
-- `ProfileManager.ts` - Voice profile management (20+ profiles: Piper, eSpeak, System TTS)
+- `ProfileManager.ts` - Voice profile management (25+ profiles with mood variations)
 - `AudioManager.ts` - Voice channel sessions, playback queue, auto-leave on idle
-- `types.ts` - Voice interfaces and configuration types
+- `types.ts` - Voice interfaces and configuration types with audio effects support
 
 **TTS Providers (`src/services/voice/providers/`):**
 
 - `ProviderFactory.ts` - Provider selection with intelligent fallback
-- `PiperProvider.ts` - **Primary**: Neural TTS via HTTP API (john, danny, lessac, ryan, amy, joe voices)
-- `EspeakProvider.ts` - **Fallback**: Free Linux TTS (10+ voice profiles)
-- `SystemProvider.ts` - Windows/macOS native TTS
+- `PiperProvider.ts` - **Primary**: Neural TTS via HTTP API with audio effects (john, lessac, ryan, amy, joe voices)
+- `SystemProvider.ts` - Windows/macOS native TTS fallback
 
-**Voice Profiles:**
+**Piper TTS Server (`piper-server/`):**
 
-- **Piper** (Neural, high-quality): `piper-default` (john 0.75x), `piper-sardonic` (danny 0.85x), `piper-energetic`, `piper-calm`
+- `server.py` - Flask HTTP server with audio effects integration
+- `effects.py` - scipy-based audio processing (reverb, pitch shift, distortion, bitcrush, echo, robot effect)
+- `README.md` - Complete API documentation for effects
+- Docker containerized at `http://localhost:8080` (configurable via `PIPER_URL`)
+
+**Audio Effects:**
+
+- **Presets**: omnic (robot+reverb), cave, demon, chipmunk, glitch, radio, ghost, telephone
+- **Individual**: reverb (0-1), pitch (-12 to +12 semitones), distortion (1-50), echo (ms), bitcrush (1-16 bits)
+- **API Usage**: `/api/tts?text=...&voice=john&effect=omnic` or custom combinations
+
+**Voice Profiles with Moods:**
+
+- **Piper Omnic** (Default Zenbot voice - robot effect):
+  - `piper-omnic` - Default (0.9 speed, -1 pitch)
+  - `piper-omnic-calm` - Contemplative (0.75 speed, -1 pitch)
+  - `piper-omnic-intense` - Urgent (1.1 speed, -2 pitch)
+  - `piper-omnic-wise` - Deep gravitas (0.7 speed, -3 pitch)
+  - `piper-omnic-playful` - Light (1.0 speed, 0 pitch)
+
+- **Other Piper Profiles**: `piper-john`, `piper-lessac`, `piper-ryan`, `piper-amy`, `piper-joe`, `piper-energetic`, `piper-calm`, `piper-sharp`, `piper-fast`, `piper-deep`
 - **eSpeak** (Linux): `zenbot-sardonic`, `zenbot-wise`, `zenbot-deep`, `zenbot-crisp`, `zenbot-smooth`, `zenbot-mysterious`
 - **System**: `system-default` (Microsoft David/Alex)
-- Custom format: `"profile-name:speed=0.8"` or `"en-gb:pitch=40:speed=120"`
+
+**Personality-to-Voice Mapping (`src/config/voicePersonalityMap.ts`):**
+
+- AI can specify personality with mood: `"zenbot-default:calm"` → `piper-omnic-calm`
+- Default mapping: `zenbot-default` → `piper-omnic` (robot voice with omnic effect)
+- Conference personalities automatically use appropriate voices
 
 **Default Behavior:**
-1. Piper (if available) → 2. eSpeak sardonic → 3. System TTS
+1. Piper with effects (if available) → 2. System TTS
 
 **Legacy (`src/voice/`):**
 - `voiceLineData.ts`, `zenVoiceLines.json` - Pre-recorded voice lines
@@ -303,30 +327,80 @@ New commands should:
 
 **Architecture:**
 - `UnifiedVoiceService.speak()` - Main entry point for all TTS requests
-- Provider selection with automatic fallback: Piper → eSpeak → System
-- Profile-based configuration supports speed overrides (`"piper-default:speed=0.8"`)
+- Provider selection with automatic fallback: Piper (with effects) → System
+- Profile-based configuration supports mood modifiers (`"personality:mood"`)
 - `AudioManager` handles voice sessions with 1-minute idle timeout and auto-leave
+- Audio effects processed server-side via Piper TTS with scipy
 
 **Setup:**
-- Piper: Docker container at `http://localhost:8080` (set `PIPER_URL` to override)
-- eSpeak: Native Linux install (`sudo apt install espeak-ng`)
-- System: Built-in Windows/macOS TTS
+- **Piper**: Docker container at `http://localhost:8080` (set `PIPER_URL` to override)
+  - Build: `docker-compose build piper`
+  - Run: `docker-compose up -d piper`
+  - Includes scipy for audio effects processing
+- **System**: Built-in Windows/macOS TTS (fallback only)
 
 **Usage:**
 ```typescript
 const voiceService = UnifiedVoiceService.getInstance();
 await voiceService.speak({
   text: "Your message",
-  profile: "piper-sardonic", // Optional
-  voiceChannel: channel,      // Optional
-  interruptExisting: false    // Optional
+  profile: "piper-omnic",     // Optional - voice profile
+  voiceChannel: channel,       // Optional - Discord voice channel
+  interruptExisting: false     // Optional - interrupt current audio
 });
+```
+
+**Personality with Mood:**
+```typescript
+// AI can specify mood modifiers
+speaker: "zenbot-default:calm"  // Maps to piper-omnic-calm
+speaker: "zenbot-default:intense" // Maps to piper-omnic-intense
+```
+
+**Audio Effects Configuration:**
+
+Voice profiles support audio effects via `VoiceConfig.piper`:
+```typescript
+{
+  voice: "john",
+  speed: 0.9,
+  pitch: -1,
+  effect: "omnic",     // Preset (omnic, cave, demon, etc.)
+  reverb: 0.08,        // Individual reverb amount (0-1)
+  distortion: 1.02,    // Individual distortion gain (1-50)
+  echo: 300,           // Echo delay in ms
+  bitcrush: 8          // Bit depth (1-16)
+}
+```
+
+**Quick Iteration Workflow:**
+
+For voice tuning without Docker rebuilds:
+```bash
+# Edit ProfileManager.ts with new settings
+npm run build
+docker cp dist/services/voice/ProfileManager.js zenbot:/app/dist/services/voice/ProfileManager.js
+docker-compose restart zenbot
+# ~5-10 seconds total
 ```
 
 **Testing:**
 - `npm run tts` - CLI testing utility for voice profiles
-- Check Docker: `docker ps` to verify Piper container is running
+- `docker ps` - Verify Piper container is running
+- `docker logs zenbot-piper` - Check Piper TTS server logs
 - Audio resources use `StreamType.Arbitrary` for Discord.js compatibility
+
+**Piper TTS Server API:**
+```bash
+# Direct API call with effects
+curl "http://localhost:8080/api/tts?text=Test&voice=john&effect=omnic&reverb=0.3&pitch=-2"
+
+# Health check
+curl "http://localhost:8080/health"
+
+# Available voices
+curl "http://localhost:8080/api/voices"
+```
 
 ### Quote System Architecture
 
@@ -367,20 +441,38 @@ When working with Zenbot, embrace these meditative practices:
 ### TTS Voice Wisdom
 
 **Current Stack:**
-- **Primary**: Piper neural TTS (self-hosted, Docker) - Best quality, no API costs
-- **Fallback**: eSpeak-NG (Linux native) - Free, robotic but reliable
-- **Last Resort**: System TTS (Windows/macOS) - Better than silence
+- **Primary**: Piper neural TTS (self-hosted, Docker) with scipy audio effects - Best quality, no API costs
+- **Fallback**: System TTS (Windows/macOS) - Simple, reliable
 
-**Profile Selection:**
-- Default preference: `piper-default` (slow john @ 0.75x for gravitas)
-- Sardonic mode: `piper-sardonic` (danny @ 0.85x for robotic snark)
-- Test profiles with `npm run tts` before deploying
-- Speed overrides: `"piper-danny:speed=0.6"` for extra slow delivery
+**Default Voice - Omnic Robot:**
+- `piper-omnic` - Default Zenbot voice (john @ 0.9x, -1 pitch, omnic robot effect)
+- Omnic effect provides characteristic robot modulation without reverb/distortion bloat
+- Clean, philosophical, on-brand for sardonic omnic monk aesthetic
+
+**Mood Variations:**
+- `piper-omnic-calm` - Slower, more contemplative (0.75x speed)
+- `piper-omnic-intense` - Faster, more urgent (1.1x, -2 pitch)
+- `piper-omnic-wise` - Deep gravitas (0.7x, -3 pitch)
+- `piper-omnic-playful` - Lighter tone (1.0x, 0 pitch)
+
+**Audio Effects Philosophy:**
+- Less is more - omnic robot effect alone is often perfect
+- Test effects directly via Piper API before adding to profiles
+- Reverb/distortion can muddy voice quickly - use sparingly (0.03-0.1 range for reverb)
+- Pitch shift is powerful: -1 to -3 semitones adds gravitas without distortion
+
+**Profile Development Workflow:**
+1. Test effect via curl: `curl "http://localhost:8080/api/tts?text=Test&voice=john&effect=omnic&pitch=-2"`
+2. If good, add to ProfileManager.ts
+3. Build and hot-copy: `npm run build && docker cp dist/services/voice/ProfileManager.js zenbot:/app/dist/services/voice/ProfileManager.js`
+4. Restart Zenbot only: `docker-compose restart zenbot` (~5 seconds)
+5. No Piper rebuild needed unless changing effects.py presets
 
 **Troubleshooting:**
-- Silent audio? Check Piper container health: `docker exec zenbot-piper curl http://localhost:8080/health`
+- Silent audio? Check Piper health: `curl http://localhost:8080/health`
+- Wrong voice settings? Check `docker logs zenbot` for TTS parameters being sent
+- Effects not applying? Verify Piper logs show effect parameters: `docker logs zenbot-piper --tail 20`
 - Provider fallback messages in logs indicate Piper unavailable
-- eSpeak quality issues? Adjust pitch/speed in ProfileManager profiles
 
 ### Code Tranquility
 

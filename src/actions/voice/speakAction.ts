@@ -37,7 +37,7 @@ export class SpeakAction implements ZenAction {
         speaker: {
           type: "string" as const,
           description:
-            "Personality/speaker name (e.g., 'zenbot-philosopher', 'zenbot-critic'). Voice will be auto-selected based on personality. Takes precedence over 'profile'.",
+            "Personality/speaker with optional mood (e.g., 'zenbot-default:calm', 'zenbot-default:intense', 'zenbot-default:wise'). Use moods to match emotional context: calm for contemplative/advice, intense for urgent/warnings, wise for deep philosophy, playful for lighthearted. Voice will be auto-selected based on personality. Takes precedence over 'profile'.",
         },
         profile: {
           type: "string" as const,
