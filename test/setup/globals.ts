@@ -57,6 +57,22 @@ vi.mock("openai", () => ({
   })),
 }));
 
+// The Gemini health check calls the model metadata endpoint with fetch
+// (outside the SDK mocked below) - answer it locally so tests stay offline
+const realFetch = globalThis.fetch;
+vi.stubGlobal(
+  "fetch",
+  vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input.toString();
+    if (url.startsWith("https://generativelanguage.googleapis.com/")) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ name: "models/mock" }), { status: 200 }),
+      );
+    }
+    return realFetch(input, init);
+  }),
+);
+
 // Mock Google Generative AI
 vi.mock("@google/generative-ai", () => ({
   GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
