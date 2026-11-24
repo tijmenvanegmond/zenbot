@@ -22,10 +22,12 @@ import {
 import { logger } from "../../../utils/logger";
 
 // Override with GEMINI_MODEL when Google retires a model (they do, regularly)
+// flash-lite answers in ~1.5s vs ~25s for gemini-3.5-flash, and has its own
+// free-tier quota. Set GEMINI_MODEL=gemini-3.5-flash for sharper but slow replies.
 export const DEFAULT_GEMINI_MODEL =
-  process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
-// Low-latency model for one-liners (quote intros): ~1.5s vs ~25s for flash
+// Model for one-liners (quote intros)
 export const FAST_GEMINI_MODEL =
   process.env.GEMINI_FAST_MODEL || "gemini-3.5-flash-lite";
 
@@ -609,20 +611,38 @@ export class GeminiProvider extends BaseAIProvider {
 
   // ===== HEALTH CHECK =====
 
-  async healthCheck(): Promise<boolean> {
-    try {
-      // Simple test generation to check API connectivity
-      const model = this.getModel();
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: "Hello" }] }],
-        generationConfig: { maxOutputTokens: 10 },
-      });
+  private lastHealth: { ok: boolean; at: number } | null = null;
 
-      const response = await result.response;
-      return !!response.text();
+  /**
+   * Checks the key and model via the model metadata endpoint, which does not
+   * count against the generation quota (a test generation did, on every
+   * startup and several times per conference). Cached for a minute.
+   */
+  async healthCheck(): Promise<boolean> {
+    if (this.lastHealth && Date.now() - this.lastHealth.at < 60_000) {
+      return this.lastHealth.ok;
+    }
+
+    let ok = false;
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_GEMINI_MODEL}`,
+        {
+          headers: { "x-goog-api-key": this.config.apiKey },
+          signal: AbortSignal.timeout(5000),
+        },
+      );
+      ok = response.ok;
+      if (!ok) {
+        logger.error(
+          `Gemini health check failed: model ${DEFAULT_GEMINI_MODEL} returned HTTP ${response.status}`,
+        );
+      }
     } catch (error) {
       logger.error("Gemini health check failed:", error);
-      return false;
     }
+
+    this.lastHealth = { ok, at: Date.now() };
+    return ok;
   }
 }
