@@ -98,7 +98,7 @@ export abstract class BaseAIProvider implements AIProvider {
 
     await this.sessionStorage.save(session);
 
-    logger.info(
+    logger.debug(
       `🤖 Created AI session ${sessionId} with provider ${this.name}`,
     );
     return session;

@@ -82,10 +82,19 @@ export class AdviceAction implements ZenAction {
         urgency,
       );
 
-      // STEP 2: Don't play voice here - AI already handled it during function calling
-      // The action should only return text; voice is handled by AI's speak action
-      logger.debug(
-        "🎭 Skipping voice in adviceAction - AI handles TTS via speak action during function calling",
+      // STEP 2: Speak the same text we show. When the AI calls this as a
+      // function, it gets the advice back and decides what to say itself.
+      let spoken = false;
+      if (use_voice && context.source !== "ai" && context.voiceChannel) {
+        await this.playAdviceVoice(
+          adviceText,
+          context.voiceChannel,
+          advice_type,
+        );
+        spoken = true;
+      }
+      logger.info(
+        `🎭 Advice (${isAIGenerated ? "AI" : "curated"}): "${adviceText}"${spoken ? " (spoken)" : ""}`,
       );
 
       // STEP 3: Return result
@@ -98,11 +107,11 @@ export class AdviceAction implements ZenAction {
           type: advice_type,
           urgency,
           source: isAIGenerated ? "ai" : "curated",
-          voiceEnabled: false, // Voice handled by AI
+          voiceEnabled: spoken,
         },
         shouldRespond: true,
         responseText: adviceText,
-        useVoice: false, // Don't voice - AI already did via speak action
+        useVoice: false, // already spoken above (or left to the AI)
       };
     } catch (error) {
       logger.error("🎭 Advice action failed:", error);
@@ -127,23 +136,14 @@ export class AdviceAction implements ZenAction {
   ): Promise<{ adviceText: string; isAIGenerated: boolean }> {
     // Use AI for contextual advice
     if (advice_type === "ai_contextual" && context.interaction) {
-      try {
-        const zenyatta = ZenbotService.getInstance();
-        const response = await zenyatta.getAdvice(
-          context.interaction,
-          topic,
-          urgency as any,
-        );
-
-        logger.info(
-          `🎭 AI advice generated (mood: ${response.mood}, length: ${response.text.length})`,
-        );
-
-        return { adviceText: response.text, isAIGenerated: true };
-      } catch (error) {
-        logger.warn("🎭 AI advice failed, falling back to curated wisdom:", error);
-        // Fall through to curated advice
+      const adviceText = await ZenbotService.getInstance().getAdvice(
+        topic,
+        urgency as "low" | "medium" | "high",
+      );
+      if (adviceText) {
+        return { adviceText, isAIGenerated: true };
       }
+      // Fall through to curated advice (AI unavailable, slow or rejected)
     }
 
     // Use curated wisdom
@@ -175,7 +175,7 @@ export class AdviceAction implements ZenAction {
       const voiceService = UnifiedVoiceService.getInstance();
       await voiceService.speak({
         text,
-        profile: undefined, // Use default profile (piper-john)
+        profile: undefined, // default profile (piper-zen)
         voiceChannel,
         activityType: "advice",
       });
@@ -183,7 +183,10 @@ export class AdviceAction implements ZenAction {
         `🎭 Advice delivered via TTS: "${text.substring(0, 50)}..." (type: ${advice_type})`,
       );
     } catch (error) {
-      logger.warn("🎭 TTS failed for advice, continuing with text response:", error);
+      logger.warn(
+        "🎭 TTS failed for advice, continuing with text response:",
+        error,
+      );
     }
   }
 

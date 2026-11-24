@@ -290,7 +290,7 @@ export class ActionService {
     functionArgs: any,
   ): Promise<ActionResult> {
     try {
-      logger.info(
+      logger.debug(
         `🎭 AI function call: ${functionName} with args:`,
         functionArgs,
       );

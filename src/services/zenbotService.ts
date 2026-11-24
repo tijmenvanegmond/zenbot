@@ -532,27 +532,34 @@ export class ZenbotService {
   // ===== QUICK METHODS (Compatible with existing code) =====
 
   /**
-   * Get advice with conversation memory
+   * Advice in Zenbot's voice: one direct call (no tools). With function
+   * calling the AI used to speak one line (in a random voice) and reply with
+   * another. Returns null if AI is unavailable or fails - callers fall back
+   * to curated wisdom.
    */
   async getAdvice(
-    interaction: CommandInteraction,
     topic?: string,
     urgency: "low" | "medium" | "high" = "medium",
-  ): Promise<UnifiedZenyattaResponse> {
-    const message = topic
-      ? `I seek guidance about ${topic}. My urgency level is ${urgency}.`
-      : `I seek general wisdom and guidance. My urgency level is ${urgency}.`;
+  ): Promise<string | null> {
+    const length =
+      urgency === "high"
+        ? "One or two short sentences - they're in a hurry."
+        : "Two or three short sentences.";
 
-    return this.converse(
-      interaction,
-      message,
-      {
-        commandName: "advice",
-        options: { topic, urgency },
-      },
-      "zenbot-default",
-      ["conference"],
-    );
+    const prompt = `You are Zenbot, a dry, deadpan omnic monk bot in a Discord friend group. Someone asks for advice${topic ? ` about: ${topic}` : ""}.
+
+Give genuinely useful advice, delivered with dry wit. It will be spoken out loud in voice chat.
+
+Rules:
+- ${length} At most 50 words, on a single line.
+- Actually answer: give one concrete idea, not vague mysticism.
+- Never start with "Ah". Never use: peak, masterpiece, humans, humanity, chuckles, sighs.
+- Don't mention urgency levels or repeat the question back.
+- No stage directions, asterisks, emojis or quotation marks.
+
+Reply with only the advice.`;
+
+    return this.generateSpokenLine(prompt, { label: "advice", maxWords: 60 });
   }
 
   /**

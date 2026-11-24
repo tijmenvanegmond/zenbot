@@ -193,9 +193,12 @@ export class AudioManager {
     });
 
     session.connection.on("stateChange", (oldState, newState) => {
-      logger.info(
-        `🔊 Voice connection ${oldState.status} -> ${newState.status} (guild ${session.guildId})`,
-      );
+      // Also fires for internal networking changes with the same status
+      if (oldState.status !== newState.status) {
+        logger.info(
+          `🔊 Voice connection ${oldState.status} -> ${newState.status} (guild ${session.guildId})`,
+        );
+      }
       if (newState.status === "destroyed") {
         logger.info(
           `🔊 Voice connection disconnected in guild ${session.guildId}`,

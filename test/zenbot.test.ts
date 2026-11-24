@@ -27,14 +27,11 @@ describe("Zenbot Service", () => {
   });
 
   test("should provide advice with personality", async () => {
-    const response = await zenbotService.getAdvice(
-      mockInteraction,
-      "How to be more productive?",
-    );
+    // One direct generation (no session/tools) - see ZenbotService.getAdvice
+    const advice = await zenbotService.getAdvice("How to be more productive?");
 
-    expect(response.text).toBeTruthy();
-    expect(response.sessionId).toBeTruthy();
-    expect(response.text.length).toBeLessThan(300); // Should be concise
+    expect(advice).toBeTruthy();
+    expect(advice!.length).toBeLessThan(300); // Should be concise
   }, 15000);
 
   test("should maintain conversation context", async () => {
@@ -83,13 +80,12 @@ describe("Zenbot Service", () => {
   }, 15000);
 
   test("should handle gaming topics appropriately", async () => {
-    const response = await zenbotService.getAdvice(
-      mockInteraction,
+    const advice = await zenbotService.getAdvice(
       "How to find gaming partners in multiplayer games?",
     );
 
-    expect(response.text).toBeTruthy();
-    expect(response.text).not.toContain("Not doing that");
-    expect(response.text).not.toContain("refused");
+    expect(advice).toBeTruthy();
+    expect(advice).not.toContain("Not doing that");
+    expect(advice).not.toContain("refused");
   }, 15000);
 });

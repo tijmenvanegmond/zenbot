@@ -52,7 +52,12 @@ export class PiperProvider implements VoiceProvider {
   /**
    * Perform async availability check
    */
+  private checkInFlight = false;
+
   private async performAsyncCheck(): Promise<void> {
+    // isAvailable() is called several times per request; one check at a time
+    if (this.checkInFlight) return;
+    this.checkInFlight = true;
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 2000); // 2s timeout
@@ -64,10 +69,14 @@ export class PiperProvider implements VoiceProvider {
 
       clearTimeout(timeout);
       this.lastCheckTime = Date.now();
+      const wasAvailable = this.isServiceAvailable;
       this.isServiceAvailable = response.ok;
 
       if (this.isServiceAvailable) {
-        logger.info(`🎤 Piper service available at ${this.piperUrl}`);
+        // Only log changes - this check runs on every request
+        if (!wasAvailable) {
+          logger.info(`🎤 Piper service available at ${this.piperUrl}`);
+        }
       } else {
         logger.warn(
           `🎤 Piper service unhealthy at ${this.piperUrl}: ${response.status}`,
@@ -80,6 +89,8 @@ export class PiperProvider implements VoiceProvider {
         `🎤 Piper service unavailable at ${this.piperUrl}:`,
         error instanceof Error ? error.message : "Connection failed",
       );
+    } finally {
+      this.checkInFlight = false;
     }
   }
 
@@ -148,14 +159,21 @@ export class PiperProvider implements VoiceProvider {
       });
 
       // Add audio effects if specified
-      if (config!.noise !== undefined) params.append("noise", config!.noise.toString());
-      if (config!.noise_w !== undefined) params.append("noise_w", config!.noise_w.toString());
+      if (config!.noise !== undefined)
+        params.append("noise", config!.noise.toString());
+      if (config!.noise_w !== undefined)
+        params.append("noise_w", config!.noise_w.toString());
       if (config!.effect) params.append("effect", config!.effect);
-      if (config!.reverb !== undefined) params.append("reverb", config!.reverb.toString());
-      if (config!.pitch !== undefined) params.append("pitch", config!.pitch.toString());
-      if (config!.distortion !== undefined) params.append("distortion", config!.distortion.toString());
-      if (config!.echo !== undefined) params.append("echo", config!.echo.toString());
-      if (config!.bitcrush !== undefined) params.append("bitcrush", config!.bitcrush.toString());
+      if (config!.reverb !== undefined)
+        params.append("reverb", config!.reverb.toString());
+      if (config!.pitch !== undefined)
+        params.append("pitch", config!.pitch.toString());
+      if (config!.distortion !== undefined)
+        params.append("distortion", config!.distortion.toString());
+      if (config!.echo !== undefined)
+        params.append("echo", config!.echo.toString());
+      if (config!.bitcrush !== undefined)
+        params.append("bitcrush", config!.bitcrush.toString());
 
       const response = await fetch(
         `${this.piperUrl}/api/tts?${params.toString()}`,
@@ -168,7 +186,9 @@ export class PiperProvider implements VoiceProvider {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        throw new Error(`Piper API returned ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `Piper API returned ${response.status}: ${response.statusText}`,
+        );
       }
 
       const arrayBuffer = await response.arrayBuffer();

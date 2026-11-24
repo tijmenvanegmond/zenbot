@@ -376,7 +376,7 @@ export class GeminiProvider extends BaseAIProvider {
         updatedAt: session.updatedAt,
       });
 
-      logger.info(
+      logger.debug(
         `💬 Gemini conversation in session ${sessionId}: ${response.substring(0, 100)}...`,
       );
       return response;
