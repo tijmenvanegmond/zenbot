@@ -27,7 +27,6 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - TTS_PROVIDER=espeak
       - PIPER_URL=http://piper:8080
     restart: unless-stopped
     depends_on:

@@ -4,6 +4,7 @@ import {
   CommandInteractionOptionResolver,
   GuildMember,
   SlashCommandBuilder,
+  MessageFlags,
 } from "discord.js";
 import { Command } from "./command";
 import { ActionService } from "../services/actionService";
@@ -51,12 +52,12 @@ export const Rename: Command = {
 
       if (result.success) {
         await interaction.followUp({
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
           content: result.responseText,
         });
       } else {
         await interaction.followUp({
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
           content:
             result.responseText || result.error || "Failed to change nickname.",
         });
@@ -64,7 +65,7 @@ export const Rename: Command = {
     } catch (error) {
       logger.error("Error during rename command execution:", error);
       await interaction.followUp({
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
         content: "An error occurred while trying to change the nickname.",
       });
     }

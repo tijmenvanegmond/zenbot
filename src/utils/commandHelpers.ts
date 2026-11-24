@@ -2,6 +2,7 @@ import {
   CommandInteraction,
   CommandInteractionOptionResolver,
   GuildMember,
+  MessageFlags,
 } from "discord.js";
 import { logger } from "./logger";
 
@@ -22,7 +23,7 @@ export function validateVoiceChannel(interaction: CommandInteraction): {
       member: null,
       response: {
         content: "You have to be in voice to use this",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       },
     };
   }
@@ -49,7 +50,7 @@ export function createErrorResponse(
   message: string = "An error occurred while executing this command.",
 ): any {
   return {
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
     content: message,
   };
 }
@@ -59,7 +60,7 @@ export function createErrorResponse(
  */
 export function createSuccessResponse(message: string): any {
   return {
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
     content: message,
   };
 }

@@ -1,4 +1,9 @@
-import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
+import {
+  CommandInteraction,
+  Client,
+  MessageFlags,
+  SlashCommandBuilder,
+} from "discord.js";
 import { Command } from "./command";
 import { ActionService } from "../services/actionService";
 import { RemarkType } from "../actions/entertainment/remarkAction";
@@ -65,7 +70,7 @@ export const Remark: Command = {
 
       if (result.success) {
         await interaction.followUp({
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
           content: result.responseText,
         });
       } else {

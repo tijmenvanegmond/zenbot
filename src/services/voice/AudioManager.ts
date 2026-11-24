@@ -6,6 +6,7 @@ import {
   createAudioPlayer,
   joinVoiceChannel,
   AudioPlayerStatus,
+  VoiceConnectionStatus,
 } from "@discordjs/voice";
 import { PlaybackOptions } from "./types";
 import { logger } from "../../utils/logger";
@@ -237,6 +238,10 @@ export class AudioManager {
     const session = this.sessions.get(guildId);
     if (!session) return;
 
+    // Remove first: destroy() emits a "destroyed" state change whose handler
+    // calls cleanupSession again, which used to destroy the connection twice
+    this.sessions.delete(guildId);
+
     logger.info(`🔊 Cleaning up voice session for guild ${guildId}`);
 
     try {
@@ -248,11 +253,10 @@ export class AudioManager {
       // Stop player
       session.player.stop();
 
-      // Destroy connection
-      session.connection.destroy();
-
-      // Remove from sessions
-      this.sessions.delete(guildId);
+      // Destroy connection (unless it already was, e.g. kicked from channel)
+      if (session.connection.state.status !== VoiceConnectionStatus.Destroyed) {
+        session.connection.destroy();
+      }
 
       logger.info(`🔊 Voice session cleaned up for guild ${guildId}`);
     } catch (error) {

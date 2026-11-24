@@ -1,5 +1,4 @@
 import { VoiceConfig } from "./types";
-import { VOICE_CONFIG } from "../../config";
 import { logger } from "../../utils/logger";
 
 /**
@@ -322,6 +321,16 @@ export class ProfileManager {
       },
     });
 
+    // Danny - low-quality robotic male (listed in /tts)
+    this.profiles.set("piper-danny", {
+      provider: "piper",
+      piper: {
+        voice: "danny",
+        speed: 1.0,
+        speaker: undefined,
+      },
+    });
+
     // Zen - Zenbot's default voice: joe with the "zen" preset (omnic robot
     // over a subtle octave-down layer, small room). noise/noise_w keep the
     // delivery calm but natural.
@@ -467,29 +476,14 @@ export class ProfileManager {
    * Get default configuration based on environment and provider availability
    */
   private getDefaultConfig(): VoiceConfig {
-    // Always prefer Piper John voice (high-quality neural TTS)
-    // UnifiedVoiceService will handle fallback if Piper is unavailable
+    // Zenbot's voice. UnifiedVoiceService falls back to system TTS if Piper
+    // is unavailable (the eSpeak provider was removed).
     if (this.profiles.has("piper-zen")) {
       logger.debug("🎤 Returning piper-zen as default config");
       return this.profiles.get("piper-zen")!;
     }
 
-    // Fallback to sardonic Linux voice (free, no API costs)
-    if (this.profiles.has("zenbot-sardonic")) {
-      logger.debug("🎤 Returning zenbot-sardonic as fallback default");
-      return this.profiles.get("zenbot-sardonic")!;
-    }
-
-    const provider = VOICE_CONFIG.TTS_PROVIDER;
-
-    switch (provider) {
-      case "espeak":
-        return this.profiles.get("zenbot-default")!;
-      case "local":
-      case "system":
-      default:
-        return this.profiles.get("system-default")!;
-    }
+    return this.profiles.get("system-default")!;
   }
 
   /**

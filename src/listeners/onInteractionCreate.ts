@@ -3,6 +3,7 @@ import {
   Client,
   BaseInteraction,
   InteractionType,
+  MessageFlags,
 } from "discord.js";
 import { CommandCollection } from "../commands/commandCollection";
 import { logger } from "../utils/logger";
@@ -38,7 +39,7 @@ const handleSlashCommand = async (
       if (!interaction.deferred && !interaction.replied) {
         await interaction.reply({
           content: "Unknown command.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       return;
@@ -52,7 +53,7 @@ const handleSlashCommand = async (
 
     if (shouldDeferHere && !interaction.deferred && !interaction.replied) {
       try {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       } catch (deferErr: any) {
         // If the interaction is unknown already, bail early
         if (deferErr?.code === 10062) {
@@ -81,7 +82,7 @@ const handleSlashCommand = async (
         try {
           await interaction.reply({
             content: "An error occurred while processing this command.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
         } catch (secondaryError: any) {
           if (secondaryError?.code === 10062) {

@@ -3,6 +3,7 @@ import {
   Client,
   SlashCommandBuilder,
   TextChannel,
+  MessageFlags,
 } from "discord.js";
 import { Command } from "./command";
 import { ActionService } from "../services/actionService";
@@ -54,7 +55,7 @@ export const Quote: Command = {
 
       if (result.success) {
         await interaction.followUp({
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
           content: result.responseText,
         });
       } else {
