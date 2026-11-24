@@ -7,9 +7,13 @@ import {
 import { TextChannel } from "discord.js";
 import { getRandomQuote } from "../../services/quoteService";
 import { ZenbotService } from "../../services/zenbotService";
-import { playTTSInChannel } from "../../utils/voiceHelpers";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
+import { formatQuoteForDisplay } from "../../utils/quoteFormat";
 import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../../config";
 import { logger } from "../../utils/logger";
+
+// Same voice the AI picked for quotes before (omnic robot, lighter tone)
+const QUOTE_VOICE_PROFILE = "piper-omnic-playful";
 
 export class ChannelQuoteAction implements ZenAction {
   name = "read_channel_quote";
@@ -125,35 +129,33 @@ export class ChannelQuoteAction implements ZenAction {
         };
       }
 
-      // Generate enhanced TTS with unified Zenyatta's contextual commentary
-      if (!context.interaction) {
-        throw new Error(
-          "Interaction context required for quote commentary generation",
-        );
-      }
-
+      // Intro + formatted quote, ready for TTS
       const enhancedText =
         await ZenbotService.getInstance().createEnhancedQuote(
           context.interaction,
           randomQuote,
         );
 
-      // Create response content
-      let responseContent = `💬 **Quote from #${quoteChannel.name}:** `;
-      if (randomQuote.isQuoted && randomQuote.speaker) {
-        responseContent += `${randomQuote.speaker} said: "${randomQuote.parsedQuote}"`;
-        if (randomQuote.poster.username !== randomQuote.speaker) {
-          responseContent += ` (shared by ${randomQuote.poster.displayName})`;
-        }
-      } else {
-        responseContent += `"${randomQuote.content}" (by ${randomQuote.poster.displayName})`;
+      const responseContent = formatQuoteForDisplay(
+        randomQuote,
+        quoteChannel.name,
+      );
+
+      // Speak it ourselves for commands/API. When the AI calls this as a
+      // function, it gets enhancedText back and decides what to say.
+      let spoken = false;
+      if (use_voice && context.source !== "ai" && context.voiceChannel) {
+        await UnifiedVoiceService.getInstance().speak({
+          text: enhancedText,
+          profile: QUOTE_VOICE_PROFILE,
+          voiceChannel: context.voiceChannel,
+          activityType: "quote-tts",
+        });
+        spoken = true;
       }
 
-      // Voice playback is handled by the AI assistant's speak function
-      // No need to call TTS here as it would be duplicate
-
       logger.info(
-        `🎭 Channel quote action: Retrieved quote from #${quoteChannel.name}`,
+        `🎭 Channel quote action: "${enhancedText.substring(0, 120)}" from #${quoteChannel.name}${spoken ? " (spoken)" : ""}`,
       );
 
       return {
@@ -167,7 +169,7 @@ export class ChannelQuoteAction implements ZenAction {
         },
         shouldRespond: true,
         responseText: responseContent,
-        useVoice: false, // AI handles voice via speak function
+        useVoice: false, // already spoken above (or left to the AI)
       };
     } catch (error) {
       logger.error("🎭 Channel quote action failed:", error);

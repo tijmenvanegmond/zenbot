@@ -7,6 +7,7 @@
 import { CommandInteraction } from "discord.js";
 import { RemarkType } from "../actions/entertainment/remarkAction";
 import { getCuratedRemark } from "../voice/curatedRemarks";
+import { formatQuoteForSpeech, INTRO_PAUSE } from "../utils/quoteFormat";
 
 // Interface for minimal interaction context needed by API calls
 export interface MinimalInteractionContext {
@@ -34,7 +35,10 @@ import { ActionService } from "./actionService";
 import { EnrichedQuote, RemarkResult } from "../types";
 import { logger } from "../utils/logger";
 import { randomUUID } from "crypto";
-import { DEFAULT_GEMINI_MODEL } from "./ai/providers/geminiProvider";
+import {
+  DEFAULT_GEMINI_MODEL,
+  FAST_GEMINI_MODEL,
+} from "./ai/providers/geminiProvider";
 
 /**
  * Response from Unified Zenyatta
@@ -624,89 +628,108 @@ export class ZenbotService {
       return { text: getCuratedRemark(type, targetSubject) };
     }
   }
-  // ===== QUOTE ENHANCEMENT (with conversation memory) =====
+  // ===== QUOTE INTROS =====
 
-  /**
-   * Generate quote commentary with conversation context
-   */
-  async generateQuoteCommentary(
-    interaction: CommandInteraction | MinimalInteractionContext,
-    quote: EnrichedQuote,
-  ): Promise<string> {
-    const message = `Generate a SHORT setup phrase before reading this quote aloud.
+  private recentQuoteIntros: string[] = [];
 
-Quote: "${quote.parsedQuote}"
-Speaker: ${quote.speaker || quote.poster.displayName}
+  private rememberQuoteIntro(intro: string): void {
+    this.recentQuoteIntros = [intro, ...this.recentQuoteIntros].slice(0, 8);
+  }
 
-`;
+  private pickFallbackQuoteIntro(quote: EnrichedQuote): string {
+    const firstSpeaker = quote.lines?.find((l) => l.speaker)?.speaker;
+    const options = [
+      "Entered into the record.",
+      "From the archives.",
+      "Submitted without comment.",
+      "Someone wrote this down. On purpose.",
+      "Exhibit A.",
+      "This was said. Out loud.",
+      "The archives remember.",
+      "Context was not provided. Neither will I.",
+      ...(firstSpeaker
+        ? [`${firstSpeaker}, unprompted.`, `Nobody stopped ${firstSpeaker}.`]
+        : []),
+    ].filter((option) => !this.recentQuoteIntros.includes(option));
 
-    try {
-      const response = await this.converse(
-        interaction,
-        message,
-        {
-          commandName: "quote_commentary",
-          options: { quote: quote.parsedQuote },
-        },
-        "zenbot-default",
-        ["conference"],
-      );
-
-      // Clean up response to ensure it's a brief introduction
-      let commentary = response.text.trim();
-
-      // Remove quotes if added
-      if (commentary.startsWith('"') && commentary.endsWith('"')) {
-        commentary = commentary.slice(1, -1);
-      }
-
-      // Remove ending punctuation that would clash with quote
-      if (
-        commentary.endsWith(".") ||
-        commentary.endsWith("!") ||
-        commentary.endsWith("?")
-      ) {
-        commentary = commentary.slice(0, -1);
-      }
-
-      return commentary;
-    } catch (error) {
-      if (!(error instanceof AIUnavailableError)) {
-        logger.error("⚠️ Quote commentary generation failed:", error);
-      }
-
-      // Fallback commentaries with more personality
-      const fallbacks = [
-        "Focus up",
-        "Core point",
-        "Signal only",
-        "Context first",
-        "Tiny truth",
-        "Heads up",
-        "Watch this",
-        "Key line",
-      ];
-
-      return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-    }
+    return options[Math.floor(Math.random() * options.length)];
   }
 
   /**
-   * Create enhanced quote TTS with commentary
+   * Short deadpan lead-in spoken before a quote. One direct generation call
+   * (no tools, no session) with a timeout, falling back to curated intros.
+   */
+  async generateQuoteIntro(quote: EnrichedQuote): Promise<string> {
+    let intro: string | null = null;
+
+    try {
+      const provider = this.requireAI().getProvider();
+      const quoteBlock = (quote.lines ?? [])
+        .map((l) => (l.speaker ? `${l.speaker}: ${l.text}` : `(${l.text})`))
+        .join("\n");
+
+      const prompt = `You are Zenbot, a dry, deadpan omnic monk bot hanging out in a Discord friend group's voice chat. You're about to read a quote from their #quotes channel out loud.
+
+Write ONE short lead-in (3-10 words) to say right before the quote.
+
+The quote:
+${quoteBlock || quote.content}
+
+Rules:
+- Deadpan and understated. The quote is the joke: set it up, never explain, rate or judge it.
+- Never start with "Ah". Never use: peak, masterpiece, elegance, humans, humanity, philosophy, Aristotle, chuckles.
+- No stage directions, asterisks, emojis or quotation marks.
+- Don't repeat the quote or spoil its punchline.
+- Must sound different from these recent ones: ${this.recentQuoteIntros.join(" | ") || "(none yet)"}
+
+Tone examples (don't copy them): Entered into the record without objection. / Osha, unprompted, at 2am. / Nobody asked for context. Here it is anyway. / The archives remember this one.
+
+Reply with only the lead-in.`;
+
+      const raw = await Promise.race([
+        provider.generateText(prompt, {
+          temperature: 1.0,
+          maxTokens: 1000,
+          ...(provider.name === "gemini" && { model: FAST_GEMINI_MODEL }),
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Quote intro timed out")), 10000),
+        ),
+      ]);
+
+      const cleaned = raw
+        .split("\n")[0]
+        .replace(/\*[^*]*\*/g, "")
+        .replace(/["“”]/g, "")
+        .trim();
+      const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
+      const tryHard = /^ah\b|\bpeak\b|masterpiece|humans?\b|humanity/i;
+
+      if (wordCount >= 2 && wordCount <= 14 && !tryHard.test(cleaned)) {
+        intro = /[.!?…]$/.test(cleaned) ? cleaned : `${cleaned}.`;
+      } else {
+        logger.warn(`⚠️ Rejected quote intro: "${cleaned}"`);
+      }
+    } catch (error) {
+      if (!(error instanceof AIUnavailableError)) {
+        logger.warn("⚠️ Quote intro generation failed, using fallback:", error);
+      }
+    }
+
+    const finalIntro = intro ?? this.pickFallbackQuoteIntro(quote);
+    this.rememberQuoteIntro(finalIntro);
+    return finalIntro;
+  }
+
+  /**
+   * Full spoken text for a quote: intro, a pause, then the quote itself
    */
   async createEnhancedQuote(
-    interaction: CommandInteraction | MinimalInteractionContext,
+    _interaction: CommandInteraction | MinimalInteractionContext,
     quote: EnrichedQuote,
   ): Promise<string> {
-    try {
-      const commentary = await this.generateQuoteCommentary(interaction, quote);
-      const quoteText = quote.isQuoted ? quote.parsedQuote : quote.content;
-
-      return `${commentary}... ${quoteText}`;
-    } catch (error) {
-      logger.error("⚠️ Enhanced quote TTS creation failed:", error);
-      return quote.isQuoted ? quote.parsedQuote : quote.content;
-    }
+    const intro = await this.generateQuoteIntro(quote);
+    return `${intro}${INTRO_PAUSE} ${formatQuoteForSpeech(quote)}`;
   }
 
   // ===== UTILITY METHODS =====

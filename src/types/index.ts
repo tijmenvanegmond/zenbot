@@ -59,10 +59,16 @@ export interface BotStatus {
 }
 
 // ===== QUOTE TYPES =====
+export interface QuoteLine {
+  speaker: string | null; // null = narration/context line
+  text: string;
+}
+
 export interface ParsedQuote {
   speaker: string | null;
   quote: string;
   isQuoted: boolean;
+  lines: QuoteLine[]; // one entry per line; dialogues have several
 }
 
 export interface EnrichedQuote {
@@ -71,6 +77,7 @@ export interface EnrichedQuote {
   parsedQuote: string;
   speaker: string | null;
   isQuoted: boolean;
+  lines: QuoteLine[];
   poster: {
     id: string;
     username: string;

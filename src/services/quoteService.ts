@@ -3,6 +3,7 @@ import { logger } from "../utils/logger";
 import { OpenAIService } from "./openaiService";
 import {
   ParsedQuote,
+  QuoteLine,
   EnrichedQuote,
   QuoteSearchOptions,
   QuoteSearchResult,
@@ -12,31 +13,85 @@ import {
 /**
  * Smart quote parsing - fast regex with multiple format support
  */
+const URL_PATTERN = /https?:\/\/\S+/gi;
+const SPEAKER_LINE = /^([^:]{1,40}?)\s*:\s*(.+)$/;
+
+const stripQuoteMarks = (text: string): string =>
+  text
+    .trim()
+    .replace(/^["'“”‘’]+\s*/, "")
+    .replace(/\s*["'“”‘’]+$/, "")
+    .trim();
+
+/**
+ * Parse one line as `Name: "text"` (quotes optional) or plain narration
+ */
+const parseLine = (line: string): QuoteLine => {
+  const match = line.match(SPEAKER_LINE);
+  if (match) {
+    const speaker = match[1].trim();
+    const isUrlScheme = /^https?$/i.test(speaker);
+    const looksLikeName = speaker.split(/\s+/).length <= 5;
+    if (!isUrlScheme && looksLikeName) {
+      return { speaker, text: stripQuoteMarks(match[2]) };
+    }
+  }
+  return { speaker: null, text: stripQuoteMarks(line) };
+};
+
+/**
+ * Smart quote parsing - handles single quotes and multi-line dialogues:
+ *   osha: "everything is fine"
+ *   Osha: "pelican" \n Murloc: "those are seagulls" \n Osha: "chicken"
+ */
 export const parseQuote = (content: string): ParsedQuote => {
-  // Fast regex patterns for common quote formats
-  const quotePatterns = [
-    /^(.+?):\s*["'](.+)["']$/, // Name: "quote" or Name: 'quote'
-    /^(.+?):\s*"(.+)"$/, // Name: "quote"
-    /^(.+?):\s*'(.+)'$/, // Name: 'quote'
-    /^(.+?):\s*(.+)$/, // Name: anything else
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map(parseLine);
+
+  const speakers = [
+    ...new Set(lines.map((l) => l.speaker).filter((s): s is string => !!s)),
   ];
 
-  for (const pattern of quotePatterns) {
-    const match = content.match(pattern);
-    if (match) {
-      return {
-        speaker: match[1].trim(),
-        quote: match[2].trim(),
-        isQuoted: true,
-      };
-    }
+  if (speakers.length === 0) {
+    return {
+      speaker: null,
+      quote: stripQuoteMarks(content),
+      isQuoted: false,
+      lines,
+    };
+  }
+
+  if (lines.length === 1) {
+    return {
+      speaker: lines[0].speaker,
+      quote: lines[0].text,
+      isQuoted: true,
+      lines,
+    };
   }
 
   return {
-    speaker: null,
-    quote: content,
-    isQuoted: false,
+    speaker: speakers.join(" & "),
+    quote: lines
+      .map((l) => (l.speaker ? `${l.speaker}: "${l.text}"` : l.text))
+      .join("\n"),
+    isQuoted: true,
+    lines,
   };
+};
+
+/**
+ * Whether a message is worth reading aloud - skips GIF links and short
+ * chatter ("ah", "?????") that ends up in quote channels
+ */
+export const isQuotable = (quote: EnrichedQuote): boolean => {
+  const withoutUrls = quote.content.replace(URL_PATTERN, "").trim();
+  if (!withoutUrls) return false;
+  if (quote.isQuoted) return true;
+  return withoutUrls.split(/\s+/).length >= 4;
 };
 
 /**
@@ -71,6 +126,7 @@ export const enrichMessages = (messages: Message[]): EnrichedQuote[] => {
       parsedQuote: parsed.quote,
       speaker: parsed.speaker,
       isQuoted: parsed.isQuoted,
+      lines: parsed.lines,
       poster: {
         id: msg.author.id,
         username: msg.author.username,
@@ -156,5 +212,9 @@ export const getRandomQuote = async (
     return null;
   }
 
-  return quotes[Math.floor(Math.random() * quotes.length)];
+  // Prefer real quotes; fall back to anything if the filter leaves nothing
+  const quotable = quotes.filter(isQuotable);
+  const pool = quotable.length > 0 ? quotable : quotes;
+
+  return pool[Math.floor(Math.random() * pool.length)];
 };

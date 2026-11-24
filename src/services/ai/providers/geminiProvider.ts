@@ -25,6 +25,10 @@ import { logger } from "../../../utils/logger";
 export const DEFAULT_GEMINI_MODEL =
   process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
+// Low-latency model for one-liners (quote intros): ~1.5s vs ~25s for flash
+export const FAST_GEMINI_MODEL =
+  process.env.GEMINI_FAST_MODEL || "gemini-3.5-flash-lite";
+
 export class GeminiProvider extends BaseAIProvider {
   readonly name = "gemini";
   readonly supportedModels = [
