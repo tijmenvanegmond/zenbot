@@ -99,6 +99,17 @@ Zenbot uses a unified actions system that provides a single interface for functi
   - `onInteractionCreate.ts` - Slash command handling
   - `onVoiceChannelUpdate.ts` - Voice state changes
   - `onPlayerUpdate.ts` - Audio player events
+  - `onMessageCreate.ts` - `@Zenbot` chat (see below)
+
+### @Zenbot Chat - Where Tool Calling Lives
+
+- Mentioning the bot starts a free conversation through `ZenbotService.converse()` with function calling
+- Tools offered: `read_channel_quote`, `roll_dice`, `set_voice_mood`, `channel_management`. Excluded: `speak`, voice control, listening, conference, `rename_user`
+- The handler shows the reply and, if the author is in voice, speaks that same reply: "<name> asks: <message>", pause, reply. The AI never speaks for itself here, so text and voice can't diverge
+- `set_voice_mood` (AI-only) stores a mood in `voiceMoodStore`; the handler speaks the reply with `piper-zen-<mood>`
+- `[pause]` markers in replies are spoken as silence and removed from the text
+- 5s per-user cooldown (⏳ reaction) to protect the Gemini quota
+- Fixed commands (`/advice`, `/remark`, `/quote`) deliberately don't use tools: they make one direct call and speak exactly what they show
 
 ### Voice System - Unified Architecture with Audio Effects
 

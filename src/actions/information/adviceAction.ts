@@ -86,8 +86,13 @@ export class AdviceAction implements ZenAction {
       // function, it gets the advice back and decides what to say itself.
       let spoken = false;
       if (use_voice && context.source !== "ai" && context.voiceChannel) {
+        // Say who asked and about what - voice listeners can't see the command
+        const asker = context.user.displayName || context.user.username;
+        const trigger = topic
+          ? `${asker} wants advice on ${topic}.`
+          : `${asker} wants advice.`;
         await this.playAdviceVoice(
-          adviceText,
+          `${trigger}[pause:0.7] ${adviceText}`,
           context.voiceChannel,
           advice_type,
         );

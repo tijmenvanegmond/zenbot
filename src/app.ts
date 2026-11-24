@@ -5,6 +5,7 @@ import onInteractionCreate from "./listeners/onInteractionCreate";
 import onVoiceChannelUpdate from "./listeners/onVoiceChannelUpdate";
 import Fastify from "fastify";
 import onPlayerUpdate from "./listeners/onPlayerUpdate";
+import onMessageCreate from "./listeners/onMessageCreate";
 import { registerApiRoutes } from "./api";
 import { logger } from "./utils/logger";
 
@@ -51,6 +52,7 @@ onReady(discordClient);
 onInteractionCreate(discordClient);
 onVoiceChannelUpdate(discordClient);
 onPlayerUpdate(discordClient);
+onMessageCreate(discordClient);
 /**
  * Two bots on one token both receive every slash command and fight over
  * voice connections (commands fail with "unknown interaction", the bot joins

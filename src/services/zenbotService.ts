@@ -425,7 +425,15 @@ export class ZenbotService {
       anyActions = true;
 
       for (const call of functionCalls) {
-        const signature = `${call.name}:${JSON.stringify(call.arguments || {})}`;
+        // Sort keys: the model repeats calls with arguments in a different
+        // order, which slipped past the guard (and re-rolled dice)
+        const args = call.arguments || {};
+        const sortedArgs = Object.fromEntries(
+          Object.keys(args)
+            .sort()
+            .map((key) => [key, args[key]]),
+        );
+        const signature = `${call.name}:${JSON.stringify(sortedArgs)}`;
 
         // Check for exact duplicates
         if (executedSignatures.has(signature)) {
