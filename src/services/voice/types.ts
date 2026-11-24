@@ -28,24 +28,12 @@ export interface VoiceResult {
  * Voice configuration for a profile
  */
 export interface VoiceConfig {
-  provider: "system" | "espeak" | "piper";
+  provider: "system" | "piper";
 
   // System TTS settings (Windows/macOS)
   system?: {
     voice: string;
     speed: number;
-  };
-
-  // eSpeak-NG settings
-  espeak?: {
-    variant: string; // e.g., 'en+m2'
-    pitch: number; // 0-99
-    amplitude: number; // 0-200
-    speed: number; // WPM
-    wordGap: number; // ms between words
-    capitalEmphasis: number; // 0-40
-    punctuation: boolean;
-    ssml: boolean;
   };
 
   // Piper TTS settings
@@ -57,14 +45,13 @@ export interface VoiceConfig {
     noise_w?: number; // Timing variation (piper default 0.8; lower = more even cadence)
 
     // Audio effects
-    effect?: string; // Preset: omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone
+    effect?: string; // Preset: zen, omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone
     reverb?: number; // 0-1
     pitch?: number; // -12 to +12 semitones
     distortion?: number; // 1-50 gain
     echo?: number; // delay in ms
     bitcrush?: number; // 1-16 bit depth
   };
-
 }
 
 /**

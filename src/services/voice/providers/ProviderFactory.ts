@@ -25,11 +25,7 @@ export class ProviderFactory {
    * Load all available providers
    */
   private loadProviders(): void {
-    const providers = [
-      new SystemProvider(),
-      new PiperProvider(),
-      // EspeakProvider removed - garbage quality
-    ];
+    const providers = [new SystemProvider(), new PiperProvider()];
 
     for (const provider of providers) {
       this.providers.set(provider.name, provider);
@@ -67,7 +63,7 @@ export class ProviderFactory {
    * Get best available provider for platform
    */
   getBestProvider(): VoiceProvider {
-    // Preference order: piper > system (espeak removed)
+    // Preference order: piper > system
     const preferenceOrder = ["piper", "system"];
 
     for (const name of preferenceOrder) {
@@ -122,8 +118,6 @@ export class ProviderFactory {
     switch (name) {
       case "system":
         return process.platform;
-      case "espeak":
-        return "linux"; // Platform detection for eSpeak
       case "piper":
         return "docker"; // Piper runs in container
       default:
@@ -138,13 +132,6 @@ export class ProviderFactory {
     switch (name) {
       case "system":
         return ["offline", "platform-native", "fast"];
-      case "espeak":
-        return [
-          "offline",
-          "voice-tweaking",
-          "personality-profiles",
-          "customizable",
-        ];
       case "piper":
         return [
           "neural-tts",

@@ -23,20 +23,13 @@ export const TTS: Command = {
         .setDescription("Voice profile to use")
         .setRequired(false)
         .addChoices(
-          { name: "🎭 Sardonic (default)", value: "zenbot-sardonic" },
-          { name: "Default", value: "zenbot-default" },
-          { name: "Wise", value: "zenbot-wise" },
-          { name: "Excited", value: "zenbot-excited" },
-          { name: "Calm", value: "zenbot-calm" },
-          { name: "🧠 Deep Philosopher", value: "zenbot-deep" },
-          { name: "📢 Crisp & Clear", value: "zenbot-crisp" },
-          { name: "📻 Smooth Radio", value: "zenbot-smooth" },
-          { name: "🎪 Mysterious", value: "zenbot-mysterious" },
-          { name: "⚡ Energetic", value: "zenbot-energetic" },
-          { name: "👔 Professional", value: "zenbot-professional" },
+          { name: "🧘 Zen (default)", value: "piper-zen" },
+          { name: "🧘 Zen - calm", value: "piper-zen-calm" },
+          { name: "🧘 Zen - wise", value: "piper-zen-wise" },
+          { name: "🧘 Zen - playful", value: "piper-zen-playful" },
+          { name: "🧘 Zen - intense", value: "piper-zen-intense" },
           { name: "System", value: "system-default" },
           // Piper TTS profiles - high-quality neural voices
-          { name: "🧘 Zen (default)", value: "piper-zen" },
           { name: "👨 Piper John (slow)", value: "piper-default" },
           { name: "👨 Piper John (normal)", value: "piper-john" },
           { name: "🤖 Piper Danny (robotic)", value: "piper-danny" },
@@ -44,7 +37,6 @@ export const TTS: Command = {
           { name: "👨 Piper Ryan (male)", value: "piper-ryan" },
           { name: "👩‍🦰 Piper Amy (soft)", value: "piper-amy" },
           { name: "👨‍💼 Piper Joe (deep)", value: "piper-joe" },
-          { name: "🎭 Piper Extra Slow", value: "piper-sardonic" },
           { name: "⚡ Piper Energetic", value: "piper-energetic" },
           { name: "🧘 Piper Calm", value: "piper-calm" },
         ),

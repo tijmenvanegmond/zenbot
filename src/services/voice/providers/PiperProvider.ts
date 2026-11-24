@@ -44,7 +44,7 @@ export class PiperProvider implements VoiceProvider {
 
     // No cached result yet - trigger async check and assume available
     // This optimistic approach allows first requests to try Piper
-    // rather than immediately falling back to eSpeak
+    // rather than immediately falling back to system TTS
     this.performAsyncCheck();
     return true; // Optimistically assume available until proven otherwise
   }
@@ -140,7 +140,7 @@ export class PiperProvider implements VoiceProvider {
    * Generate TTS buffer using Piper HTTP API
    * API format: GET /api/tts?text=<text>&voice=<voice>&speed=<speed>
    */
-  private async generateTTS(
+  async generateTTS(
     text: string,
     config: VoiceConfig["piper"],
   ): Promise<Buffer> {
