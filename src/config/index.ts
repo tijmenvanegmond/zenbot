@@ -11,7 +11,7 @@ dotenv.config();
 export class Config {
   // Environment Variables
   static readonly DISCORD_TOKEN = Config.getRequiredEnv("DISCORD_API_TOKEN");
-  static readonly OPENAI_API_KEY = Config.getRequiredEnv("OPENAI_API_KEY");
+  static readonly OPENAI_API_KEY = process.env.OPENAI_API_KEY; // optional
   static readonly PORT = parseInt(Config.getEnv("PORT", "3001"));
   static readonly LOG_LEVEL = Config.getEnv("LOG_LEVEL", "INFO");
 
@@ -136,7 +136,6 @@ export class Config {
     try {
       // Test required variables by accessing them
       Config.DISCORD_TOKEN;
-      Config.OPENAI_API_KEY;
 
       logger.info("Configuration validation successful");
       logger.info(`Server configured for port: ${Config.PORT}`);

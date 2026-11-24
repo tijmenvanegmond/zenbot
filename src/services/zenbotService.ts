@@ -6,6 +6,7 @@
 
 import { CommandInteraction } from "discord.js";
 import { RemarkType } from "../actions/entertainment/remarkAction";
+import { getCuratedRemark } from "../voice/curatedRemarks";
 
 // Interface for minimal interaction context needed by API calls
 export interface MinimalInteractionContext {
@@ -33,6 +34,7 @@ import { ActionService } from "./actionService";
 import { EnrichedQuote, RemarkResult } from "../types";
 import { logger } from "../utils/logger";
 import { randomUUID } from "crypto";
+import { DEFAULT_GEMINI_MODEL } from "./ai/providers/geminiProvider";
 
 /**
  * Response from Unified Zenyatta
@@ -51,9 +53,18 @@ export interface UnifiedZenyattaResponse {
  * Provides consistent Zenbot personality across all AI providers with conversation memory
  * Now supports multiple instances for chorus conversations
  */
+export class AIUnavailableError extends Error {
+  constructor() {
+    super("No AI provider configured");
+    this.name = "AIUnavailableError";
+  }
+}
+
 export class ZenbotService {
   private static instance: ZenbotService | null = null;
-  private aiManager: AIServiceManager;
+  // null when no AI provider is configured - AI-backed methods then throw
+  // AIUnavailableError and callers fall back to curated (non-AI) content
+  private aiManager: AIServiceManager | null;
   private actionService: ActionService;
   private conferenceManager: UnifiedConferenceManager | null = null;
   private personalityCache = new Map<string, string>();
@@ -61,7 +72,7 @@ export class ZenbotService {
   // Session management - maps user+context to session IDs
   private userSessions = new Map<string, string>();
 
-  constructor(aiManager: AIServiceManager) {
+  constructor(aiManager: AIServiceManager | null) {
     this.aiManager = aiManager;
     this.actionService = ActionService.getInstance();
   }
@@ -69,11 +80,29 @@ export class ZenbotService {
   /**
    * Initialize the global singleton instance (for backward compatibility)
    */
-  static initialize(aiManager: AIServiceManager): void {
+  static initialize(aiManager: AIServiceManager | null): void {
     if (!this.instance) {
       this.instance = new ZenbotService(aiManager);
-      logger.info("� Zenbot Service initialized");
+      logger.info(
+        aiManager
+          ? "🧘 Zenbot Service initialized"
+          : "🧘 Zenbot Service initialized without AI - using curated responses",
+      );
     }
+  }
+
+  /**
+   * Whether an AI provider is configured
+   */
+  isAIEnabled(): boolean {
+    return this.aiManager !== null;
+  }
+
+  private requireAI(): AIServiceManager {
+    if (!this.aiManager) {
+      throw new AIUnavailableError();
+    }
+    return this.aiManager;
   }
 
   /**
@@ -118,14 +147,14 @@ export class ZenbotService {
     let session: AISession | null = null;
 
     if (sessionId) {
-      session = await this.aiManager.getProvider().getSession(sessionId);
+      session = await this.requireAI().getProvider().getSession(sessionId);
     }
 
     if (!session) {
       // Create new Zenyatta session
       const context = this.buildZenbotContext(interaction);
 
-      session = await this.aiManager.createSession("Zenbot", {
+      session = await this.requireAI().createSession("Zenbot", {
         userId,
         contextId,
         systemPrompt: this.buildZenbotSystemPrompt(
@@ -170,7 +199,7 @@ export class ZenbotService {
     const currentContext = session.metadata.context;
     const newContext = { ...currentContext, ...updates };
 
-    await this.aiManager.getProvider().updateSession(session.id, {
+    await this.requireAI().getProvider().updateSession(session.id, {
       context: newContext,
     });
   }
@@ -219,7 +248,7 @@ export class ZenbotService {
 
     try {
       // Decide whether to attempt function calling
-      const provider = this.aiManager.getProvider();
+      const provider = this.requireAI().getProvider();
       let responseText: string;
 
       if (provider.supportsFunctions) {
@@ -247,7 +276,7 @@ export class ZenbotService {
             );
           } else {
             // Fall back to normal chat if no functions available
-            responseText = await this.aiManager.chat(
+            responseText = await this.requireAI().chat(
               session.id,
               contextualMessage,
             );
@@ -257,14 +286,17 @@ export class ZenbotService {
             "⚠️ Function calling path failed; falling back to standard chat:",
             fcError instanceof Error ? fcError.message : fcError,
           );
-          responseText = await this.aiManager.chat(
+          responseText = await this.requireAI().chat(
             session.id,
             contextualMessage,
           );
         }
       } else {
         // Provider does not support functions
-        responseText = await this.aiManager.chat(session.id, contextualMessage);
+        responseText = await this.requireAI().chat(
+          session.id,
+          contextualMessage,
+        );
       }
 
       const response: UnifiedZenyattaResponse = {
@@ -281,21 +313,10 @@ export class ZenbotService {
       );
       return response;
     } catch (error) {
+      // Rethrow so callers can use their own curated (non-AI) fallbacks
+      // instead of speaking a generic error line
       logger.error("⚠️ Zenbot conversation failed:", error);
-      const fallbacks = [
-        "Temporary malfunction. Re-ask.",
-        "Upstream glitch. Refine and retry.",
-        "That broke. Shorter input, try again.",
-        "Model hiccup. Patience.",
-        "System burped. Ask again in a beat.",
-      ];
-      return {
-        text: fallbacks[Math.floor(Math.random() * fallbacks.length)],
-        shouldUseVoice: false,
-        mood: "mysterious",
-        sessionId: session.id,
-        reasoning: "Zenbot fallback after AI error",
-      };
+      throw error;
     }
   }
 
@@ -328,7 +349,7 @@ export class ZenbotService {
     );
 
     try {
-      for await (const event of this.aiManager.chatStream(
+      for await (const event of this.requireAI().chatStream(
         session.id,
         contextualMessage,
       )) {
@@ -455,7 +476,7 @@ export class ZenbotService {
 
           // Skip adding tool results to history for OpenAI to avoid conversation flow issues
           // OpenAI handles tool calling within the same callFunctions operation
-          const provider = this.aiManager.getProvider();
+          const provider = this.requireAI().getProvider();
           if (provider.name !== "openai") {
             await provider.addToHistory(sessionId, [
               {
@@ -487,7 +508,7 @@ export class ZenbotService {
 
     if (anyActions) {
       try {
-        const wrap = await this.aiManager.chat(
+        const wrap = await this.requireAI().chat(
           sessionId,
           "Provide your final response with full Zenbot personality - be concise but witty (≤240 chars), keep the best parts from your function call responses. No meta-commentary about actions taken.",
         );
@@ -597,11 +618,10 @@ export class ZenbotService {
       );
       return { text: response.text };
     } catch (error) {
-      logger.error("⚠️ Remark generation failed:", error);
-      // Fallback: use simpler remark generation (ignores typed nuance)
-      return {
-        text: "Failed to generate remark. Please try again.",
-      };
+      if (!(error instanceof AIUnavailableError)) {
+        logger.error("⚠️ Remark generation failed:", error);
+      }
+      return { text: getCuratedRemark(type, targetSubject) };
     }
   }
   // ===== QUOTE ENHANCEMENT (with conversation memory) =====
@@ -651,7 +671,9 @@ Speaker: ${quote.speaker || quote.poster.displayName}
 
       return commentary;
     } catch (error) {
-      logger.error("⚠️ Quote commentary generation failed:", error);
+      if (!(error instanceof AIUnavailableError)) {
+        logger.error("⚠️ Quote commentary generation failed:", error);
+      }
 
       // Fallback commentaries with more personality
       const fallbacks = [
@@ -913,6 +935,15 @@ VOICE CHANNEL MANAGEMENT:
     aiProvider: string;
     aiProviderHealth: boolean;
   }> {
+    if (!this.aiManager) {
+      return {
+        activeSessions: 0,
+        totalMessages: 0,
+        aiProvider: "none",
+        aiProviderHealth: false,
+      };
+    }
+
     const aiStats = await this.aiManager.getStats();
     const healthCheck = await this.aiManager.healthCheck();
     const primaryProvider = Object.keys(healthCheck)[0];
@@ -1030,7 +1061,7 @@ VOICE CHANNEL MANAGEMENT:
       if (process.env.GOOGLE_AI_API_KEY) {
         availableProviders.gemini = {
           apiKey: process.env.GOOGLE_AI_API_KEY,
-          defaultModel: "gemini-1.5-flash",
+          defaultModel: DEFAULT_GEMINI_MODEL,
         };
       }
 
@@ -1148,6 +1179,10 @@ Maintain Zenbot's personality: sharp, insightful, authentic, and occasionally sa
    * Check if conference is available
    */
   isConferenceAvailable(): boolean {
+    if (!this.aiManager) {
+      return false;
+    }
+
     const externalProviderCount = [
       process.env.OPENAI_API_KEY,
       process.env.ANTHROPIC_API_KEY,
@@ -1163,7 +1198,11 @@ Maintain Zenbot's personality: sharp, insightful, authentic, and occasionally sa
    * Clean up expired sessions
    */
   async cleanup(): Promise<void> {
-    await this.aiManager.getProvider().cleanupSessions();
+    if (!this.aiManager) {
+      return;
+    }
+
+    await this.requireAI().getProvider().cleanupSessions();
 
     // Clean up consciousness manager if it exists
     if (this.conferenceManager) {
@@ -1172,7 +1211,9 @@ Maintain Zenbot's personality: sharp, insightful, authentic, and occasionally sa
 
     // Clean up local session mapping
     for (const [key, sessionId] of this.userSessions.entries()) {
-      const session = await this.aiManager.getProvider().getSession(sessionId);
+      const session = await this.requireAI()
+        .getProvider()
+        .getSession(sessionId);
       if (!session) {
         this.userSessions.delete(key);
       }

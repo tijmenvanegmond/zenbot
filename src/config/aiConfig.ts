@@ -5,6 +5,7 @@
 
 import { AIServiceConfig } from "../services/ai";
 import { logger } from "../utils/logger";
+import { DEFAULT_GEMINI_MODEL } from "../services/ai/providers/geminiProvider";
 
 // Load environment variables
 const OPENAI_API_KEY = undefined; // process.env.OPENAI_API_KEY; // Disabled to avoid token usage
@@ -28,9 +29,20 @@ if (!GOOGLE_AI_API_KEY) {
   );
 }
 
-if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY && !GOOGLE_AI_API_KEY) {
-  throw new Error(
-    "At least one AI provider API key must be configured (OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_AI_API_KEY)",
+/**
+ * AI is optional. It is enabled when at least one provider key is present,
+ * unless explicitly switched off with AI_ENABLED=false. Without AI, Zenbot
+ * runs on curated responses (voice, quotes, advice, remarks still work).
+ */
+const HAS_AI_KEY = !!(OPENAI_API_KEY || ANTHROPIC_API_KEY || GOOGLE_AI_API_KEY);
+export const AI_ENABLED =
+  HAS_AI_KEY && process.env.AI_ENABLED?.toLowerCase() !== "false";
+
+if (!AI_ENABLED) {
+  logger.warn(
+    HAS_AI_KEY
+      ? "⚠️ AI disabled via AI_ENABLED=false - running on curated responses"
+      : "⚠️ No AI provider key configured - running on curated responses",
   );
 }
 
@@ -39,7 +51,7 @@ const getDefaultProvider = (): string => {
   if (GOOGLE_AI_API_KEY) return "gemini";
   if (ANTHROPIC_API_KEY) return "anthropic";
   if (OPENAI_API_KEY) return "openai";
-  throw new Error("No AI provider available");
+  return "none";
 };
 
 export const AI_CONFIG: AIServiceConfig = {
@@ -70,7 +82,7 @@ export const AI_CONFIG: AIServiceConfig = {
     ...(GOOGLE_AI_API_KEY && {
       gemini: {
         apiKey: GOOGLE_AI_API_KEY,
-        defaultModel: "gemini-2.5-flash",
+        defaultModel: DEFAULT_GEMINI_MODEL,
         maxTokens: 4000,
         temperature: 0.7,
       },

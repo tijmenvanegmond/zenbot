@@ -9,11 +9,8 @@ import { registerApiRoutes } from "./api";
 import { logger } from "./utils/logger";
 
 // Initialize AI Services
-import {
-  AIServiceManager,
-  MemorySessionStorage,
-} from "./services/ai";
-import { AI_CONFIG } from "./config/aiConfig";
+import { AIServiceManager, MemorySessionStorage } from "./services/ai";
+import { AI_CONFIG, AI_ENABLED } from "./config/aiConfig";
 import { ZenbotService } from "./services/zenbotService";
 import { UnifiedVoiceService } from "./services/voice/UnifiedVoiceService";
 
@@ -24,18 +21,19 @@ const PORT = process.argv[3] || process.env.PORT || 3001;
 
 logger.info("Zenbot awakens... Experience tranquility through code.");
 
-// Initialize AI Services - The Path of Unified Intelligence
-const sessionStorage = new MemorySessionStorage();
-const aiManager = new AIServiceManager(AI_CONFIG, sessionStorage);
-
-// Initialize Unified Zenyatta Service
+// Initialize AI Services (optional) - without a provider, Zenbot uses curated responses
+const aiManager = AI_ENABLED
+  ? new AIServiceManager(AI_CONFIG, new MemorySessionStorage())
+  : null;
 ZenbotService.initialize(aiManager);
 
 // Initialize Voice Service to show provider status at startup
 const voiceService = UnifiedVoiceService.getInstance();
 logger.info("🎤 Voice service initialized");
 
-logger.info("🧘 AI services initialized - The Iris connects all providers");
+if (aiManager) {
+  logger.info("🧘 AI services initialized - The Iris connects all providers");
+}
 
 const discordClient = new Client({
   intents: [

@@ -21,12 +21,17 @@ import {
 } from "../types";
 import { logger } from "../../../utils/logger";
 
+// Override with GEMINI_MODEL when Google retires a model (they do, regularly)
+export const DEFAULT_GEMINI_MODEL =
+  process.env.GEMINI_MODEL || "gemini-3.5-flash";
+
 export class GeminiProvider extends BaseAIProvider {
   readonly name = "gemini";
   readonly supportedModels = [
-    "gemini-2.5-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
+    DEFAULT_GEMINI_MODEL,
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
   ];
   readonly supportsStreaming = true;
   readonly supportsFunctions = true; // Via function calling
@@ -52,7 +57,7 @@ export class GeminiProvider extends BaseAIProvider {
     this.client = new GoogleGenerativeAI(config.apiKey);
   }
 
-  private getModel(modelName: string = "gemini-2.5-flash"): GenerativeModel {
+  private getModel(modelName: string = DEFAULT_GEMINI_MODEL): GenerativeModel {
     if (!this.models.has(modelName)) {
       this.models.set(
         modelName,

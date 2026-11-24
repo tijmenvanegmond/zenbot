@@ -1,6 +1,4 @@
 import { ZenbotService } from "./zenbotService";
-import { AIServiceManager, MemorySessionStorage } from "./ai";
-import { AI_CONFIG } from "../config/aiConfig";
 import { logger } from "../utils/logger";
 
 /**
@@ -12,24 +10,17 @@ export class AssistantInitializer {
    */
   static async initializeAssistants(): Promise<void> {
     try {
-      logger.info("🧘 Initializing Unified Zenyatta Service...");
-
-      // Initialize AI service manager with multi-provider support
-      const sessionStorage = new MemorySessionStorage();
-      const aiManager = new AIServiceManager(AI_CONFIG, sessionStorage);
-
-      // Initialize the unified Zenyatta service
-      ZenbotService.initialize(aiManager);
+      // ZenbotService is initialized in app.ts (with or without AI)
       const zenyatta = ZenbotService.getInstance();
 
-      logger.info(
-        "🧘 Unified Zenyatta Service ready for enlightened conversations",
-      );
+      if (!zenyatta.isAIEnabled()) {
+        logger.info("🧘 Zenbot running without AI - curated responses only");
+        return;
+      }
 
-      // Log AI system stats
-      const stats = await aiManager.getStats();
+      const stats = await zenyatta.getStats();
       logger.info(
-        `AI System stats: ${stats.providers.length} providers (${stats.providers.join(", ")}), ${stats.activeSessions} sessions, ${stats.totalMessages} messages`,
+        `🧘 Zenbot AI ready: provider ${stats.aiProvider}, ${stats.activeSessions} sessions, ${stats.totalMessages} messages`,
       );
     } catch (error) {
       logger.error("Failed to initialize AI system:", error);
