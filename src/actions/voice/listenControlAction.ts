@@ -13,7 +13,7 @@ import {
   speakReply,
 } from "../../services/zenbotChat";
 import { transcribeSpeech } from "../../services/speechToText";
-import { opus } from "prism-media";
+import { OpusDecoder } from "../../services/voice/opusDecoder";
 
 // Audio processing constants - Adjusted for real speech patterns
 const MIN_AUDIO_DURATION_MS = 500; // Minimum 500ms - realistic for short speech
@@ -361,6 +361,18 @@ export class ListenControlAction implements ZenAction {
   private setupVoiceListening(connection: any, context: ActionContext): void {
     const receiver = connection.receiver;
 
+    // Incoming audio is end-to-end encrypted (DAVE). Surface the library's
+    // decrypt messages: if they keep failing, packets reach the decoder still
+    // encrypted and transcription only ever hears noise.
+    if (!connection.__zenbotDaveDebug) {
+      connection.__zenbotDaveDebug = true;
+      connection.on("debug", (message: string) => {
+        if (/decrypt|dave/i.test(message)) {
+          logger.info(`🎤 Voice E2EE: ${message}`);
+        }
+      });
+    }
+
     const pcmBuffers = new Map<string, Buffer[]>(); // Store PCM data per user
     const userSpeakStartTimes = new Map<string, number>(); // Track speaking duration
     const activeStreams = new Map<string, any>(); // Track active audio streams per user
@@ -384,27 +396,20 @@ export class ListenControlAction implements ZenAction {
       // Subscribe to user's OPUS stream and decode it properly
       const opusStream = receiver.subscribe(userId);
 
-      // Create Opus decoder with proper settings
-      const decoder = new opus.Decoder({
-        frameSize: 960,
-        channels: 2,
-        rate: 48000,
-      });
-
-      // Pipe Opus stream through decoder to get proper PCM
-      const pcmStream = opusStream.pipe(decoder);
       activeStreams.set(userId, opusStream);
 
-      pcmStream.on("data", (data: Buffer) => {
-        // Store properly decoded PCM data
+      // Decode packet by packet. Piping into a decoder stream let one bad
+      // packet (e.g. still DAVE-encrypted while the E2EE session warms up)
+      // kill the whole utterance: "memory access out of bounds", no PCM.
+      const decoder = new OpusDecoder();
+      opusStream.on("data", (packet: Buffer) => {
+        const pcm = decoder.decode(packet);
+        if (!pcm) return;
         const userPcmBuffers = pcmBuffers.get(userId) || [];
-        userPcmBuffers.push(data);
+        userPcmBuffers.push(pcm);
         pcmBuffers.set(userId, userPcmBuffers);
       });
-
-      pcmStream.on("error", (error: any) => {
-        logger.error(`🎤 PCM stream error for user ${userId}:`, error);
-      });
+      opusStream.once("close", () => decoder.logSummary(userId));
 
       opusStream.on("error", (error: any) => {
         logger.error(`🎤 Opus stream error for user ${userId}:`, error);
