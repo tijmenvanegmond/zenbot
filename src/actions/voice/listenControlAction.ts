@@ -8,13 +8,12 @@ import { VoiceSessionManager } from "../../services/voiceSessionManager";
 import { joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
 import { logger } from "../../utils/logger";
 import {
-  MinimalInteractionContext,
-  ZenbotService,
-} from "../../services/zenbotService";
-import { ActionService } from "../../services/actionService";
-import { OpenAIService } from "../../services/openaiService";
+  getChatReply,
+  isChatAvailable,
+  speakReply,
+} from "../../services/zenbotChat";
+import { transcribeSpeech } from "../../services/speechToText";
 import { opus } from "prism-media";
-import { channel } from "diagnostics_channel";
 
 // Audio processing constants - Adjusted for real speech patterns
 const MIN_AUDIO_DURATION_MS = 500; // Minimum 500ms - realistic for short speech
@@ -82,92 +81,94 @@ function createWAVBuffer(pcmBuffers: Buffer[]): Buffer {
   return Buffer.concat([header, pcmData]);
 }
 
+// Zenbot only answers when addressed - unless it's the only one listening.
+// Transcription spells the name many ways ("Zenbot", "Zen bot", "ZennBot",
+// "Xenbot", "Zenyatta").
+export const WAKE_WORD = /\b[zx]en+[\s-]?(bot|yatta)?\b/i;
+
+// One reply at a time per guild: overlapping replies talk over each other
+const replyInFlight = new Set<string>();
+
 /**
- * Process voice commands from transcribed speech using Zenyatta AI and action system
+ * Answer something said in voice: same conversation as @Zenbot chat (real
+ * names, tools, voice mood; spoken text == posted text). Posts what was heard
+ * and the reply in the channel /listen was started from.
  */
-async function processVoiceCommand(
+async function respondToSpeech(
   userId: string,
   transcription: string,
   context: ActionContext,
 ): Promise<void> {
+  const voiceChannel = context.voiceChannel;
+  if (!voiceChannel || !context.guild) return;
+
+  const member =
+    voiceChannel.members.get(userId) ??
+    (await voiceChannel.guild.members.fetch(userId).catch(() => null));
+  if (!member || member.user.bot) return;
+
+  const humans = voiceChannel.members.filter((m) => !m.user.bot).size;
+  if (humans > 1 && !WAKE_WORD.test(transcription)) {
+    logger.debug(
+      `🎤 Ignoring "${transcription}" from ${member.displayName} (no wake word)`,
+    );
+    return;
+  }
+
+  if (!isChatAvailable()) {
+    await speakReply(
+      voiceChannel,
+      "My conversational mind is offline. Try the slash commands.",
+      undefined,
+      "voice-response",
+    );
+    return;
+  }
+
+  if (replyInFlight.has(context.guild.id)) {
+    logger.info(
+      `🎤 Skipping "${transcription}" from ${member.displayName}: still answering`,
+    );
+    return;
+  }
+  replyInFlight.add(context.guild.id);
+
+  const textChannel = context.interaction?.channel;
   try {
-    logger.info(
-      `🎤 Processing voice input from user ${userId}: "${transcription}"`,
-    );
+    logger.info(`🎤 ${member.displayName} (voice): "${transcription}"`);
+    const reply = await getChatReply({
+      member,
+      text: transcription,
+      channel: textChannel ?? voiceChannel,
+      spokenInput: true,
+    });
 
-    if (!context.voiceChannel) {
-      logger.warn(
-        "🎤 No voice channel in context for voice command processing",
-      );
-      return;
+    // They said it out loud, so no need to repeat the trigger in voice
+    await speakReply(voiceChannel, reply.speech, reply.mood, "voice-response");
+
+    if (textChannel && "send" in textChannel) {
+      await textChannel
+        .send(
+          `🎤 **${member.displayName}:** ${transcription}\n🧘 ${reply.display}`.slice(
+            0,
+            2000,
+          ),
+        )
+        .catch(() => undefined);
     }
-
-    // Get the Zenyatta assistant for intelligent conversation
-    const zenyatta = ZenbotService.getInstance();
-
-    // Create a mock interaction object for the assistant to use
-    const mockInteraction = {
-      user: {
-        id: userId,
-        username: `VoiceUser_${userId.slice(-4)}`, // Use last 4 chars for readable username
-        displayName: `Voice User ${userId.slice(-4)}`,
-      },
-      guild: context.guild,
-      channel: context.voiceChannel, // Use voice channel as context
-      client: {
-        users: {
-          fetch: async () => ({
-            username: `VoiceUser_${userId.slice(-4)}`,
-            displayName: `Voice User ${userId.slice(-4)}`,
-          }),
-        },
-      },
-    } as MinimalInteractionContext;
-
-    // Use the assistant to have a natural conversation with the voice input
-    const response = await zenyatta.converse(mockInteraction, transcription);
-
-    // Always use voice response since this is a voice interaction
-    const voiceText = response.voiceText || response.text;
-
     logger.info(
-      `🎤 AI responding to voice input: "${voiceText.substring(0, 100)}..." (mood: ${response.mood})`,
-    );
-
-    // Use action system to play TTS response
-    const actionService = ActionService.getInstance();
-    await actionService.executeFromVoice(
-      userId,
-      context.guild!.id,
-      context.voiceChannel,
-      "enhanced_tts",
-      {
-        text: voiceText,
-        activity_type: "voice-response",
-        voice_style: "normal",
-      },
+      `🎤 Zenbot -> ${member.displayName}${reply.mood ? ` [${reply.mood}]` : ""}: "${reply.display.substring(0, 120)}"`,
     );
   } catch (error) {
-    logger.error(
-      `🎤 Error processing voice command from user ${userId}:`,
-      error,
-    );
-
-    // Fallback response in case of AI failure
-    if (context.voiceChannel && context.guild) {
-      const actionService = ActionService.getInstance();
-      await actionService.executeFromVoice(
-        userId,
-        context.guild.id,
-        context.voiceChannel,
-        "enhanced_tts",
-        {
-          text: "I sense a disturbance in my consciousness. Please try speaking again, and we shall find harmony.",
-          activity_type: "voice-error",
-          voice_style: "normal",
-        },
-      );
-    }
+    logger.error(`🎤 Voice reply to ${member.displayName} failed:`, error);
+    await speakReply(
+      voiceChannel,
+      "Something in my head just broke. Say that again.",
+      undefined,
+      "voice-error",
+    ).catch(() => undefined);
+  } finally {
+    replyInFlight.delete(context.guild.id);
   }
 }
 
@@ -444,15 +445,14 @@ export class ListenControlAction implements ZenAction {
               wavBuffer.length >= MIN_WAV_SIZE_BYTES
             ) {
               // Transcribe using the WAV buffer directly
-              const transcription =
-                await OpenAIService.transcribeAudioBuffer(wavBuffer);
+              const transcription = await transcribeSpeech(wavBuffer);
               if (transcription && transcription.length > 0) {
                 logger.info(
                   `🎤 Transcription from user ${userId}: "${transcription}"`,
                 );
 
                 // Process voice commands using action system
-                await processVoiceCommand(userId, transcription, context);
+                await respondToSpeech(userId, transcription, context);
               } else {
                 logger.info(
                   `🎤 No speech detected in audio from user ${userId}`,

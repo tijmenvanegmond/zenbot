@@ -110,6 +110,15 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - `[pause]` markers in replies are spoken as silence and removed from the text
 - 5s per-user cooldown (⏳ reaction) to protect the Gemini quota
 - Fixed commands (`/advice`, `/remark`, `/quote`) deliberately don't use tools: they make one direct call and speak exactly what they show
+- The conversation itself lives in `src/services/zenbotChat.ts` (`getChatReply`, `speakReply`), shared with `/listen`
+
+### /listen - Voice Conversation
+
+- `listenControlAction.ts` captures each speaker, `speechToText.ts` transcribes (Gemini on `GEMINI_FAST_MODEL`, audio downmixed to 16kHz mono first; OpenAI Whisper only without a Gemini key)
+- Zenbot only answers when the transcript contains its name (`WAKE_WORD`, tolerant of "Zen bot"/"ZennBot"/"Xenbot"), unless it's alone with one person
+- One reply at a time per guild; what was heard and the reply are posted in the channel `/listen` was started from
+- Each utterance is a Gemini request (transcription) - long sessions in busy channels use quota
+- The bot and `/listen` share one voice connection per guild: `AudioManager` joins with `selfDeaf: false` and skips its idle leave while a listen session is active. Deafening or leaving there silently ends listening
 
 ### Voice System - Unified Architecture with Audio Effects
 

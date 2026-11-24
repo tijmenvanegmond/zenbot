@@ -10,6 +10,7 @@ import {
 } from "@discordjs/voice";
 import { PlaybackOptions } from "./types";
 import { logger } from "../../utils/logger";
+import { VoiceSessionManager } from "../voiceSessionManager";
 
 // Auto-leave after 1 minute of inactivity
 const IDLE_TIMEOUT_MS = 1 * 60 * 1000;
@@ -104,10 +105,14 @@ export class AudioManager {
     await this.cleanupSession(guildId);
 
     // Create connection
+    // There is one voice connection per guild. joinVoiceChannel reconfigures
+    // it, and the default selfDeaf: true stopped /listen hearing anyone after
+    // Zenbot's first reply
     const connection = joinVoiceChannel({
       channelId: voiceChannel.id,
       guildId: voiceChannel.guildId,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+      selfDeaf: false,
     });
 
     // Create player
@@ -278,6 +283,16 @@ export class AudioManager {
 
     // Set new timer
     session.idleTimer = setTimeout(() => {
+      // A /listen session shares this connection - leaving would end it
+      if (
+        VoiceSessionManager.getInstance().shouldStayInChannel(session.guildId)
+      ) {
+        logger.debug(
+          `🔊 Idle timeout for guild ${session.guildId}, staying: listen session active`,
+        );
+        this.resetIdleTimer(session);
+        return;
+      }
       logger.info(
         `🔊 Voice session idle timeout reached for guild ${session.guildId}, leaving channel`,
       );
