@@ -40,7 +40,7 @@ def synthesize():
       - text: Text to synthesize (required)
       - voice: Voice to use (optional, default: john)
       - speed: Speed multiplier (optional, default: 1.0)
-      - effect: Effect preset (optional): omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone
+      - effect: Effect preset (optional): zen, omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone
       - reverb: Reverb amount 0-1 (optional)
       - pitch: Pitch shift in semitones -12 to +12 (optional)
       - distortion: Distortion gain 1-50 (optional)

@@ -36,7 +36,8 @@ export const TTS: Command = {
           { name: "👔 Professional", value: "zenbot-professional" },
           { name: "System", value: "system-default" },
           // Piper TTS profiles - high-quality neural voices
-          { name: "👨 Piper John (default)", value: "piper-default" },
+          { name: "🧘 Zen (default)", value: "piper-zen" },
+          { name: "👨 Piper John (slow)", value: "piper-default" },
           { name: "👨 Piper John (normal)", value: "piper-john" },
           { name: "🤖 Piper Danny (robotic)", value: "piper-danny" },
           { name: "👩 Piper Lessac (female)", value: "piper-lessac" },
@@ -73,7 +74,7 @@ export const TTS: Command = {
 
       // If speed is specified, append it to the profile
       if (speed) {
-        const baseProfile = profile || "piper-default";
+        const baseProfile = profile || "piper-zen";
         profile = `${baseProfile}:speed=${speed}`;
         logger.info(
           `${interaction.user.username} requesting TTS with custom speed: "${text.substring(0, 50)}..." (profile: ${baseProfile}, speed: ${speed})`,

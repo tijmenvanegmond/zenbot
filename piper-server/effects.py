@@ -52,32 +52,94 @@ class AudioEffects:
         # Mix wet and dry
         return audio * (1 - wet) + reverb * wet
 
+    # ----- Phase vocoder (pitch shift without changing duration) -----
+
+    _N_FFT = 1024
+    _HOP = 256
+
+    def _stft(self, x: np.ndarray) -> np.ndarray:
+        n_fft, hop = self._N_FFT, self._HOP
+        win = np.hanning(n_fft)
+        x = np.pad(x, (n_fft // 2, n_fft // 2))
+        frames = 1 + (len(x) - n_fft) // hop
+        return np.stack(
+            [np.fft.rfft(win * x[i * hop: i * hop + n_fft]) for i in range(frames)],
+            axis=1,
+        )
+
+    def _istft(self, spec: np.ndarray, length: int) -> np.ndarray:
+        n_fft, hop = self._N_FFT, self._HOP
+        win = np.hanning(n_fft)
+        frames = spec.shape[1]
+        out = np.zeros(n_fft + hop * (frames - 1))
+        norm = np.zeros_like(out)
+        for i in range(frames):
+            out[i * hop: i * hop + n_fft] += win * np.fft.irfft(spec[:, i], n_fft)
+            norm[i * hop: i * hop + n_fft] += win ** 2
+        out = (out / np.maximum(norm, 1e-8))[n_fft // 2:]
+        return np.pad(out, (0, max(0, length - len(out))))[:length]
+
+    def time_stretch(self, audio: np.ndarray, rate: float) -> np.ndarray:
+        """Change duration without changing pitch (rate > 1 = shorter)"""
+        spec = self._stft(audio)
+        if spec.shape[1] < 2:
+            return audio
+        steps = np.arange(0, spec.shape[1] - 1, rate)
+        expected = np.linspace(0, np.pi * self._HOP, spec.shape[0])
+        phase = np.angle(spec[:, 0])
+        out = np.zeros((spec.shape[0], len(steps)), dtype=complex)
+        for t, step in enumerate(steps):
+            i, frac = int(step), step - int(step)
+            mag = (1 - frac) * np.abs(spec[:, i]) + frac * np.abs(spec[:, i + 1])
+            out[:, t] = mag * np.exp(1j * phase)
+            dphi = np.angle(spec[:, i + 1]) - np.angle(spec[:, i]) - expected
+            dphi -= 2 * np.pi * np.round(dphi / (2 * np.pi))
+            phase = phase + expected + dphi
+        return self._istft(out, int(round(len(audio) / rate)))
+
     def apply_pitch_shift(self, audio: np.ndarray, semitones: float) -> np.ndarray:
         """
-        Shift pitch by semitones
+        Shift pitch by semitones, keeping the same duration
 
         Args:
             audio: Input audio array
             semitones: Number of semitones to shift (-12 to +12)
         """
-        if semitones == 0:
+        if semitones == 0 or len(audio) == 0:
             return audio
 
-        # Calculate pitch shift ratio
-        ratio = 2 ** (semitones / 12.0)
+        # Resample (changes pitch and length), then stretch back to length
+        k = 2 ** (-semitones / 12.0)
+        resampled = signal.resample(audio, max(1, int(len(audio) * k)))
+        shifted = self.time_stretch(resampled, k)
+        return np.pad(shifted, (0, max(0, len(audio) - len(shifted))))[: len(audio)]
 
-        # Resample to change pitch
-        num_samples = int(len(audio) / ratio)
-        indices = np.linspace(0, len(audio) - 1, num_samples)
+    def apply_octave_layer(self, audio: np.ndarray, mix: float = 0.2, semitones: float = -12) -> np.ndarray:
+        """
+        Blend in a pitch-shifted copy of the same audio (aligned by
+        construction) for a doubled, synthetic monk tone
+        """
+        if mix <= 0:
+            return audio
+        return audio + mix * self.apply_pitch_shift(audio, semitones)
 
-        # Linear interpolation
-        shifted = np.interp(indices, np.arange(len(audio)), audio)
-
-        # Resample back to original length (changes speed)
-        final_indices = np.linspace(0, len(shifted) - 1, len(audio))
-        result = np.interp(final_indices, np.arange(len(shifted)), shifted)
-
-        return result
+    def apply_room(self, audio: np.ndarray, seconds: float = 0.25, wet: float = 0.1) -> np.ndarray:
+        """
+        Convolution reverb with a short, darkened, decaying tail. Starts
+        immediately (no pre-delay), so it reads as room rather than echo.
+        """
+        n = int(self.sample_rate * seconds)
+        if n < 1 or wet <= 0:
+            return audio
+        t = np.arange(n) / self.sample_rate
+        rng = np.random.default_rng(7)  # fixed: same room every time
+        ir = rng.standard_normal(n) * np.exp(-t * (6.9 / seconds))
+        b, a = signal.butter(2, 3500 / (self.sample_rate / 2))
+        ir = signal.lfilter(b, a, ir)
+        ir /= np.sqrt(np.sum(ir ** 2))
+        tail = signal.fftconvolve(audio, ir)
+        tail = np.pad(tail, (0, len(audio) + n - len(tail)))
+        return (1 - wet) * np.pad(audio, (0, n)) + wet * tail
 
     def apply_distortion(self, audio: np.ndarray, gain: float = 5.0) -> np.ndarray:
         """
@@ -209,7 +271,8 @@ class AudioEffects:
         Apply a preset effect combination
 
         Available presets:
-        - omnic: Robot voice with reverb
+        - zen: Zenbot voice - robot over a subtle octave layer, small room
+        - omnic: Robot voice
         - cave: Deep echoing cave
         - demon: Demonic distorted voice
         - chipmunk: High pitched
@@ -218,7 +281,16 @@ class AudioEffects:
         - ghost: Ethereal ghostly
         - telephone: Phone quality
         """
-        if preset == "omnic":
+        if preset == "zen":
+            # Zenbot's voice: omnic robot over a 20% octave-down layer, small room
+            audio = self.apply_robot(self.apply_octave_layer(audio, mix=0.2))
+            audio = self.apply_room(audio, seconds=0.25, wet=0.1)
+            # Normalize: the layer adds level
+            peak = np.max(np.abs(audio))
+            if peak > 0.95:
+                audio = audio / peak * 0.9
+
+        elif preset == "omnic":
             audio = self.apply_robot(audio)
             # Reverb and distortion now passed as individual parameters, not in preset
 

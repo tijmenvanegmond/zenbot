@@ -12,8 +12,8 @@ import { formatQuoteForDisplay } from "../../utils/quoteFormat";
 import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../../config";
 import { logger } from "../../utils/logger";
 
-// Same voice the AI picked for quotes before (omnic robot, lighter tone)
-const QUOTE_VOICE_PROFILE = "piper-omnic-playful";
+// Zenbot's default voice
+const QUOTE_VOICE_PROFILE = "piper-zen";
 
 export class ChannelQuoteAction implements ZenAction {
   name = "read_channel_quote";

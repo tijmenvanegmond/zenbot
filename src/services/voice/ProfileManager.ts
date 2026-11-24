@@ -24,7 +24,6 @@ export class ProfileManager {
    * Load predefined voice profiles
    */
   private loadDefaultProfiles(): void {
-
     // System profiles (Windows/macOS)
     this.profiles.set("system-default", {
       provider: "system",
@@ -323,6 +322,26 @@ export class ProfileManager {
       },
     });
 
+    // Zen - Zenbot's default voice: joe with the "zen" preset (omnic robot
+    // over a subtle octave-down layer, small room). noise/noise_w keep the
+    // delivery calm but natural.
+    const zen = (speed: number) => ({
+      provider: "piper" as const,
+      piper: {
+        voice: "joe",
+        speed,
+        speaker: undefined,
+        effect: "zen",
+        noise: 0.45,
+        noise_w: 0.5,
+      },
+    });
+    this.profiles.set("piper-zen", zen(0.78));
+    this.profiles.set("piper-zen-calm", zen(0.7));
+    this.profiles.set("piper-zen-wise", zen(0.66));
+    this.profiles.set("piper-zen-playful", zen(0.85));
+    this.profiles.set("piper-zen-intense", zen(0.92));
+
     // Fast and energetic - ryan
     this.profiles.set("piper-energetic", {
       provider: "piper",
@@ -434,7 +453,9 @@ export class ProfileManager {
           } else if (config.system) {
             config.system.speed = speed;
           }
-          logger.info(`🎭 Applied speed override: ${speed}x to profile ${profileName}`);
+          logger.info(
+            `🎭 Applied speed override: ${speed}x to profile ${profileName}`,
+          );
         }
       }
     }
@@ -448,9 +469,9 @@ export class ProfileManager {
   private getDefaultConfig(): VoiceConfig {
     // Always prefer Piper John voice (high-quality neural TTS)
     // UnifiedVoiceService will handle fallback if Piper is unavailable
-    if (this.profiles.has("piper-default")) {
-      logger.debug("🎤 Returning piper-default as default config");
-      return this.profiles.get("piper-default")!;
+    if (this.profiles.has("piper-zen")) {
+      logger.debug("🎤 Returning piper-zen as default config");
+      return this.profiles.get("piper-zen")!;
     }
 
     // Fallback to sardonic Linux voice (free, no API costs)
@@ -511,7 +532,10 @@ export class ProfileManager {
             break;
           case "capital":
           case "k":
-            config.espeak!.capitalEmphasis = Math.max(0, Math.min(40, numValue));
+            config.espeak!.capitalEmphasis = Math.max(
+              0,
+              Math.min(40, numValue),
+            );
             break;
         }
       }

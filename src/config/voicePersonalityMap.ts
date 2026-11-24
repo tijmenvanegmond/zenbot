@@ -12,8 +12,8 @@ export interface PersonalityVoiceMapping {
  */
 export const PERSONALITY_VOICE_MAP: PersonalityVoiceMapping = {
   // Default Zenbot (sardonic omnic monk)
-  "zenbot-default": "piper-omnic", // john @ 0.9x with omnic robot effect
-  zenbot: "piper-omnic",
+  "zenbot-default": "piper-zen", // joe @ 0.78x, zen preset (omnic + octave layer + room)
+  zenbot: "piper-zen",
   default: "piper-john", // john @ 1.0x - balanced clean voice
 
   // Conference personalities
