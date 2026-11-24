@@ -7,9 +7,12 @@ Provides simple HTTP API for text-to-speech with multiple voice support and audi
 from flask import Flask, request, Response, jsonify
 import subprocess
 import os
+import re
 import sys
 import numpy as np
 import struct
+from typing import Optional
+from piper import PiperVoice, SynthesisConfig
 from effects import AudioEffects
 
 app = Flask(__name__)
@@ -71,26 +74,10 @@ def synthesize():
         return jsonify({"error": f"Voice model not found: {voice_path}"}), 500
 
     try:
-        # Run piper TTS
-        # Output raw PCM audio which we'll convert to WAV
-        cmd = [
-            "piper",
-            "--model", voice_path,
-            "--output-raw",
-            "--length_scale", str(1.0 / speed),  # Inverse for piper
-        ]
-
-        result = subprocess.run(
-            cmd,
-            input=text.encode('utf-8'),
-            capture_output=True,
-            check=True,
-            timeout=30
-        )
-
-        # Convert PCM data to numpy array for processing
-        pcm_data = result.stdout
-        audio = np.frombuffer(pcm_data, dtype=np.int16).astype(np.float32) / 32768.0
+        # Run piper TTS per chunk; [pause] / [pause:0.8] markers become silence
+        noise = request.args.get('noise', None, type=float)
+        noise_w = request.args.get('noise_w', None, type=float)
+        audio = synthesize_with_pauses(text, voice_path, speed, noise, noise_w)
 
         # Apply effect preset if specified
         if effect_preset:
@@ -160,6 +147,66 @@ def list_voices():
 def health():
     """Health check endpoint"""
     return jsonify({"status": "healthy", "service": "piper-tts"})
+
+SAMPLE_RATE = 22050
+PAUSE_MARKER = re.compile(r"\[pause(?::(\d+(?:\.\d+)?))?\]", re.IGNORECASE)
+DEFAULT_PAUSE_SECONDS = 0.5
+MAX_PAUSE_SECONDS = 3.0
+
+
+# Voices stay loaded in memory: loading takes ~0.8s, synthesis ~0.1s
+_voice_cache = {}
+
+
+def get_voice(voice_path: str) -> PiperVoice:
+    if voice_path not in _voice_cache:
+        _voice_cache[voice_path] = PiperVoice.load(voice_path)
+    return _voice_cache[voice_path]
+
+
+def run_piper(text: str, voice_path: str, speed: float,
+              noise: Optional[float] = None, noise_w: Optional[float] = None) -> np.ndarray:
+    """
+    Synthesize text, returning float32 audio.
+    noise   - expressiveness/variation in tone (piper default 0.667; lower = calmer)
+    noise_w - variation in phoneme timing (piper default 0.8; lower = more even cadence)
+    """
+    config = SynthesisConfig(
+        length_scale=1.0 / speed,  # Inverse for piper
+        noise_scale=noise,
+        noise_w_scale=noise_w,
+    )
+    arrays = [chunk.audio_float_array for chunk in get_voice(voice_path).synthesize(text, config)]
+    if not arrays:
+        return np.zeros(0, dtype=np.float32)
+    return np.concatenate(arrays).astype(np.float32)
+
+
+def synthesize_with_pauses(text: str, voice_path: str, speed: float,
+                           noise: Optional[float] = None,
+                           noise_w: Optional[float] = None) -> np.ndarray:
+    """
+    Split text on [pause] / [pause:SECONDS] markers, synthesize each chunk and
+    join them with exact silence. Text without markers is a single piper run.
+    """
+    parts = PAUSE_MARKER.split(text)
+    # re.split with one group gives: [text, seconds, text, seconds, ..., text]
+    chunks = parts[0::2]
+    pauses = parts[1::2]
+
+    segments = []
+    for i, chunk in enumerate(chunks):
+        if chunk.strip():
+            segments.append(run_piper(chunk.strip(), voice_path, speed, noise, noise_w))
+        if i < len(pauses):
+            seconds = float(pauses[i]) if pauses[i] else DEFAULT_PAUSE_SECONDS
+            seconds = min(max(seconds, 0.0), MAX_PAUSE_SECONDS)
+            segments.append(np.zeros(int(SAMPLE_RATE * seconds), dtype=np.float32))
+
+    if not segments:
+        return np.zeros(0, dtype=np.float32)
+    return np.concatenate(segments)
+
 
 def create_wav_header(data_size: int, sample_rate: int = 22050, bits_per_sample: int = 16, channels: int = 1) -> bytes:
     """Create WAV file header for PCM audio data"""

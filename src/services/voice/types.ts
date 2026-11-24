@@ -53,6 +53,8 @@ export interface VoiceConfig {
     voice: string; // e.g., 'en_US-lessac-medium', 'en_GB-alan-medium'
     speed: number; // 0.5 - 2.0 (multiplier)
     speaker?: number; // Optional speaker ID for multi-speaker models
+    noise?: number; // Tone variation (piper default 0.667; lower = calmer, flatter)
+    noise_w?: number; // Timing variation (piper default 0.8; lower = more even cadence)
 
     // Audio effects
     effect?: string; // Preset: omnic, cave, demon, chipmunk, glitch, radio, ghost, telephone

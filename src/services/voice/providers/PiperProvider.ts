@@ -148,6 +148,8 @@ export class PiperProvider implements VoiceProvider {
       });
 
       // Add audio effects if specified
+      if (config!.noise !== undefined) params.append("noise", config!.noise.toString());
+      if (config!.noise_w !== undefined) params.append("noise_w", config!.noise_w.toString());
       if (config!.effect) params.append("effect", config!.effect);
       if (config!.reverb !== undefined) params.append("reverb", config!.reverb.toString());
       if (config!.pitch !== undefined) params.append("pitch", config!.pitch.toString());

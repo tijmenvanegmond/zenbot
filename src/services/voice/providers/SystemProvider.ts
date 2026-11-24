@@ -42,7 +42,9 @@ export class SystemProvider implements VoiceProvider {
 
     try {
       await this.ensureTempDir();
-      const buffer = await this.generateTTS(text, config.system);
+      // Pause markers are Piper-only; a comma gives a natural break instead
+      const spokenText = text.replace(/\[pause(?::[\d.]+)?\]/gi, ", ");
+      const buffer = await this.generateTTS(spokenText, config.system);
 
       if (buffer.length === 0) {
         throw new Error("System TTS generated empty audio buffer");
