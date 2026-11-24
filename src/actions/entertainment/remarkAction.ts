@@ -5,7 +5,7 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { ZenbotService } from "../../services/zenbotService";
-import { playTTSInChannel } from "../../utils/voiceHelpers";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
 import { logger } from "../../utils/logger";
 
 export enum RemarkType {
@@ -111,6 +111,7 @@ export class RemarkAction implements ZenAction {
           context.interaction,
           type,
           subjectName,
+          context.voiceChannel?.name,
         );
         remarkText = result.text;
       } catch (remarkError) {
@@ -124,8 +125,17 @@ export class RemarkAction implements ZenAction {
         };
       }
 
-      // Voice playback is handled by the AI assistant's speak function
-      // No need to call TTS here as it would be duplicate
+      // Speak the same text we show. When the AI calls this as a function,
+      // it gets remarkText back and decides what to say itself.
+      let spoken = false;
+      if (use_voice && context.source !== "ai" && context.voiceChannel) {
+        await UnifiedVoiceService.getInstance().speak({
+          text: remarkText,
+          voiceChannel: context.voiceChannel,
+          activityType: "remark",
+        });
+        spoken = true;
+      }
 
       // Create response with appropriate emoji
       const emojiMap: Record<RemarkType, string> = {
@@ -142,7 +152,7 @@ export class RemarkAction implements ZenAction {
       const responseText = `${emoji} **Remark about ${subjectName}:** ${remarkText}`;
 
       logger.info(
-        `🎭 Remark action: Generated ${type} remark${subjectName ? ` about ${subjectName}` : ""}`,
+        `🎭 Remark action: ${type} remark${subjectName ? ` about ${subjectName}` : ""}: "${remarkText}"${spoken ? " (spoken)" : ""}`,
       );
 
       return {
@@ -156,7 +166,7 @@ export class RemarkAction implements ZenAction {
         },
         shouldRespond: true,
         responseText,
-        useVoice: false, // AI handles voice via speak function
+        useVoice: false, // already spoken above (or left to the AI)
       };
     } catch (error) {
       logger.error("🎭 Remark action failed:", error);

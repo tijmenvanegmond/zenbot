@@ -599,34 +599,99 @@ export class ZenbotService {
    * Generate a contextual remark with full conversation history
    */
   async generateRemark(
-    interaction: CommandInteraction,
+    _interaction: CommandInteraction,
     type: RemarkType = RemarkType.POSITIVE,
     subject?: string,
+    voiceChannelName?: string,
   ): Promise<RemarkResult> {
     const targetSubject = subject || "someone";
 
     const remarkLabel = this.getRemarkTypeDescription(type);
 
-    const message = `Generate ${remarkLabel} about "${targetSubject}" as Zenbot: concise, dry, mildly spicy (no hate, no slurs). Max 1 line.`;
+    // Without per-type tone, "mildly spicy" won and compliments came out as insults
+    const toneByType: Partial<Record<RemarkType, string>> = {
+      [RemarkType.POSITIVE]:
+        "Genuinely kind: a real compliment, delivered dry. Not backhanded, no insult.",
+      [RemarkType.ENCOURAGING]:
+        "Genuinely supportive and uplifting, in a dry voice. No insult.",
+      [RemarkType.WISE]: "Calm and sincere. A small piece of real wisdom.",
+      [RemarkType.PHILOSOPHICAL]: "Thoughtful and wry, not mean.",
+      [RemarkType.MYSTERIOUS]: "Cryptic and ominous, playful rather than mean.",
+      [RemarkType.NEGATIVE]: "A lighthearted roast. Mildly spicy, never cruel.",
+      [RemarkType.SARCASTIC]: "Dry sarcasm. Mildly spicy, never cruel.",
+      [RemarkType.HUMOROUS]: "Playful and funny.",
+    };
+    const tone = toneByType[type] ?? "Dry and witty.";
 
+    const prompt = `You are Zenbot, a dry, deadpan omnic monk bot hanging out in a Discord friend group${voiceChannelName ? ` (voice channel: "${voiceChannelName}")` : ""}.
+
+Say ${remarkLabel} about ${targetSubject}. It will be spoken out loud in voice chat.
+
+Tone: ${tone}
+
+Rules:
+- One line, at most 20 words. No hate, no slurs.
+- Address or name ${targetSubject} directly.
+- Never start with "Ah". Never use: peak, masterpiece, humans, humanity, chuckles.
+- No stage directions, asterisks, emojis or quotation marks.
+
+Reply with only the remark.`;
+
+    // One direct call (no tools): with function calling, the AI used to call
+    // speak with one line and then reply with a different one
+    const text = await this.generateSpokenLine(prompt, {
+      label: "remark",
+      maxWords: 28,
+    });
+    return { text: text ?? getCuratedRemark(type, targetSubject) };
+  }
+
+  /**
+   * One short line meant to be spoken: a single direct generation on the fast
+   * model (no tools, no session) with a 10s timeout. Returns null when AI is
+   * unavailable, slow, or the line fails validation - callers use curated
+   * fallbacks then.
+   */
+  private async generateSpokenLine(
+    prompt: string,
+    { label, maxWords }: { label: string; maxWords: number },
+  ): Promise<string | null> {
     try {
-      const response = await this.converse(
-        interaction,
-        message,
-        {
-          commandName: "remark",
-          options: { subject: targetSubject },
-        },
-        "zenbot-default",
-        ["conference"],
-      );
-      return { text: response.text };
+      const provider = this.requireAI().getProvider();
+      const raw = await Promise.race([
+        provider.generateText(prompt, {
+          temperature: 1.0,
+          maxTokens: 1000,
+          ...(provider.name === "gemini" && { model: FAST_GEMINI_MODEL }),
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${label} timed out`)), 10000),
+        ),
+      ]);
+
+      const cleaned = (
+        raw
+          .split("\n")
+          .map((line) => line.trim())
+          .find(Boolean) ?? ""
+      )
+        .replace(/\*[^*]*\*|_[^_]*_/g, "") // *chuckles* / _sighs_
+        .replace(/["“”]/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
+      const tryHard = /^ah\b|\bpeak\b|masterpiece|humans?\b|humanity/i;
+
+      if (wordCount >= 2 && wordCount <= maxWords && !tryHard.test(cleaned)) {
+        return /[.!?…]$/.test(cleaned) ? cleaned : `${cleaned}.`;
+      }
+      logger.warn(`⚠️ Rejected ${label}: "${cleaned}"`);
     } catch (error) {
       if (!(error instanceof AIUnavailableError)) {
-        logger.error("⚠️ Remark generation failed:", error);
+        logger.warn(`⚠️ ${label} generation failed, using fallback:`, error);
       }
-      return { text: getCuratedRemark(type, targetSubject) };
     }
+    return null;
   }
   // ===== QUOTE INTROS =====
 
@@ -660,15 +725,11 @@ export class ZenbotService {
    * (no tools, no session) with a timeout, falling back to curated intros.
    */
   async generateQuoteIntro(quote: EnrichedQuote): Promise<string> {
-    let intro: string | null = null;
+    const quoteBlock = (quote.lines ?? [])
+      .map((l) => (l.speaker ? `${l.speaker}: ${l.text}` : `(${l.text})`))
+      .join("\n");
 
-    try {
-      const provider = this.requireAI().getProvider();
-      const quoteBlock = (quote.lines ?? [])
-        .map((l) => (l.speaker ? `${l.speaker}: ${l.text}` : `(${l.text})`))
-        .join("\n");
-
-      const prompt = `You are Zenbot, a dry, deadpan omnic monk bot hanging out in a Discord friend group's voice chat. You're about to read a quote from their #quotes channel out loud.
+    const prompt = `You are Zenbot, a dry, deadpan omnic monk bot hanging out in a Discord friend group's voice chat. You're about to read a quote from their #quotes channel out loud.
 
 Write ONE short lead-in (3-10 words) to say right before the quote.
 
@@ -686,36 +747,10 @@ Tone examples (don't copy them): Entered into the record without objection. / Os
 
 Reply with only the lead-in.`;
 
-      const raw = await Promise.race([
-        provider.generateText(prompt, {
-          temperature: 1.0,
-          maxTokens: 1000,
-          ...(provider.name === "gemini" && { model: FAST_GEMINI_MODEL }),
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Quote intro timed out")), 10000),
-        ),
-      ]);
-
-      const cleaned = raw
-        .split("\n")[0]
-        .replace(/\*[^*]*\*/g, "")
-        .replace(/["“”]/g, "")
-        .trim();
-      const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
-      const tryHard = /^ah\b|\bpeak\b|masterpiece|humans?\b|humanity/i;
-
-      if (wordCount >= 2 && wordCount <= 14 && !tryHard.test(cleaned)) {
-        intro = /[.!?…]$/.test(cleaned) ? cleaned : `${cleaned}.`;
-      } else {
-        logger.warn(`⚠️ Rejected quote intro: "${cleaned}"`);
-      }
-    } catch (error) {
-      if (!(error instanceof AIUnavailableError)) {
-        logger.warn("⚠️ Quote intro generation failed, using fallback:", error);
-      }
-    }
-
+    const intro = await this.generateSpokenLine(prompt, {
+      label: "quote intro",
+      maxWords: 14,
+    });
     const finalIntro = intro ?? this.pickFallbackQuoteIntro(quote);
     this.rememberQuoteIntro(finalIntro);
     return finalIntro;
