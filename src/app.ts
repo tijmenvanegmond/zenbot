@@ -51,7 +51,47 @@ onReady(discordClient);
 onInteractionCreate(discordClient);
 onVoiceChannelUpdate(discordClient);
 onPlayerUpdate(discordClient);
-discordClient.login(DISCORD_API_TOKEN);
+/**
+ * Two bots on one token both receive every slash command and fight over
+ * voice connections (commands fail with "unknown interaction", the bot joins
+ * voice and stays silent). In `npm run dev`, use DISCORD_DEV_TOKEN if set,
+ * otherwise refuse to start while the live bot (Docker) is running.
+ */
+const resolveDiscordToken = async (): Promise<string | undefined> => {
+  const isDev = process.env.npm_lifecycle_event === "dev";
+  if (!isDev) return DISCORD_API_TOKEN;
+
+  if (process.env.DISCORD_DEV_TOKEN) {
+    logger.info("🧪 Dev mode: logging in with DISCORD_DEV_TOKEN");
+    return process.env.DISCORD_DEV_TOKEN;
+  }
+
+  const liveUrl = process.env.LIVE_BOT_URL || "http://localhost:3001/";
+  const liveBotRunning = await fetch(liveUrl, {
+    signal: AbortSignal.timeout(2000),
+  })
+    .then((res) => res.ok)
+    .catch(() => false);
+
+  if (liveBotRunning) {
+    logger.error(
+      `❌ Dev mode: the live bot is running (${liveUrl} answered) and would share this token. ` +
+        "Stop it first (docker stop zenbot) or set DISCORD_DEV_TOKEN to a separate test bot.",
+    );
+    process.exit(1);
+  }
+
+  logger.warn(
+    "⚠️ Dev mode with the live token - don't start the Docker bot while this runs",
+  );
+  return DISCORD_API_TOKEN;
+};
+
+// The API server starts after the check, so the check never finds itself
+resolveDiscordToken().then((token) => {
+  discordClient.login(token);
+  startApiServer();
+});
 
 // Initialize Fastify server - the gateway to digital enlightenment
 const fastify = Fastify({
@@ -61,12 +101,14 @@ const fastify = Fastify({
 // Register all API routes - true self flows through many forms
 registerApiRoutes(fastify, discordClient);
 
-fastify.listen({ host: "0.0.0.0", port: Number(PORT) }, (err, address) => {
-  if (err) {
-    logger.error("❌ Failed to start API server:", err);
-    process.exit(1);
-  }
-  logger.info(
-    `🌐 API server listening on ${address} - the path to enlightenment is open`,
-  );
-});
+function startApiServer(): void {
+  fastify.listen({ host: "0.0.0.0", port: Number(PORT) }, (err, address) => {
+    if (err) {
+      logger.error("❌ Failed to start API server:", err);
+      process.exit(1);
+    }
+    logger.info(
+      `🌐 API server listening on ${address} - the path to enlightenment is open`,
+    );
+  });
+}
