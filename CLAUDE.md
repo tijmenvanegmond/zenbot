@@ -23,7 +23,7 @@ Zenbot is a **multi-AI powered Discord bot** with a sardonic personality. Built 
 - `npm run lint` - Format code with Prettier
 - `npm run start` - Run the built application
 - `npm run test` - Run the vitest suite (`npm run test:run` for a single run)
-- `npm run tts` - Run TTS testing utility
+- `npm run tts -- "text" [profile] [out.wav]` - Render a voice profile to a WAV via Piper (`--list` for profiles)
 
 **One bot per token:** two instances on the same token both receive every slash command and fight over voice (commands fail with "unknown interaction", the bot joins voice and stays silent). `npm run dev` logs in with `DISCORD_DEV_TOKEN` if set; otherwise it refuses to start while the live bot answers on `localhost:3001`. Stop the container first (`docker stop zenbot`) or use a separate test bot.
 
@@ -158,7 +158,7 @@ Zenbot uses a unified actions system that provides a single interface for functi
 
 - **Piper Omnic** (previous default, john + omnic): `piper-omnic`, `-calm`, `-intense`, `-wise`, `-playful`
 - **Other Piper Profiles**: `piper-default` (john, slow), `piper-john`, `piper-lessac`, `piper-ryan`, `piper-amy`, `piper-joe`, `piper-danny`, `piper-energetic`, `piper-calm`, `piper-sharp`, `piper-fast`, `piper-deep`
-- **eSpeak profiles** (`zenbot-sardonic` etc.) still exist in ProfileManager but the eSpeak provider was removed; they fall back to Piper
+- Personality names resolve through the map, moods included: `getConfig("zenbot-default:calm")` → `piper-zen-calm`. Unknown names log a warning and use `piper-zen`
 - **System**: `system-default` (Microsoft David/Alex)
 
 **Personality-to-Voice Mapping (`src/config/voicePersonalityMap.ts`):**
@@ -415,7 +415,7 @@ docker-compose restart zenbot
 ```
 
 **Testing:**
-- `npm run tts` - CLI testing utility for voice profiles
+- `npm run tts -- "Test line" piper-zen-wise` - CLI testing utility for voice profiles (writes `tts-output.wav`)
 - `docker ps` - Verify Piper container is running
 - `docker logs zenbot-piper` - Check Piper TTS server logs
 - Audio resources use `StreamType.Arbitrary` for Discord.js compatibility
@@ -536,10 +536,9 @@ When working with Zenbot, embrace these meditative practices:
 
 ### Testing
 
-**Provider Tests:**
+**Unit tests:** `npx vitest run` - AI SDKs, Discord and Gemini metadata are mocked in `test/setup/globals.ts`, so the suite runs offline and spends no quota.
 
-- `node dist/test-all-providers.js` - Test all providers
-- `node dist/test-fallback-fixed.js` - Test fallback resilience
+**Live AI tests:** `RUN_LIVE_AI_TESTS=1 npx vitest run test/multi-personality.test.ts` - calls the real providers (spends quota)
 
 **Conference Test:**
 
@@ -619,8 +618,7 @@ curl -X POST -H "Content-Type: application/json" \
 
 ### Action Testing
 
-- `node dist/test-registry.js` - Verify all actions are properly registered and accessible
-- `node dist/test-channel-action.js` - Test specific action functionality with mock contexts
+- `test/services/actionService.test.ts` and `test/actions/` - registry and action tests
 - Actions include built-in parameter validation and error handling
 
 ### Development Workflow

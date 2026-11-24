@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
-    "tts": "ts-node src/doTTS.ts",
+    "tts": "ts-node src/scripts/tts.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

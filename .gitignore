@@ -117,3 +117,5 @@ coverage/
 html-coverage/
 
 .playwright-mcp/
+# npm run tts output
+tts-output.wav
