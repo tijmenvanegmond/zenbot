@@ -5,7 +5,7 @@ import {
 } from "../services/zenbotService";
 import { UnifiedVoiceService } from "../services/voice/UnifiedVoiceService";
 import { takeVoiceMood } from "../services/voice/voiceMoodStore";
-import { toSpeakableText } from "../utils/speechText";
+import { stripStageDirections, toSpeakableText } from "../utils/speechText";
 import { logger } from "../utils/logger";
 
 /**
@@ -31,9 +31,7 @@ const lastChatAt = new Map<string, number>();
 
 const PAUSE_MARKER = /\s*\[pause(?::[\d.]+)?\]\s*/gi;
 
-const CHAT_GUIDE = `
-
-(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. Use your tools when they fit: set_voice_mood to choose how you sound, read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll. Don't describe the tools or say you used them.)`;
+const CHAT_GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. No stage directions like *chuckles* or _sighs_. Use your tools when they fit: set_voice_mood to choose how you sound, read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll. Don't describe the tools or say you used them.)`;
 
 export default (client: Client): void => {
   client.on("messageCreate", async (message: Message) => {
@@ -98,7 +96,7 @@ async function handleChat(client: Client, message: Message): Promise<void> {
   try {
     const response = await zenbot.converse(
       chatContext,
-      text + CHAT_GUIDE,
+      `${text}\n\n${describeVoice(message)}\n${CHAT_GUIDE}`,
       { commandName: "chat" },
       "zenbot-default",
       EXCLUDED_TOOLS,
@@ -110,7 +108,11 @@ async function handleChat(client: Client, message: Message): Promise<void> {
     return;
   }
 
-  const display = reply.replace(PAUSE_MARKER, " ").replace(/\s+/g, " ").trim();
+  const display = stripStageDirections(reply.replace(PAUSE_MARKER, " "), {
+    keepItalics: true,
+  })
+    .replace(/\s+/g, " ")
+    .trim();
   await message.reply(display.slice(0, 2000) || "...");
 
   const voiceChannel = member?.voice?.channel;
@@ -133,4 +135,19 @@ async function handleChat(client: Client, message: Message): Promise<void> {
   logger.info(
     `💬 Zenbot -> ${message.author.username}${mood ? ` [${mood}]` : ""}${voiceChannel ? " (spoken)" : ""}: "${display.substring(0, 120)}"`,
   );
+}
+
+/**
+ * Who is actually in the author's voice channel. Without this the AI only
+ * saw the text channel and answered "who's here?" about the wrong room.
+ */
+function describeVoice(message: Message): string {
+  const channel = message.member?.voice?.channel;
+  if (!channel) {
+    return "(Voice: they are not in a voice channel; your reply is text only.)";
+  }
+  const names = channel.members.map((m) =>
+    m.id === message.client.user?.id ? "you (Zenbot)" : m.displayName,
+  );
+  return `(Voice: they are in voice channel "${channel.name}" with: ${names.join(", ")}.)`;
 }

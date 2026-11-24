@@ -789,15 +789,20 @@ Reply with only the lead-in.`;
   ): ZenbotSessionContext {
     // Check if this is a full CommandInteraction or minimal context
     const isFullInteraction = "options" in interaction;
+    // Chat messages pass a member too (see onMessageCreate), so use their
+    // real voice state whenever we have one
+    const member = (interaction as any).member;
     const voiceValidation = isFullInteraction
       ? validateVoiceChannel(interaction as CommandInteraction)
-      : { isValid: false, member: null };
+      : member?.voice?.channelId
+        ? { isValid: true, member }
+        : { isValid: false, member: null };
 
-    // For voice interactions, the channel IS the voice channel
+    // For voice interactions, the channel IS the voice channel. Text channels
+    // have `members` too, so ask discord.js instead of checking for it.
     const isVoiceInteraction =
       !isFullInteraction &&
-      interaction.channel &&
-      "members" in (interaction.channel as any);
+      (interaction.channel as any)?.isVoiceBased?.() === true;
 
     // Defensive channel name extraction
     let channelName = "Unknown Channel";
