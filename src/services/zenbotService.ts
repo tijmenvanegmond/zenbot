@@ -428,10 +428,16 @@ export class ZenbotService {
         // Sort keys: the model repeats calls with arguments in a different
         // order, which slipped past the guard (and re-rolled dice)
         const args = call.arguments || {};
+        // ...or with different capitalisation ("Play" vs "play")
         const sortedArgs = Object.fromEntries(
           Object.keys(args)
             .sort()
-            .map((key) => [key, args[key]]),
+            .map((key) => [
+              key,
+              typeof args[key] === "string"
+                ? args[key].trim().toLowerCase()
+                : args[key],
+            ]),
         );
         const signature = `${call.name}:${JSON.stringify(sortedArgs)}`;
 

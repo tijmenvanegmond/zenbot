@@ -43,7 +43,9 @@ export class SystemProvider implements VoiceProvider {
     try {
       await this.ensureTempDir();
       // Pause markers are Piper-only; a comma gives a natural break instead
-      const spokenText = text.replace(/\[pause(?::[\d.]+)?\]/gi, ", ");
+      const spokenText = text
+        .replace(/\[pause(?::[\d.]+)?\]/gi, ", ")
+        .replace(/\[gong\]/gi, " "); // no gong without Piper
       const buffer = await this.generateTTS(spokenText, config.system);
 
       if (buffer.length === 0) {

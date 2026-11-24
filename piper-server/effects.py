@@ -141,6 +141,62 @@ class AudioEffects:
         tail = np.pad(tail, (0, len(audio) + n - len(tail)))
         return (1 - wet) * np.pad(audio, (0, n)) + wet * tail
 
+    # ----- Gong -----
+
+    _gong: Optional[np.ndarray] = None
+
+    def make_gong(self, seconds: float = 4.0) -> np.ndarray:
+        """
+        A temple gong, synthesized (no sample files): a low fundamental with
+        the inharmonic overtones of a metal plate. Higher partials bloom just
+        after the strike and die faster, slightly detuned pairs give the
+        shimmering beat, and a short filtered noise burst is the mallet.
+        Rendered once and cached - it's the same gong every time.
+        """
+        if self._gong is not None:
+            return self._gong
+
+        sr = self.sample_rate
+        t = np.arange(int(sr * seconds)) / sr
+        fundamental = 87.0
+
+        # (frequency ratio, amplitude, decay seconds, bloom seconds)
+        partials = [
+            (1.00, 1.00, 3.2, 0.00),
+            (1.52, 0.55, 2.4, 0.04),
+            (2.03, 0.45, 1.9, 0.08),
+            (2.71, 0.38, 1.5, 0.12),
+            (3.44, 0.28, 1.1, 0.15),
+            (4.18, 0.18, 0.8, 0.18),
+            (5.37, 0.12, 0.6, 0.20),
+            (6.92, 0.07, 0.4, 0.20),
+        ]
+
+        gong = np.zeros_like(t)
+        for ratio, amp, decay, bloom in partials:
+            freq = fundamental * ratio
+            envelope = amp * np.exp(-t / decay)
+            if bloom > 0:
+                envelope *= 1 - np.exp(-t / bloom)
+            # the pitch sags a touch as the plate settles
+            glide = 1 + 0.004 * np.exp(-t * 3)
+            for detune in (1.0, 1.0035):  # beating pair
+                gong += 0.5 * envelope * np.sin(2 * np.pi * freq * detune * glide * t)
+
+        # Mallet: a 40ms dark noise thump
+        rng = np.random.default_rng(3)
+        thump = rng.standard_normal(len(t)) * np.exp(-t / 0.04)
+        b, a = signal.butter(2, 900 / (sr / 2))
+        gong += 0.35 * signal.lfilter(b, a, thump)
+
+        # A little room, then fade the tail so it ends cleanly
+        gong = self.apply_room(gong, seconds=1.5, wet=0.25)[: len(t)]
+        fade = int(sr * 0.3)
+        gong[-fade:] *= np.linspace(1, 0, fade)
+
+        self._gong = (gong / np.max(np.abs(gong)) * 0.7).astype(np.float32)
+        return self._gong
+
     def apply_distortion(self, audio: np.ndarray, gain: float = 5.0) -> np.ndarray:
         """
         Apply distortion/overdrive effect

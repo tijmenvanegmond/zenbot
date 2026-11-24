@@ -107,7 +107,9 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - Tools offered: `read_channel_quote`, `roll_dice`, `set_voice_mood`, `channel_management`. Excluded: `speak`, voice control, listening, conference, `rename_user`
 - The handler shows the reply and, if the author is in voice, speaks that same reply: "<name> asks: <message>", pause, reply. The AI never speaks for itself here, so text and voice can't diverge
 - `set_voice_mood` (AI-only) stores a mood in `voiceMoodStore`; the handler speaks the reply with `piper-zen-<mood>`
-- `[pause]` markers in replies are spoken as silence and removed from the text
+- `[pause]` markers in replies are spoken as silence and removed from the text; `[gong]` (max one per reply) strikes the gong and shows as 🔔
+- Replies that are empty, only markers, or leak tool summaries (`isUnusableReply`) get one retry without tools - the free-tier model does this occasionally after tool calls
+- Chat costs ~3 Gemini requests per message with tools; the free tier allows 15/minute on flash-lite
 - 5s per-user cooldown (⏳ reaction) to protect the Gemini quota
 - Fixed commands (`/advice`, `/remark`, `/quote`) deliberately don't use tools: they make one direct call and speak exactly what they show
 - The conversation itself lives in `src/services/zenbotChat.ts` (`getChatReply`, `speakReply`), shared with `/listen`
@@ -148,6 +150,7 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - **Individual**: reverb (0-1), pitch (-12 to +12 semitones, duration preserved), distortion (1-50), echo (ms), bitcrush (1-16 bits)
 - **Delivery**: `noise` (tone variation, piper default 0.667) and `noise_w` (timing variation, default 0.8) - lower is calmer and more even
 - **Pauses**: `[pause]` or `[pause:0.8]` in the text inserts exact silence (seconds, max 3). System TTS replaces markers with a comma
+- **Gong**: `[gong]` inserts a synthesized temple gong (`AudioEffects.make_gong`, 4s, cached). Voice effects apply to speech chunks only, never to pauses or the gong
 - **API Usage**: `/api/tts?text=...&voice=joe&effect=zen` or custom combinations
 
 **Voice Profiles with Moods:**

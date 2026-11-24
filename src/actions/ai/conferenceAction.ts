@@ -318,7 +318,7 @@ Provide thoughtful, distinctive perspectives while maintaining your unique voice
       if (context.source !== "ai" && context.voiceChannel) {
         const spoken =
           `The question: ${toSpeakableText(question, 300)}[pause:0.9] ` +
-          `After deliberation:[pause:0.6] ${toSpeakableText(result.response)}`;
+          `[gong][pause:0.3] After deliberation:[pause:0.6] ${toSpeakableText(result.response)}`;
         UnifiedVoiceService.getInstance()
           .speak({
             text: spoken,

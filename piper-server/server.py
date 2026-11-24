@@ -74,35 +74,26 @@ def synthesize():
         return jsonify({"error": f"Voice model not found: {voice_path}"}), 500
 
     try:
-        # Run piper TTS per chunk; [pause] / [pause:0.8] markers become silence
+        def apply_effects(audio: np.ndarray) -> np.ndarray:
+            """Voice effects - applied to speech only, never to pauses or the gong"""
+            if effect_preset:
+                audio = audio_effects.apply_preset(audio, effect_preset)
+            if reverb is not None:
+                audio = audio_effects.apply_reverb(audio, room_size=0.5, wet=float(reverb))
+            if pitch is not None:
+                audio = audio_effects.apply_pitch_shift(audio, float(pitch))
+            if distortion is not None:
+                audio = audio_effects.apply_distortion(audio, float(distortion))
+            if echo is not None:
+                audio = audio_effects.apply_echo(audio, float(echo))
+            if bitcrush is not None:
+                audio = audio_effects.apply_bitcrush(audio, int(bitcrush))
+            return audio
+
+        # Piper per text chunk; [pause] / [pause:0.8] become silence, [gong] a gong
         noise = request.args.get('noise', None, type=float)
         noise_w = request.args.get('noise_w', None, type=float)
-        audio = synthesize_with_pauses(text, voice_path, speed, noise, noise_w)
-
-        # Apply effect preset if specified
-        if effect_preset:
-            audio = audio_effects.apply_preset(audio, effect_preset)
-
-        # Apply individual effects if specified
-        if reverb is not None:
-            reverb_amount = float(reverb)
-            audio = audio_effects.apply_reverb(audio, room_size=0.5, wet=reverb_amount)
-
-        if pitch is not None:
-            semitones = float(pitch)
-            audio = audio_effects.apply_pitch_shift(audio, semitones)
-
-        if distortion is not None:
-            gain = float(distortion)
-            audio = audio_effects.apply_distortion(audio, gain)
-
-        if echo is not None:
-            delay_ms = float(echo)
-            audio = audio_effects.apply_echo(audio, delay_ms)
-
-        if bitcrush is not None:
-            bits = int(bitcrush)
-            audio = audio_effects.apply_bitcrush(audio, bits)
+        audio = synthesize_with_markers(text, voice_path, speed, noise, noise_w, apply_effects)
 
         # Convert back to PCM
         audio = np.clip(audio, -1.0, 1.0)
@@ -149,7 +140,9 @@ def health():
     return jsonify({"status": "healthy", "service": "piper-tts"})
 
 SAMPLE_RATE = 22050
-PAUSE_MARKER = re.compile(r"\[pause(?::(\d+(?:\.\d+)?))?\]", re.IGNORECASE)
+MARKER = re.compile(
+    r"\[(?P<kind>pause|gong)(?::(?P<seconds>\d+(?:\.\d+)?))?\]", re.IGNORECASE
+)
 DEFAULT_PAUSE_SECONDS = 0.5
 MAX_PAUSE_SECONDS = 3.0
 
@@ -182,30 +175,43 @@ def run_piper(text: str, voice_path: str, speed: float,
     return np.concatenate(arrays).astype(np.float32)
 
 
-def synthesize_with_pauses(text: str, voice_path: str, speed: float,
-                           noise: Optional[float] = None,
-                           noise_w: Optional[float] = None) -> np.ndarray:
+def synthesize_with_markers(text: str, voice_path: str, speed: float,
+                            noise: Optional[float] = None,
+                            noise_w: Optional[float] = None,
+                            process=None) -> np.ndarray:
     """
-    Split text on [pause] / [pause:SECONDS] markers, synthesize each chunk and
-    join them with exact silence. Text without markers is a single piper run.
+    Split text on markers and join the pieces:
+      [pause] / [pause:SECONDS] -> exact silence (default 0.5s, max 3s)
+      [gong]                    -> a temple gong (Zenbot strikes it for drama)
+    Each speech chunk goes through `process` (voice effects); silence and the
+    gong are inserted untouched. Text without markers is a single piper run.
     """
-    parts = PAUSE_MARKER.split(text)
-    # re.split with one group gives: [text, seconds, text, seconds, ..., text]
-    chunks = parts[0::2]
-    pauses = parts[1::2]
-
     segments = []
-    for i, chunk in enumerate(chunks):
-        if chunk.strip():
-            segments.append(run_piper(chunk.strip(), voice_path, speed, noise, noise_w))
-        if i < len(pauses):
-            seconds = float(pauses[i]) if pauses[i] else DEFAULT_PAUSE_SECONDS
+    position = 0
+    for match in MARKER.finditer(text):
+        chunk = text[position:match.start()].strip()
+        if chunk:
+            segments.append(_speech(chunk, voice_path, speed, noise, noise_w, process))
+        if match.group("kind").lower() == "gong":
+            segments.append(audio_effects.make_gong())
+        else:
+            seconds = float(match.group("seconds")) if match.group("seconds") else DEFAULT_PAUSE_SECONDS
             seconds = min(max(seconds, 0.0), MAX_PAUSE_SECONDS)
             segments.append(np.zeros(int(SAMPLE_RATE * seconds), dtype=np.float32))
+        position = match.end()
+
+    tail = text[position:].strip()
+    if tail:
+        segments.append(_speech(tail, voice_path, speed, noise, noise_w, process))
 
     if not segments:
         return np.zeros(0, dtype=np.float32)
     return np.concatenate(segments)
+
+
+def _speech(text, voice_path, speed, noise, noise_w, process):
+    audio = run_piper(text, voice_path, speed, noise, noise_w)
+    return process(audio).astype(np.float32) if process else audio
 
 
 def create_wav_header(data_size: int, sample_rate: int = 22050, bits_per_sample: int = 16, channels: int = 1) -> bytes:

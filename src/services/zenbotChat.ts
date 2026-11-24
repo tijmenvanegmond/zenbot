@@ -3,6 +3,8 @@ import { ZenbotService, MinimalInteractionContext } from "./zenbotService";
 import { UnifiedVoiceService } from "./voice/UnifiedVoiceService";
 import { takeVoiceMood, VoiceMood } from "./voice/voiceMoodStore";
 import { stripStageDirections, toSpeakableText } from "../utils/speechText";
+import { ActionService } from "./actionService";
+import { logger } from "../utils/logger";
 
 /**
  * Free conversation with Zenbot, shared by @Zenbot chat (typed) and /listen
@@ -24,8 +26,41 @@ const EXCLUDED_TOOLS = [
 ];
 
 const PAUSE_MARKER = /\s*\[pause(?::[\d.]+)?\]\s*/gi;
+const GONG_MARKER = /\s*\[gong\]\s*/gi;
 
-const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. No stage directions like *chuckles* or _sighs_. Use your tools when they fit: set_voice_mood to choose how you sound, read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll. Don't describe the tools or say you used them.)`;
+/**
+ * No real words (empty, only [gong]/[pause], "(no response)"), or leaked
+ * internals: tool summaries like "roll_dice success: ..." or the
+ * function-calling wrap-up instruction
+ */
+export const isUnusableReply = (text: string): boolean => {
+  const words = text
+    .replace(/\[(pause(?::[\d.]+)?|gong)\]/gi, "")
+    .replace(/\(no response\)/gi, "")
+    .trim();
+  return (
+    words.length === 0 ||
+    /\b[a-z]+_[a-z_]+ (success|failed)\b/i.test(text) ||
+    /Provide your final response/i.test(text)
+  );
+};
+
+const allToolNames = (): string[] =>
+  ActionService.getInstance()
+    .getFunctionDefinitions()
+    .map((fn) => fn.name);
+
+/** One gong per reply - it's a punchline, not a soundtrack */
+const limitGongs = (text: string): string => {
+  let seen = false;
+  return text.replace(/\[gong\]/gi, () => {
+    if (seen) return "";
+    seen = true;
+    return "[gong]";
+  });
+};
+
+const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. Use your tools when they fit: set_voice_mood to choose how you sound, read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll. Don't describe the tools or say you used them.)`;
 
 const SPOKEN_INPUT_NOTE =
   "(They said this out loud in voice chat; it was transcribed automatically, so expect transcription errors.)";
@@ -79,20 +114,42 @@ export const getChatReply = async ({
     GUIDE,
   ].join("\n");
 
-  const response = await ZenbotService.getInstance().converse(
+  const zenbot = ZenbotService.getInstance();
+  const commandContext = { commandName: spokenInput ? "voice_chat" : "chat" };
+  let response = await zenbot.converse(
     chatContext,
     message,
-    { commandName: spokenInput ? "voice_chat" : "chat" },
+    commandContext,
     "zenbot-default",
     EXCLUDED_TOOLS,
   );
-  const reply = response.text;
+
+  // The free-tier model sometimes answers a tool round with nothing, only a
+  // [gong], or parrots tool summaries from its history. Retry once without
+  // tools: the tool results are already in the session, so it can still use
+  // the real roll/quote.
+  if (isUnusableReply(response.text)) {
+    logger.warn(
+      `💬 Unusable reply "${response.text.substring(0, 80)}", retrying without tools`,
+    );
+    response = await zenbot.converse(
+      chatContext,
+      "(Your last reply was empty or garbled. Answer my previous message now, in words, in 1-3 short sentences. Use any results you already got.)",
+      commandContext,
+      "zenbot-default",
+      allToolNames(),
+    );
+  }
+  const reply = limitGongs(
+    isUnusableReply(response.text) ? "..." : response.text,
+  );
 
   return {
     display:
-      stripStageDirections(reply.replace(PAUSE_MARKER, " "), {
-        keepItalics: true,
-      })
+      stripStageDirections(
+        reply.replace(PAUSE_MARKER, " ").replace(GONG_MARKER, " 🔔 "),
+        { keepItalics: true },
+      )
         .replace(/\s+/g, " ")
         .trim() || "...",
     speech: toSpeakableText(reply),
