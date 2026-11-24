@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.61.0",
-    "@discordjs/voice": "^0.18.0",
+    "@discordjs/voice": "^0.19.2",
     "@google/generative-ai": "^0.24.1",
     "discord.js": "^14.17",
     "dotenv": "^16.0.3",

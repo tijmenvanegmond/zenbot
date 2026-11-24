@@ -111,6 +111,11 @@ export class AudioManager {
 
     // Create player
     const player = createAudioPlayer();
+    player.on("stateChange", (oldState, newState) => {
+      logger.debug(
+        `🔊 Player ${oldState.status} -> ${newState.status} (guild ${guildId})`,
+      );
+    });
 
     // Subscribe player to connection
     connection.subscribe(player);
@@ -187,6 +192,9 @@ export class AudioManager {
     });
 
     session.connection.on("stateChange", (oldState, newState) => {
+      logger.info(
+        `🔊 Voice connection ${oldState.status} -> ${newState.status} (guild ${session.guildId})`,
+      );
       if (newState.status === "destroyed") {
         logger.info(
           `🔊 Voice connection disconnected in guild ${session.guildId}`,
