@@ -8,6 +8,8 @@ import { UnifiedConferenceManager } from "../../services/ai/unifiedConferenceMan
 import { DefaultAIServiceManager } from "../../services/ai/aiServiceManager";
 import { ZenbotService } from "../../services/zenbotService";
 import { logger } from "../../utils/logger";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
+import { toSpeakableText } from "../../utils/speechText";
 
 interface ConferenceTranscript {
   timestamp: string;
@@ -311,6 +313,23 @@ Provide thoughtful, distinctive perspectives while maintaining your unique voice
         fullResponse += `*${(result.consensusLevel * 100).toFixed(1)}% consensus • ${(totalDuration / 1000).toFixed(1)}s*`;
       }
 
+      // Join the caller's voice channel and read the question, then the
+      // conclusion. Not awaited, so the text reply isn't held up by TTS.
+      if (context.source !== "ai" && context.voiceChannel) {
+        const spoken =
+          `The question: ${toSpeakableText(question, 300)}[pause:0.9] ` +
+          `After deliberation:[pause:0.6] ${toSpeakableText(result.response)}`;
+        UnifiedVoiceService.getInstance()
+          .speak({
+            text: spoken,
+            voiceChannel: context.voiceChannel,
+            activityType: "conference",
+          })
+          .catch((error) =>
+            logger.error("🎭 Failed to speak conference conclusion:", error),
+          );
+      }
+
       // Clean up conference manager
       await conferenceManager.cleanup();
 
@@ -335,7 +354,7 @@ Provide thoughtful, distinctive perspectives while maintaining your unique voice
         },
         shouldRespond: true,
         responseText: fullResponse,
-        useVoice: context.voiceChannel ? true : false,
+        useVoice: false, // spoken above
       };
     } catch (error) {
       logger.error("❌ Enhanced conference action failed:", error);
