@@ -1,5 +1,6 @@
 import { Client, Message } from "discord.js";
 import {
+  chatErrorLine,
   getChatReply,
   isChatAvailable,
   speakReply,
@@ -65,7 +66,7 @@ async function handleChat(client: Client, message: Message): Promise<void> {
     reply = await getChatReply({ member, text, channel: message.channel });
   } catch (error) {
     logger.error("💬 Chat reply failed:", error);
-    await message.reply("Something in my head just broke. Ask again.");
+    await message.reply(chatErrorLine(error));
     return;
   }
 

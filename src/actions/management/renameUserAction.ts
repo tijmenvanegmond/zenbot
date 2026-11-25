@@ -7,6 +7,42 @@ import {
 import { GuildMember } from "discord.js";
 import { logger } from "../../utils/logger";
 
+/**
+ * The AI knows people by name, not ID: try the ID, then "me", then names in
+ * the requester's voice channel, then the whole server (display name,
+ * nickname or username, case-insensitive).
+ */
+const resolveMember = async (
+  context: ActionContext,
+  who: string,
+): Promise<GuildMember | null> => {
+  const guild = context.interaction?.guild;
+  if (!guild) return null;
+  const target = who.trim().replace(/^@/, "");
+
+  if (/^(me|myself)$/i.test(target)) {
+    return guild.members.fetch(context.user.id).catch(() => null);
+  }
+  if (/^\d{15,20}$/.test(target)) {
+    return guild.members.fetch(target).catch(() => null);
+  }
+
+  const lower = target.toLowerCase();
+  const matches = (m: GuildMember) =>
+    [m.displayName, m.nickname, m.user.username, m.user.globalName].some(
+      (name) => name?.toLowerCase() === lower,
+    );
+
+  const inVoice = context.voiceChannel?.members.find(matches);
+  if (inVoice) return inVoice;
+  const cached = guild.members.cache.find(matches);
+  if (cached) return cached;
+  const found = await guild.members
+    .fetch({ query: target, limit: 5 })
+    .catch(() => null);
+  return found?.find(matches) ?? found?.first() ?? null;
+};
+
 export class RenameUserAction implements ZenAction {
   name = "rename_user";
   description = "Change the nickname of a user in the server";
@@ -25,7 +61,8 @@ export class RenameUserAction implements ZenAction {
       properties: {
         user_id: {
           type: "string" as const,
-          description: "The ID of the user whose nickname to change",
+          description:
+            'Who to rename: their user ID, or their name as you see it (e.g. "Osha"). Use "me" for the person talking to you',
         },
         new_nickname: {
           type: "string" as const,
@@ -62,19 +99,30 @@ export class RenameUserAction implements ZenAction {
         };
       }
 
-      // Get the guild member
-      const guild = context.interaction.guild!;
-      let member: GuildMember;
-
-      try {
-        member = await guild.members.fetch(user_id);
-      } catch (fetchError) {
+      const member = await resolveMember(context, user_id);
+      if (!member) {
         return {
           success: false,
-          error: `User not found: ${user_id}`,
+          error: `User not found: ${user_id} - nobody was renamed`,
           shouldRespond: true,
           responseText: "Could not find that user in this server.",
         };
+      }
+
+      // Chat and /listen: one sentence shouldn't rename anyone in the server.
+      // Only the person asking, or someone in the voice channel with them.
+      if (context.source === "ai") {
+        const inTheirVoice =
+          !!context.voiceChannel &&
+          member.voice?.channelId === context.voiceChannel.id;
+        if (member.id !== context.user.id && !inTheirVoice) {
+          return {
+            success: false,
+            error: `${member.displayName} is not the requester or in their voice channel - not renamed. Only they or people in voice with them can be renamed from chat`,
+            shouldRespond: true,
+            responseText: `I only rename you or people in voice with you, not ${member.displayName}.`,
+          };
+        }
       }
 
       const oldNickname = member.nickname || member.user.username;

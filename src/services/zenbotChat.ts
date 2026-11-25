@@ -1,7 +1,6 @@
 import { GuildMember, TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { ZenbotService, MinimalInteractionContext } from "./zenbotService";
 import { UnifiedVoiceService } from "./voice/UnifiedVoiceService";
-import { takeVoiceMood, VoiceMood } from "./voice/voiceMoodStore";
 import { stripStageDirections, toSpeakableText } from "../utils/speechText";
 import { ActionService } from "./actionService";
 import { logger } from "../utils/logger";
@@ -22,11 +21,29 @@ const EXCLUDED_TOOLS = [
   "listen_control",
   "stop_all",
   "conference",
-  "rename_user",
 ];
+
+export const VOICE_MOODS = ["calm", "wise", "playful", "intense"] as const;
+export type VoiceMood = (typeof VOICE_MOODS)[number];
 
 const PAUSE_MARKER = /\s*\[pause(?::[\d.]+)?\]\s*/gi;
 const GONG_MARKER = /\s*\[gong\]\s*/gi;
+// The voice mood rides along in the reply as [mood:playful]. It used to be a
+// tool, which cost a whole extra Gemini round on nearly every message.
+const MOOD_MARKER = /\s*\[mood:\s*([a-z]+)\s*\]\s*/gi;
+
+/** Pull the [mood:x] tag out of a reply: the first valid mood wins */
+export const extractMood = (
+  text: string,
+): { text: string; mood?: VoiceMood } => {
+  let mood: VoiceMood | undefined;
+  const cleaned = text.replace(MOOD_MARKER, (_, name: string) => {
+    const lower = name.toLowerCase() as VoiceMood;
+    if (!mood && VOICE_MOODS.includes(lower)) mood = lower;
+    return " ";
+  });
+  return { text: cleaned.trim(), mood };
+};
 
 /**
  * No real words (empty, only [gong]/[pause], "(no response)"), or leaked
@@ -35,7 +52,7 @@ const GONG_MARKER = /\s*\[gong\]\s*/gi;
  */
 export const isUnusableReply = (text: string): boolean => {
   const words = text
-    .replace(/\[(pause(?::[\d.]+)?|gong)\]/gi, "")
+    .replace(/\[(pause(?::[\d.]+)?|gong|mood:\s*[a-z]+\s*)\]/gi, "")
     .replace(/\(no response\)/gi, "")
     .trim();
   return (
@@ -60,7 +77,7 @@ const limitGongs = (text: string): string => {
   });
 };
 
-const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. Use your tools when they fit: set_voice_mood to choose how you sound, read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
+const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. To choose how your voice sounds, start the reply with one of [mood:calm] [mood:wise] [mood:playful] [mood:intense] - optional, and never a tool call. Use your tools only when they fit: read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas), rename_user to give someone a new nickname (only when asked; them or someone in their voice channel, by name). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
 
 const SPOKEN_INPUT_NOTE =
   "(They said this out loud in voice chat; it was transcribed automatically, so expect transcription errors.)";
@@ -81,6 +98,14 @@ export interface ChatReply {
   speech: string;
   mood?: VoiceMood;
 }
+
+/** What to say when getChatReply throws: rate limits are normal on the free tier, not breakage */
+export const chatErrorLine = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error);
+  return /429|quota|too many requests|circuit breaker/i.test(message)
+    ? "Too many questions at once - even enlightenment has a rate limit. Give me a minute."
+    : "Something in my head just broke. Try that again.";
+};
 
 export const isChatAvailable = (): boolean =>
   ZenbotService.getInstance().isAIEnabled();
@@ -140,9 +165,10 @@ export const getChatReply = async ({
       allToolNames(),
     );
   }
-  const reply = limitGongs(
+  const { text: replyText, mood } = extractMood(
     isUnusableReply(response.text) ? "..." : response.text,
   );
+  const reply = limitGongs(replyText);
 
   return {
     display:
@@ -153,7 +179,7 @@ export const getChatReply = async ({
         .replace(/\s+/g, " ")
         .trim() || "...",
     speech: toSpeakableText(reply),
-    mood: takeVoiceMood(member.id),
+    mood,
   };
 };
 

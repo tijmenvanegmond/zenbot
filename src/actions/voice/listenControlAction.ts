@@ -8,6 +8,7 @@ import { VoiceSessionManager } from "../../services/voiceSessionManager";
 import { joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
 import { logger } from "../../utils/logger";
 import {
+  chatErrorLine,
   getChatReply,
   isChatAvailable,
   speakReply,
@@ -177,7 +178,7 @@ async function respondToSpeech(
     logger.error(`🎤 Voice reply to ${member.displayName} failed:`, error);
     await speakReply(
       voiceChannel,
-      "Something in my head just broke. Say that again.",
+      chatErrorLine(error),
       undefined,
       "voice-error",
     ).catch(() => undefined);

@@ -10,7 +10,6 @@ import { VoiceChannelAction } from "../actions/voice/voiceChannelAction";
 import { ListenControlAction } from "../actions/voice/listenControlAction";
 import { AdviceAction } from "../actions/information/adviceAction";
 import { StopAction } from "../actions/voice/stopAction";
-import { SetVoiceMoodAction } from "../actions/voice/setVoiceMoodAction";
 import { ChannelManagementAction } from "../actions/management/channelManagementAction";
 import { ChannelQuoteAction } from "../actions/information/channelQuoteAction";
 import { RenameUserAction } from "../actions/management/renameUserAction";
@@ -46,7 +45,6 @@ export class ActionService {
     this.registry.register(new VoiceChannelAction());
     this.registry.register(new ListenControlAction());
     this.registry.register(new StopAction());
-    this.registry.register(new SetVoiceMoodAction());
 
     // Information actions
     this.registry.register(new AdviceAction());

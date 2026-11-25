@@ -388,6 +388,9 @@ export class ZenbotService {
     let rounds = 0;
     let aggregate = "";
     let anyActions = false;
+    // The model answered in words after seeing the tool results: that is the
+    // reply, no extra "final wrap" request needed (saves quota every turn)
+    let finalAnswer = "";
 
     while (rounds < MAX_ROUNDS) {
       rounds++;
@@ -420,7 +423,10 @@ export class ZenbotService {
         aggregate = aggregate ? `${aggregate}\n${response}` : response;
       }
 
-      if (!functionCalls || functionCalls.length === 0) break;
+      if (!functionCalls || functionCalls.length === 0) {
+        finalAnswer = response?.trim() || "";
+        break;
+      }
 
       anyActions = true;
 
@@ -523,6 +529,8 @@ export class ZenbotService {
     logger.info(
       `🔧 Function calling complete: anyActions=${anyActions}, aggregate="${aggregate?.substring(0, 100)}..."`,
     );
+
+    if (anyActions && finalAnswer) return finalAnswer;
 
     if (anyActions) {
       try {

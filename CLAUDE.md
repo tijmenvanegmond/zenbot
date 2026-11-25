@@ -104,12 +104,14 @@ Zenbot uses a unified actions system that provides a single interface for functi
 ### @Zenbot Chat - Where Tool Calling Lives
 
 - Mentioning the bot starts a free conversation through `ZenbotService.converse()` with function calling
-- Tools offered: `read_channel_quote`, `roll_dice`, `set_voice_mood`, `channel_management`. Excluded: `speak`, voice control, listening, conference, `rename_user`
+- Tools offered: `read_channel_quote`, `roll_dice`, `channel_management`, `rename_user`. Excluded: `speak`, voice control, listening, conference
+- `rename_user` takes a name or ID ("me" works). From chat it only renames the requester or people in their voice channel
+- `channel_management` rename defaults to the user's voice channel (also when the AI passes an unknown ID) and refuses up front past Discord's limit of 2 renames per channel per 10 minutes - discord.js would otherwise queue it and rename minutes later
 - The handler shows the reply and, if the author is in voice, speaks that same reply: "<name> asks: <message>", pause, reply. The AI never speaks for itself here, so text and voice can't diverge
-- `set_voice_mood` (AI-only) stores a mood in `voiceMoodStore`; the handler speaks the reply with `piper-zen-<mood>`
+- Voice mood is an inline `[mood:calm|wise|playful|intense]` tag in the reply (`extractMood`), spoken with `piper-zen-<mood>`. It was a tool once; that cost an extra Gemini round on nearly every message
 - `[pause]` markers in replies are spoken as silence and removed from the text; `[gong]` (max one per reply) strikes the gong and shows as 🔔
 - Replies that are empty, only markers, or leak tool summaries (`isUnusableReply`) get one retry without tools - the free-tier model does this occasionally after tool calls
-- Chat costs ~3 Gemini requests per message with tools; the free tier allows 15/minute on flash-lite
+- Chat costs 1 Gemini request per message, 2 with a tool call (the model's answer after the tool round is used directly; the extra "final wrap" only runs when it ended without words). /listen adds 1 for transcription. The free tier allows 15/minute on flash-lite; rate-limit errors get their own reply (`chatErrorLine`)
 - 5s per-user cooldown (⏳ reaction) to protect the Gemini quota
 - Fixed commands (`/advice`, `/remark`, `/quote`) deliberately don't use tools: they make one direct call and speak exactly what they show
 - The conversation itself lives in `src/services/zenbotChat.ts` (`getChatReply`, `speakReply`), shared with `/listen`

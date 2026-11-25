@@ -15,6 +15,35 @@ import {
  * Channel Management Action - handles voice channel operations like renaming, creating, and management
  * Extracts channel naming logic into a reusable action
  */
+// Discord's per-channel rename limit (2 per 10 minutes), tracked here so we
+// can refuse up front instead of queueing. Shared with the auto-rename on join.
+const RENAME_LIMIT = 2;
+const RENAME_WINDOW_MS = 10 * 60 * 1000;
+const renames = new Map<string, number[]>();
+
+const recentRenames = (channelId: string): number[] => {
+  const now = Date.now();
+  const recent = (renames.get(channelId) ?? []).filter(
+    (at) => now - at < RENAME_WINDOW_MS,
+  );
+  renames.set(channelId, recent);
+  return recent;
+};
+
+/** 0 if a rename is allowed now, else minutes until the next one is */
+export const renameWaitMinutes = (channelId: string): number => {
+  const recent = recentRenames(channelId);
+  if (recent.length < RENAME_LIMIT) return 0;
+  return Math.max(
+    1,
+    Math.ceil((recent[0] + RENAME_WINDOW_MS - Date.now()) / 60000),
+  );
+};
+
+export const recordRename = (channelId: string): void => {
+  recentRenames(channelId).push(Date.now());
+};
+
 export class ChannelManagementAction implements ZenAction {
   name = "channel_management";
   description = "Manage voice channels with creative naming and operations";
@@ -112,6 +141,14 @@ export class ChannelManagementAction implements ZenAction {
                 c.name.toLowerCase() === channel_id.toLowerCase(),
             ) as any;
           }
+          // The AI invents channel IDs; asked from voice, "this channel" is
+          // what they meant
+          if (!channel && context.voiceChannel) {
+            logger.info(
+              `🏷️ Channel "${channel_id}" not found, using the user's voice channel`,
+            );
+            channel = context.voiceChannel as any;
+          }
 
           if (!channel || !channel.isVoiceBased?.()) {
             return {
@@ -139,7 +176,20 @@ export class ChannelManagementAction implements ZenAction {
             };
           }
 
-          // Rename the channel
+          // Discord allows ~2 renames per channel per 10 minutes, and
+          // discord.js silently queues the request until then - so a third
+          // rename "hung" and then happened minutes later, out of nowhere
+          const waitMinutes = renameWaitMinutes(channel.id);
+          if (waitMinutes > 0) {
+            return {
+              success: false,
+              error: `Discord rate limit: this channel was renamed twice in the last 10 minutes. Not renamed; try again in ~${waitMinutes} minute(s)`,
+              shouldRespond: true,
+              responseText: `Discord only lets me rename a channel twice per 10 minutes. Try again in about ${waitMinutes} minute${waitMinutes === 1 ? "" : "s"}.`,
+            };
+          }
+          recordRename(channel.id);
+
           await channel.setName(newName);
 
           logger.info(
