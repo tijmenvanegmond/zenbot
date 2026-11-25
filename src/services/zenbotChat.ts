@@ -7,6 +7,7 @@ import { AudioManager } from "./voice/AudioManager";
 import { VoiceSessionManager } from "./voiceSessionManager";
 import { takePendingLeave } from "../actions/voice/leaveVoiceAction";
 import { getVoiceConnection } from "@discordjs/voice";
+import { describeRoom } from "./voice/voiceRoomLog";
 import { logger } from "../utils/logger";
 
 /**
@@ -83,6 +84,15 @@ const limitGongs = (text: string): string => {
 
 const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. To choose how your voice sounds, start the reply with one of [mood:calm] [mood:wise] [mood:playful] [mood:intense] - optional, and never a tool call. Use your tools only when they fit: read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas), rename_user to give someone a new nickname (only when asked; them or someone in their voice channel, by name), leave_voice when told to leave or go away (you leave right after your reply, so say goodbye). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
 
+// [silent], optionally after a mood tag, and nothing else that's real words
+const SILENT_REPLY = /^\s*(\[mood:\s*[a-z]+\s*\]\s*)?\[silent\][\s.]*$/i;
+
+const SILENCE_NOTE =
+  "(You don't have to answer everything. If this needs no reply - they're talking to someone else, thinking out loud, or just reacting - reply with exactly [silent].)";
+
+const UNADDRESSED_NOTE =
+  "(They did NOT say your name - you just overheard it. Reply with exactly [silent] unless it's clearly meant for you or a reply would be genuinely funny. Most of the time: [silent].)";
+
 const SPOKEN_INPUT_NOTE =
   "(They said this out loud in voice chat; it was transcribed automatically, so expect transcription errors.)";
 
@@ -93,6 +103,11 @@ export interface ChatRequest {
   channel: TextBasedChannel | VoiceBasedChannel;
   /** The message was spoken (/listen) rather than typed */
   spokenInput?: boolean;
+  /**
+   * Spoken input that didn't name Zenbot (it's alone with one person and
+   * hears everything). It should mostly stay quiet then.
+   */
+  unaddressed?: boolean;
 }
 
 export interface ChatReply {
@@ -103,6 +118,8 @@ export interface ChatReply {
   mood?: VoiceMood;
   /** The AI called leave_voice: speak the reply, then leaveVoice() */
   leaveVoice: boolean;
+  /** Spoken input it chose not to answer ([silent]): say and post nothing */
+  silent: boolean;
 }
 
 /** What to say when getChatReply throws: rate limits are normal on the free tier, not breakage */
@@ -122,6 +139,7 @@ export const getChatReply = async ({
   text,
   channel,
   spokenInput = false,
+  unaddressed = false,
 }: ChatRequest): Promise<ChatReply> => {
   // Shaped like an interaction so the action context (voice channel, guild,
   // channels) resolves the same way it does for slash commands
@@ -141,7 +159,9 @@ export const getChatReply = async ({
     text,
     "",
     ...(spokenInput ? [SPOKEN_INPUT_NOTE] : []),
+    ...(spokenInput ? [unaddressed ? UNADDRESSED_NOTE : SILENCE_NOTE] : []),
     describeVoice(member),
+    ...(member.voice?.channel ? [describeRoom(member.guild.id, text)] : []),
     GUIDE,
   ].join("\n");
 
@@ -154,6 +174,12 @@ export const getChatReply = async ({
     "zenbot-default",
     EXCLUDED_TOOLS,
   );
+
+  // Spoken chatter doesn't always need an answer. Typed @mentions always get one.
+  if (spokenInput && SILENT_REPLY.test(response.text)) {
+    takePendingLeave(member.guild.id);
+    return { display: "", speech: "", leaveVoice: false, silent: true };
+  }
 
   // The free-tier model sometimes answers a tool round with nothing, only a
   // [gong], or parrots tool summaries from its history. Retry once without
@@ -187,6 +213,7 @@ export const getChatReply = async ({
     speech: toSpeakableText(reply),
     mood,
     leaveVoice: takePendingLeave(member.guild.id),
+    silent: false,
   };
 };
 

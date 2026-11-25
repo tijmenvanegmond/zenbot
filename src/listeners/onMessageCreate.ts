@@ -6,6 +6,7 @@ import {
   leaveVoice,
   speakReply,
 } from "../services/zenbotChat";
+import { addRoomLine } from "../services/voice/voiceRoomLog";
 import { toSpeakableText } from "../utils/speechText";
 import { logger } from "../utils/logger";
 
@@ -75,6 +76,9 @@ async function handleChat(client: Client, message: Message): Promise<void> {
 
   const voiceChannel = member.voice?.channel;
   if (voiceChannel) {
+    // Part of the voice conversation too (it's read aloud there)
+    addRoomLine(member.guild.id, `${member.displayName} (typed)`, text);
+    addRoomLine(member.guild.id, "Zenbot (you)", reply.display);
     // People in voice can't see the message, so say what triggered the reply
     const verb = /\?\s*$/.test(text) ? "asks" : "says";
     const trigger = `${member.displayName} ${verb}:[pause:0.4] ${toSpeakableText(text, 200)}`;

@@ -19,6 +19,7 @@ import {
   speechLevelDb,
   transcribeSpeech,
 } from "../../services/speechToText";
+import { addRoomLine } from "../../services/voice/voiceRoomLog";
 import { OpusDecoder } from "../../services/voice/opusDecoder";
 import { AudioManager } from "../../services/voice/AudioManager";
 import { AudioPlayerStatus } from "@discordjs/voice";
@@ -123,8 +124,13 @@ async function respondToSpeech(
     (await voiceChannel.guild.members.fetch(userId).catch(() => null));
   if (!member || member.user.bot) return;
 
+  // Everything heard goes in the room log, addressed to Zenbot or not, so it
+  // can follow the conversation around a question
+  addRoomLine(context.guild.id, member.displayName, transcription);
+
+  const named = WAKE_WORD.test(transcription);
   const humans = voiceChannel.members.filter((m) => !m.user.bot).size;
-  if (humans > 1 && !WAKE_WORD.test(transcription)) {
+  if (humans > 1 && !named) {
     logger.debug(
       `🎤 Ignoring "${transcription}" from ${member.displayName} (no wake word)`,
     );
@@ -157,7 +163,14 @@ async function respondToSpeech(
       text: transcription,
       channel: textChannel ?? voiceChannel,
       spokenInput: true,
+      unaddressed: !named,
     });
+
+    if (reply.silent) {
+      logger.info(`🎤 Zenbot lets "${transcription}" pass in silence`);
+      return;
+    }
+    addRoomLine(context.guild.id, "Zenbot (you)", reply.display);
 
     // They said it out loud, so no need to repeat the trigger in voice
     await speakReply(voiceChannel, reply.speech, reply.mood, "voice-response");
