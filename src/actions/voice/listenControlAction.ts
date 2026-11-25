@@ -12,12 +12,26 @@ import {
   isChatAvailable,
   speakReply,
 } from "../../services/zenbotChat";
-import { transcribeSpeech } from "../../services/speechToText";
+import {
+  MIN_SPEECH_LEVEL_DB,
+  speechLevelDb,
+  transcribeSpeech,
+} from "../../services/speechToText";
 import { OpusDecoder } from "../../services/voice/opusDecoder";
+import { AudioManager } from "../../services/voice/AudioManager";
+import { AudioPlayerStatus } from "@discordjs/voice";
 
 // Audio processing constants - Adjusted for real speech patterns
 const MIN_AUDIO_DURATION_MS = 500; // Minimum 500ms - realistic for short speech
 const MIN_WAV_SIZE_BYTES = 2000; // Much lower threshold - 2KB minimum for real speech
+// A short blip that starts while Zenbot talks is almost always its own voice
+// leaking back through someone's mic. Longer speech over it is a real
+// interruption and still counts.
+const ECHO_MAX_MS = 1500;
+
+const isBotSpeaking = (guildId: string): boolean =>
+  AudioManager.getInstance().getSession(guildId)?.player.state.status ===
+  AudioPlayerStatus.Playing;
 
 /**
  * Convert properly decoded PCM buffers to WAV format for Whisper transcription
@@ -376,12 +390,16 @@ export class ListenControlAction implements ZenAction {
     const pcmBuffers = new Map<string, Buffer[]>(); // Store PCM data per user
     const userSpeakStartTimes = new Map<string, number>(); // Track speaking duration
     const activeStreams = new Map<string, any>(); // Track active audio streams per user
+    const startedOverBot = new Set<string>(); // Began while Zenbot was talking
+    const guildId = context.guild?.id ?? "";
 
     receiver.speaking.on("start", (userId: string) => {
       logger.info(`🎤 User ${userId} started speaking`);
 
       // Track when user started speaking
       userSpeakStartTimes.set(userId, Date.now());
+      if (isBotSpeaking(guildId)) startedOverBot.add(userId);
+      else startedOverBot.delete(userId);
 
       // Cleanup any existing stream for this user to prevent leaks
       const existingStream = activeStreams.get(userId);
@@ -440,12 +458,24 @@ export class ListenControlAction implements ZenAction {
             // Convert PCM to WAV buffer
             const wavBuffer = createWAVBuffer(userPcmBuffers);
 
+            const level = speechLevelDb(wavBuffer.subarray(44));
             logger.info(
-              `🎤 User ${userId} spoke for ${speakingDuration}ms, WAV size: ${wavBuffer.length} bytes`,
+              `🎤 User ${userId} spoke for ${speakingDuration}ms, WAV size: ${wavBuffer.length} bytes, level ${level.toFixed(1)} dBFS`,
             );
 
+            const echo =
+              startedOverBot.has(userId) && speakingDuration < ECHO_MAX_MS;
+
             // Filter out audio that's too short for reliable transcription
-            if (
+            if (echo) {
+              logger.info(
+                `🎤 Ignoring ${speakingDuration}ms from user ${userId}: started while Zenbot was talking (likely echo)`,
+              );
+            } else if (level < MIN_SPEECH_LEVEL_DB) {
+              logger.info(
+                `🎤 Ignoring ${speakingDuration}ms from user ${userId}: too quiet (${level.toFixed(1)} dBFS)`,
+              );
+            } else if (
               speakingDuration >= MIN_AUDIO_DURATION_MS &&
               wavBuffer.length >= MIN_WAV_SIZE_BYTES
             ) {

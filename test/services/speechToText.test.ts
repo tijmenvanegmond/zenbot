@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { toMono16k } from "../../src/services/speechToText";
+import {
+  MIN_SPEECH_LEVEL_DB,
+  speechLevelDb,
+  toMono16k,
+} from "../../src/services/speechToText";
 import { WAKE_WORD } from "../../src/actions/voice/listenControlAction";
 
 // 16-bit PCM WAV, like /listen builds from Discord audio
@@ -55,6 +59,29 @@ describe("toMono16k", () => {
     expect(toMono16k(wav)).toBe(wav);
     const notWav = Buffer.from("not a wav file at all, just some bytes....");
     expect(toMono16k(notWav)).toBe(notWav);
+  });
+});
+
+describe("speechLevelDb", () => {
+  const pcmOf = (samples: number[]) => {
+    const pcm = Buffer.alloc(samples.length * 2);
+    samples.forEach((s, i) => pcm.writeInt16LE(s, i * 2));
+    return pcm;
+  };
+
+  it("measures full scale as ~0 dBFS and silence as -Infinity", () => {
+    expect(speechLevelDb(pcmOf([32767, -32768]))).toBeCloseTo(0, 1);
+    expect(speechLevelDb(pcmOf([0, 0, 0]))).toBe(-Infinity);
+    expect(speechLevelDb(Buffer.alloc(0))).toBe(-Infinity);
+  });
+
+  it("puts speech above the gate and faint hiss below it", () => {
+    // ~-20 dBFS (3277 = 10% of full scale) vs ~-60 dBFS
+    expect(speechLevelDb(pcmOf([3277, -3277]))).toBeCloseTo(-20, 0);
+    expect(speechLevelDb(pcmOf([3277, -3277]))).toBeGreaterThan(
+      MIN_SPEECH_LEVEL_DB,
+    );
+    expect(speechLevelDb(pcmOf([33, -33]))).toBeLessThan(MIN_SPEECH_LEVEL_DB);
   });
 });
 

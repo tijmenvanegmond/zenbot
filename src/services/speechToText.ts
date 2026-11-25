@@ -11,7 +11,29 @@ import { logger } from "../utils/logger";
 const NO_SPEECH = "[no speech]";
 const TARGET_RATE = 16000;
 
-const TRANSCRIBE_PROMPT = `Transcribe the speech in this audio exactly, in the language spoken. The people are talking to a bot named Zenbot - spell it "Zenbot". Reply with only the transcript - no quotes, labels or commentary. If there is no intelligible speech, reply with exactly: ${NO_SPEECH}`;
+// No hint about the bot's name: told to expect "Zenbot", the model heard
+// "Zenbot" in breaths, keyboard clicks and Zenbot's own echo. WAKE_WORD
+// already tolerates the misspellings ("Zen bot", "ZennBot", "Xenbot").
+const TRANSCRIBE_PROMPT = `Transcribe the speech in this audio exactly, in the language spoken. Only write words that are clearly spoken - never guess. Reply with only the transcript - no quotes, labels or commentary. If there is no clear speech (silence, breathing, noise, a cough, a click), reply with exactly: ${NO_SPEECH}`;
+
+/** Below this RMS level (dBFS) an utterance is breath or background, not speech */
+export const MIN_SPEECH_LEVEL_DB = -50;
+
+/**
+ * Loudness of 16-bit PCM (any channel layout) in dBFS: 0 is full scale,
+ * normal speech in Discord sits around -30 to -15, silence below -60.
+ */
+export const speechLevelDb = (pcm: Buffer): number => {
+  const samples = Math.floor(pcm.length / 2);
+  if (samples === 0) return -Infinity;
+  let sumSquares = 0;
+  for (let i = 0; i < samples; i++) {
+    const s = pcm.readInt16LE(i * 2) / 32768;
+    sumSquares += s * s;
+  }
+  const rms = Math.sqrt(sumSquares / samples);
+  return rms === 0 ? -Infinity : 20 * Math.log10(rms);
+};
 
 let gemini: GoogleGenerativeAI | null = null;
 
