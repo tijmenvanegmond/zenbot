@@ -28,18 +28,21 @@ export class ChannelManagementAction implements ZenAction {
 
   schema = {
     name: "channel_management",
-    description: "Manage voice channels with zen-inspired creativity",
+    description:
+      "Manage voice channels. 'rename' actually changes the channel's name; 'suggest_name' only lists ideas and changes nothing",
     parameters: {
       type: "object" as const,
       properties: {
         action: {
           type: "string" as const,
-          description: "The channel management action to perform",
+          description:
+            "rename = change the name for real; suggest_name = ideas only; analyze = describe the channel",
           enum: ["rename", "create", "analyze", "suggest_name"],
         },
         channel_id: {
           type: "string" as const,
-          description: "Target channel ID (required for rename/analyze)",
+          description:
+            "Voice channel ID or exact name. Leave out to use the voice channel the user is in",
         },
         name_style: {
           type: "string" as const,
@@ -78,10 +81,11 @@ export class ChannelManagementAction implements ZenAction {
 
       switch (action) {
         case "rename": {
-          if (!channel_id) {
+          if (!channel_id && !context.voiceChannel) {
             return {
               success: false,
-              error: "Channel ID required for rename action",
+              error:
+                "No channel given and the user is not in a voice channel - nothing was renamed",
               shouldRespond: true,
               responseText: "I need to know which channel to rename",
             };
@@ -95,10 +99,12 @@ export class ChannelManagementAction implements ZenAction {
               responseText: "I can only manage channels within a server",
             };
           }
-          // Attempt to resolve channel first by ID; if that fails, try by name (case-insensitive)
-          let channel =
-            context.interaction.guild.channels.cache.get(channel_id);
-          if (!channel) {
+          // Default to the user's voice channel; otherwise resolve by ID,
+          // then by name (case-insensitive)
+          let channel = channel_id
+            ? context.interaction.guild.channels.cache.get(channel_id)
+            : (context.voiceChannel as any);
+          if (!channel && channel_id) {
             channel = context.interaction.guild.channels.cache.find(
               (c: any) =>
                 c.isVoiceBased?.() &&
