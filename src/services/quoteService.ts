@@ -1,4 +1,5 @@
-import { Message, TextChannel } from "discord.js";
+import { Guild, Message, TextChannel } from "discord.js";
+import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../config";
 import { logger } from "../utils/logger";
 import { OpenAIService } from "./openaiService";
 import {
@@ -194,6 +195,19 @@ export const fetchAndParseQuotes = async (
     quotes: enrichedQuotes,
     totalFound: enrichedQuotes.length,
   };
+};
+
+/** The server's quotes channel: the first text channel matching QUOTE_CHANNEL_NAMES */
+export const findQuoteChannel = (guild: Guild): TextChannel | undefined => {
+  for (const name of QUOTE_CHANNEL_NAMES) {
+    const found = guild.channels.cache.find(
+      (channel) =>
+        channel.name.toLowerCase().includes(name.toLowerCase()) &&
+        channel.type === CHANNEL_TYPES.GUILD_TEXT,
+    );
+    if (found) return found as TextChannel;
+  }
+  return undefined;
 };
 
 /**

@@ -10,8 +10,10 @@ const MAX_LINES = 10;
 const MAX_AGE_MS = 5 * 60 * 1000;
 const MAX_LINE_CHARS = 200;
 
-interface RoomLine {
+export interface RoomLine {
   speaker: string;
+  /** Discord user ID; "zenbot" for Zenbot's own lines */
+  speakerId?: string;
   text: string;
   at: number;
 }
@@ -31,12 +33,14 @@ export const addRoomLine = (
   guildId: string,
   speaker: string,
   text: string,
+  speakerId?: string,
 ): void => {
   const trimmed = text.trim();
   if (!trimmed) return;
   const lines = fresh(guildId);
   lines.push({
     speaker,
+    speakerId,
     text: trimmed.slice(0, MAX_LINE_CHARS),
     at: Date.now(),
   });
@@ -64,6 +68,11 @@ export const describeRoom = (guildId: string, exclude?: string): string => {
   });
   return `(Recently said in voice, oldest first - context, not addressed to you unless it says so:\n${rendered.join("\n")})`;
 };
+
+/** The recent lines, oldest first (e.g. to pick one to quote) */
+export const recentRoomLines = (guildId: string): RoomLine[] => [
+  ...fresh(guildId),
+];
 
 /** For tests */
 export const clearRoomLog = (): void => rooms.clear();

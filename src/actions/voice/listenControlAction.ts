@@ -126,7 +126,7 @@ async function respondToSpeech(
 
   // Everything heard goes in the room log, addressed to Zenbot or not, so it
   // can follow the conversation around a question
-  addRoomLine(context.guild.id, member.displayName, transcription);
+  addRoomLine(context.guild.id, member.displayName, transcription, member.id);
 
   const named = WAKE_WORD.test(transcription);
   const humans = voiceChannel.members.filter((m) => !m.user.bot).size;
@@ -170,7 +170,7 @@ async function respondToSpeech(
       logger.info(`🎤 Zenbot lets "${transcription}" pass in silence`);
       return;
     }
-    addRoomLine(context.guild.id, "Zenbot (you)", reply.display);
+    addRoomLine(context.guild.id, "Zenbot (you)", reply.display, "zenbot");
 
     // They said it out loud, so no need to repeat the trigger in voice
     await speakReply(voiceChannel, reply.speech, reply.mood, "voice-response");

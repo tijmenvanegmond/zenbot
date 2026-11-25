@@ -5,11 +5,14 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { TextChannel } from "discord.js";
-import { getRandomQuote } from "../../services/quoteService";
+import {
+  findQuoteChannel,
+  getRandomQuote,
+} from "../../services/quoteService";
 import { ZenbotService } from "../../services/zenbotService";
 import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
 import { formatQuoteForDisplay } from "../../utils/quoteFormat";
-import { CHANNEL_TYPES, QUOTE_CHANNEL_NAMES } from "../../config";
+import { CHANNEL_TYPES } from "../../config";
 import { logger } from "../../utils/logger";
 
 // Zenbot's default voice
@@ -87,19 +90,7 @@ export class ChannelQuoteAction implements ZenAction {
         }
         quoteChannel = channel as TextChannel;
       } else {
-        // Find default quotes channel
-        const guild = context.interaction.guild!;
-        for (const name of QUOTE_CHANNEL_NAMES) {
-          const foundChannel = guild.channels.cache.find(
-            (channel) =>
-              channel.name.toLowerCase().includes(name.toLowerCase()) &&
-              channel.type === CHANNEL_TYPES.GUILD_TEXT,
-          );
-          if (foundChannel) {
-            quoteChannel = foundChannel as TextChannel;
-            break;
-          }
-        }
+        quoteChannel = findQuoteChannel(context.interaction.guild!);
 
         if (!quoteChannel) {
           return {
