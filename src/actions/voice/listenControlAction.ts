@@ -19,6 +19,7 @@ import {
   speechLevelDb,
   transcribeSpeech,
 } from "../../services/speechToText";
+import { SPEECH_HINTS, WAKE_WORD } from "../../services/voice/vocabulary";
 import { addRoomLine } from "../../services/voice/voiceRoomLog";
 import { OpusDecoder } from "../../services/voice/opusDecoder";
 import { AudioManager } from "../../services/voice/AudioManager";
@@ -31,6 +32,8 @@ const MIN_WAV_SIZE_BYTES = 2000; // Much lower threshold - 2KB minimum for real 
 // leaking back through someone's mic. Longer speech over it is a real
 // interruption and still counts.
 const ECHO_MAX_MS = 1500;
+// Nobody talks to Zenbot in 30s monologues; longer is an open mic or music
+const MAX_UTTERANCE_MS = 30000;
 
 const isBotSpeaking = (guildId: string): boolean =>
   AudioManager.getInstance().getSession(guildId)?.player.state.status ===
@@ -99,9 +102,8 @@ function createWAVBuffer(pcmBuffers: Buffer[]): Buffer {
 }
 
 // Zenbot only answers when addressed - unless it's the only one listening.
-// Transcription spells the name many ways ("Zenbot", "Zen bot", "ZennBot",
-// "Xenbot", "Zenyatta").
-export const WAKE_WORD = /\b[zx]en+[\s-]?(bot|yatta)?\b/i;
+// The name's many misspellings live in services/voice/vocabulary.ts
+export { WAKE_WORD };
 
 // One reply at a time per guild: overlapping replies talk over each other
 const replyInFlight = new Set<string>();
@@ -492,12 +494,23 @@ export class ListenControlAction implements ZenAction {
               logger.info(
                 `🎤 Ignoring ${speakingDuration}ms from user ${userId}: too quiet (${level.toFixed(1)} dBFS)`,
               );
+            } else if (speakingDuration > MAX_UTTERANCE_MS) {
+              // An open mic or music: a 100s, 19MB upload once took ~70s
+              // and tipped Gemini into rate limiting for everyone
+              logger.info(
+                `🎤 Ignoring ${Math.round(speakingDuration / 1000)}s from user ${userId}: too long for one remark (open mic or music?)`,
+              );
             } else if (
               speakingDuration >= MIN_AUDIO_DURATION_MS &&
               wavBuffer.length >= MIN_WAV_SIZE_BYTES
             ) {
               // Transcribe using the WAV buffer directly
-              const transcription = await transcribeSpeech(wavBuffer);
+              // Opt-in word list only: hinted names also get "heard" in
+              // clicks (see vocabulary.ts), so voice members aren't added
+              const transcription = await transcribeSpeech(
+                wavBuffer,
+                SPEECH_HINTS,
+              );
               if (transcription && transcription.length > 0) {
                 logger.info(
                   `🎤 Transcription from user ${userId}: "${transcription}"`,

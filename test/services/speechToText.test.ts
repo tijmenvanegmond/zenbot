@@ -93,11 +93,25 @@ describe("WAKE_WORD", () => {
     "Zen-bot?",
     "Xenbot, hi",
     "Zenyatta?",
+    // Real mishearings from a /listen session
+    "Tim Bolts, can you rename Maki?",
+    "Then Bolt",
+    "tim-bolt quota",
+    "Zen bolts, please leave.",
+    "Sim bot, roll a dice",
   ])("wakes on: %s", (text) => {
     expect(WAKE_WORD.test(text)).toBe(true);
   });
 
-  it.each(["zenith of my career", "frozen pizza", "Kitzen bot"])(
+  it.each([
+    "zenith of my career",
+    "frozen pizza",
+    "Kitzen bot",
+    "them both are wrong",
+    "time boxes",
+    "Tim, both of you",
+    "the bolts are loose",
+  ])(
     "ignores: %s",
     (text) => {
       expect(WAKE_WORD.test(text)).toBe(false);
