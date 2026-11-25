@@ -11,6 +11,7 @@ import {
   chatErrorLine,
   getChatReply,
   isChatAvailable,
+  leaveVoice,
   speakReply,
 } from "../../services/zenbotChat";
 import {
@@ -174,6 +175,8 @@ async function respondToSpeech(
     logger.info(
       `🎤 Zenbot -> ${member.displayName}${reply.mood ? ` [${reply.mood}]` : ""}: "${reply.display.substring(0, 120)}"`,
     );
+    // Asked to leave: after the goodbye, which also ends this listen session
+    if (reply.leaveVoice) await leaveVoice(context.guild.id);
   } catch (error) {
     logger.error(`🎤 Voice reply to ${member.displayName} failed:`, error);
     await speakReply(

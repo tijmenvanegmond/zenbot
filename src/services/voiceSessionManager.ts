@@ -119,7 +119,10 @@ export class VoiceSessionManager {
     if (!session) return;
 
     logger.info(`🎤 Force leaving voice channel for guild ${guildId}`);
-    session.connection.destroy();
+    // Shared with AudioManager, which may have destroyed it already
+    if (session.connection.state.status !== VoiceConnectionStatus.Destroyed) {
+      session.connection.destroy();
+    }
     this.cleanupSession(guildId);
   }
 

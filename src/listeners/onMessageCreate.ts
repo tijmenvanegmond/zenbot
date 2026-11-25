@@ -3,6 +3,7 @@ import {
   chatErrorLine,
   getChatReply,
   isChatAvailable,
+  leaveVoice,
   speakReply,
 } from "../services/zenbotChat";
 import { toSpeakableText } from "../utils/speechText";
@@ -82,7 +83,14 @@ async function handleChat(client: Client, message: Message): Promise<void> {
       `${trigger}[pause:0.8] ${reply.speech}`,
       reply.mood,
       "chat",
-    ).catch((error) => logger.error("💬 Failed to speak chat reply:", error));
+    )
+      .catch((error) => logger.error("💬 Failed to speak chat reply:", error))
+      // Goodbye first, then go
+      .then(async () => {
+        if (reply.leaveVoice) await leaveVoice(message.guild!.id);
+      });
+  } else if (reply.leaveVoice) {
+    await leaveVoice(message.guild!.id);
   }
 
   logger.info(

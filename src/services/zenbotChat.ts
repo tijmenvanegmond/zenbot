@@ -3,6 +3,10 @@ import { ZenbotService, MinimalInteractionContext } from "./zenbotService";
 import { UnifiedVoiceService } from "./voice/UnifiedVoiceService";
 import { stripStageDirections, toSpeakableText } from "../utils/speechText";
 import { ActionService } from "./actionService";
+import { AudioManager } from "./voice/AudioManager";
+import { VoiceSessionManager } from "./voiceSessionManager";
+import { takePendingLeave } from "../actions/voice/leaveVoiceAction";
+import { getVoiceConnection } from "@discordjs/voice";
 import { logger } from "../utils/logger";
 
 /**
@@ -77,7 +81,7 @@ const limitGongs = (text: string): string => {
   });
 };
 
-const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. To choose how your voice sounds, start the reply with one of [mood:calm] [mood:wise] [mood:playful] [mood:intense] - optional, and never a tool call. Use your tools only when they fit: read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas), rename_user to give someone a new nickname (only when asked; them or someone in their voice channel, by name). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
+const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. To choose how your voice sounds, start the reply with one of [mood:calm] [mood:wise] [mood:playful] [mood:intense] - optional, and never a tool call. Use your tools only when they fit: read_channel_quote to bring up something a friend actually said, roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas), rename_user to give someone a new nickname (only when asked; them or someone in their voice channel, by name), leave_voice when told to leave or go away (you leave right after your reply, so say goodbye). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
 
 const SPOKEN_INPUT_NOTE =
   "(They said this out loud in voice chat; it was transcribed automatically, so expect transcription errors.)";
@@ -97,6 +101,8 @@ export interface ChatReply {
   /** For TTS: markdown removed, pause markers kept */
   speech: string;
   mood?: VoiceMood;
+  /** The AI called leave_voice: speak the reply, then leaveVoice() */
+  leaveVoice: boolean;
 }
 
 /** What to say when getChatReply throws: rate limits are normal on the free tier, not breakage */
@@ -180,7 +186,20 @@ export const getChatReply = async ({
         .trim() || "...",
     speech: toSpeakableText(reply),
     mood,
+    leaveVoice: takePendingLeave(member.guild.id),
   };
+};
+
+/**
+ * Leave voice after the goodbye has been spoken. Ends /listen too: it shares
+ * the guild's single voice connection.
+ */
+export const leaveVoice = async (guildId: string): Promise<void> => {
+  await AudioManager.getInstance().leaveWhenDone(guildId);
+  await VoiceSessionManager.getInstance().forceLeave(guildId);
+  // Joined some other way (or the managers lost track): still leave
+  getVoiceConnection(guildId)?.destroy();
+  logger.info(`👋 Left voice in guild ${guildId} on request`);
 };
 
 /** Speak text in Zenbot's voice, in the mood the AI picked (if any) */

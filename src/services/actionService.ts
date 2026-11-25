@@ -15,6 +15,7 @@ import { ChannelQuoteAction } from "../actions/information/channelQuoteAction";
 import { RenameUserAction } from "../actions/management/renameUserAction";
 import { RemarkAction } from "../actions/entertainment/remarkAction";
 import { RollDiceAction } from "../actions/entertainment/rollDiceAction";
+import { LeaveVoiceAction } from "../actions/voice/leaveVoiceAction";
 import { ConferenceAction } from "../actions/ai/conferenceAction";
 
 /**
@@ -57,6 +58,7 @@ export class ActionService {
     // Entertainment actions
     this.registry.register(new RemarkAction());
     this.registry.register(new RollDiceAction());
+    this.registry.register(new LeaveVoiceAction());
 
     // AI actions
     this.registry.register(new ConferenceAction());

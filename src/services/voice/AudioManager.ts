@@ -228,6 +228,25 @@ export class AudioManager {
   }
 
   /**
+   * Leave once the current audio has finished (e.g. Zenbot's goodbye).
+   * speak() resolves when playback starts, so leaving right after it would
+   * cut the goodbye off.
+   */
+  async leaveWhenDone(guildId: string, maxWaitMs = 30000): Promise<void> {
+    const session = this.sessions.get(guildId);
+    if (session?.player.state.status === AudioPlayerStatus.Playing) {
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, maxWaitMs);
+        session.player.once(AudioPlayerStatus.Idle, () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+    }
+    await this.cleanupSession(guildId);
+  }
+
+  /**
    * Stop all audio in guild
    */
   async stopAudio(guildId: string): Promise<void> {

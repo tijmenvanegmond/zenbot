@@ -104,7 +104,8 @@ Zenbot uses a unified actions system that provides a single interface for functi
 ### @Zenbot Chat - Where Tool Calling Lives
 
 - Mentioning the bot starts a free conversation through `ZenbotService.converse()` with function calling
-- Tools offered: `read_channel_quote`, `roll_dice`, `channel_management`, `rename_user`. Excluded: `speak`, voice control, listening, conference
+- Tools offered: `read_channel_quote`, `roll_dice`, `channel_management`, `rename_user`, `leave_voice`. Excluded: `speak`, voice control, listening, conference
+- `leave_voice` (AI-only) only flags the guild; the chat path speaks the goodbye, then `leaveVoice()` waits for playback to end (`AudioManager.leaveWhenDone`) and leaves, ending /listen too. Leaving inside the tool would make the goodbye re-join the channel
 - `rename_user` takes a name or ID ("me" works). From chat it only renames the requester or people in their voice channel
 - `channel_management` rename defaults to the user's voice channel (also when the AI passes an unknown ID) and refuses up front past Discord's limit of 2 renames per channel per 10 minutes - discord.js would otherwise queue it and rename minutes later
 - The handler shows the reply and, if the author is in voice, speaks that same reply: "<name> asks: <message>", pause, reply. The AI never speaks for itself here, so text and voice can't diverge
