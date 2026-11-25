@@ -6,6 +6,7 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { findQuoteChannel } from "../../services/quoteService";
+import { findMemberByName } from "../../services/people";
 import {
   RoomLine,
   recentRoomLines,
@@ -37,7 +38,8 @@ export const quoteSpeakerName = (line: RoomLine): string =>
 /**
  * Which line to quote, newest first:
  * - never the request itself ("Zenbot, quote that")
- * - `speaker` narrows to one person (case-insensitive, partial)
+ * - `speaker` narrows to one person (case-insensitive, partial), or
+ *   `speakerId` when the name was resolved to a member (aliases like "nem")
  * - `about` narrows to a line containing those words
  * - with neither, prefer someone other than the requester
  */
@@ -46,6 +48,7 @@ export const pickQuoteLine = (
   requesterId: string,
   speaker?: string,
   about?: string,
+  speakerId?: string,
 ): RoomLine | undefined => {
   const candidates = lines
     .filter(
@@ -58,7 +61,9 @@ export const pickQuoteLine = (
   const wantWords = about ? normalize(about).split(" ").filter(Boolean) : [];
 
   const matches = candidates.filter((line) => {
-    if (
+    if (speakerId) {
+      if (line.speakerId !== speakerId) return false;
+    } else if (
       wantSpeaker &&
       !normalize(quoteSpeakerName(line)).includes(wantSpeaker)
     ) {
@@ -122,11 +127,23 @@ export class SaveQuoteAction implements ZenAction {
       };
     }
 
+    // "Quote nem": the room log says "The worst of us", so resolve the name
+    const speakerMember = parameters.speaker
+      ? await findMemberByName(
+          guild,
+          parameters.speaker,
+          context.voiceChannel?.members.values(),
+        )
+      : null;
     const line = pickQuoteLine(
       recentRoomLines(context.guild.id),
       context.user.id,
       parameters.speaker,
       parameters.about,
+      // Zenbot's own lines are logged as "zenbot", not its account ID
+      speakerMember?.id === guild.members.me?.id
+        ? "zenbot"
+        : speakerMember?.id,
     );
     if (!line) {
       return {

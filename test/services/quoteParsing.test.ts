@@ -150,3 +150,46 @@ describe("getCuratedRemark", () => {
     expect(getCuratedRemark("nonexistent", "drago")).toContain("drago");
   });
 });
+
+describe("quote filter by every name", () => {
+  // Just enough of a Discord channel for fetchAndParseQuotes
+  const channelWith = (contents: string[]) => {
+    class FakeCollection extends Map<string, any> {
+      filter(fn: (m: any) => boolean) {
+        return new FakeCollection([...this].filter(([, m]) => fn(m)));
+      }
+    }
+    const messages = new FakeCollection(
+      contents.map((content, i) => [
+        String(i),
+        {
+          id: String(i),
+          content,
+          author: { id: "poster", username: "murloc", displayName: "Murloc" },
+          createdAt: new Date(),
+          url: "",
+        },
+      ]),
+    );
+    return { messages: { fetch: async () => messages } } as any;
+  };
+
+  it("matches speakers by any of their names, as whole words", async () => {
+    const { fetchAndParseQuotes } = await import(
+      "../../src/services/quoteService"
+    );
+    const channel = channelWith([
+      'nem: "I meant to do that"',
+      'The worst of us: "trust me"',
+      'Nemesis: "not him"',
+      'osha: "pelican"',
+    ]);
+    const { quotes } = await fetchAndParseQuotes(channel, {
+      names: ["Nem", "The worst of us", "nemjit"],
+    });
+    expect(quotes.map((q) => q.parsedQuote).sort()).toEqual([
+      "I meant to do that",
+      "trust me",
+    ]);
+  });
+});

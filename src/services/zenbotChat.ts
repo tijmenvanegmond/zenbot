@@ -8,6 +8,7 @@ import { VoiceSessionManager } from "./voiceSessionManager";
 import { takePendingLeave } from "../actions/voice/leaveVoiceAction";
 import { getVoiceConnection } from "@discordjs/voice";
 import { describeRoom } from "./voice/voiceRoomLog";
+import { describePerson, preferredName } from "./people";
 import { logger } from "../utils/logger";
 
 /**
@@ -82,7 +83,7 @@ const limitGongs = (text: string): string => {
   });
 };
 
-const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. To choose how your voice sounds, start the reply with one of [mood:calm] [mood:wise] [mood:playful] [mood:intense] - optional, and never a tool call. Use your tools only when they fit: read_channel_quote to bring up something a friend actually said, save_quote when someone wants a line from the voice chat saved ("quote that!"), roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas), rename_user to give someone a new nickname (only when asked; them or someone in their voice channel, by name), leave_voice when told to leave or go away (you leave right after your reply, so say goodbye). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
+const GUIDE = `(Chat guide - not from the user: reply in 1-3 short sentences. If they are in voice chat, your reply is read aloud, and you may put [pause] where a dramatic pause helps. You also own a temple gong: you may add [gong] inside your sentence-reply, right before a verdict or result, for ceremony. It decorates a reply, it is never the reply: always say the actual answer in words. Use it rarely. No stage directions like *chuckles* or _sighs_. To choose how your voice sounds, start the reply with one of [mood:calm] [mood:wise] [mood:playful] [mood:intense] - optional, and never a tool call. Use your tools only when they fit: read_channel_quote to bring up something a friend actually said, save_quote when someone wants a line from the voice chat saved ("quote that!"), roll_dice for random decisions - never invent a roll, channel_management with action "rename" to really rename their voice channel (suggest_name only lists ideas), set_alias when someone tells you what to call them or what someone else goes by ("call me Nem") - it's your memory, not their Discord name, rename_user to give someone a new Discord nickname (only when asked; them or someone in their voice channel, by name), leave_voice when told to leave or go away (you leave right after your reply, so say goodbye). Never claim you did something - renamed, rolled, changed - unless a tool result in this conversation says it succeeded; if it failed or you didn't do it, say so. Don't describe the tools.)`;
 
 // [silent], optionally after a mood tag, and nothing else that's real words
 const SILENT_REPLY = /^\s*(\[mood:\s*[a-z]+\s*\]\s*)?\[silent\][\s.]*$/i;
@@ -147,7 +148,8 @@ export const getChatReply = async ({
     user: {
       id: member.id,
       username: member.user.username,
-      displayName: member.displayName,
+      // What Zenbot calls them: "call me Nem" beats the display name
+      displayName: preferredName(member),
     },
     member,
     guild: member.guild,
@@ -160,6 +162,7 @@ export const getChatReply = async ({
     "",
     ...(spokenInput ? [SPOKEN_INPUT_NOTE] : []),
     ...(spokenInput ? [unaddressed ? UNADDRESSED_NOTE : SILENCE_NOTE] : []),
+    `(Talking to: ${describePerson(member)}.)`,
     describeVoice(member),
     ...(member.voice?.channel ? [describeRoom(member.guild.id, text)] : []),
     GUIDE,
@@ -253,7 +256,11 @@ const describeVoice = (member: GuildMember): string => {
     return "(Voice: they are not in a voice channel; your reply is text only.)";
   }
   const names = voice.members.map((m) =>
-    m.id === member.client.user?.id ? "you (Zenbot)" : m.displayName,
+    m.id === member.client.user?.id
+      ? "you (Zenbot)"
+      : m.user.bot
+        ? m.displayName
+        : describePerson(m),
   );
   return `(Voice: they are in voice channel "${voice.name}" with: ${names.join(", ")}.)`;
 };

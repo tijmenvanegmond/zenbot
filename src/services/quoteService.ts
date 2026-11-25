@@ -150,6 +150,7 @@ export const fetchAndParseQuotes = async (
     limit = API_CONFIG.DEFAULT_QUOTE_LIMIT,
     userId,
     username,
+    names = [],
     random = false,
   } = options;
 
@@ -171,21 +172,30 @@ export const fetchAndParseQuotes = async (
   let enrichedQuotes = enrichMessages(messagesArray);
 
   // Filter by user if specified - channel the wisdom of a specific soul
-  if (userId || username) {
+  // One person, many names: "osha: ..." and "Oshy: ..." are the same speaker
+  const allNames = [...names, ...(username ? [username] : [])]
+    .map((n) => n.trim().toLowerCase())
+    .filter((n) => n.length > 0);
+
+  if (userId || allNames.length > 0) {
     enrichedQuotes = enrichedQuotes.filter((quote) => {
       // Check if filtering by poster (who submitted the quote)
       const posterMatch =
         (userId && quote.poster.id === userId) ||
-        (username &&
-          (quote.poster.username.toLowerCase() === username.toLowerCase() ||
-            quote.poster.displayName.toLowerCase() === username.toLowerCase()));
+        allNames.includes(quote.poster.username.toLowerCase()) ||
+        allNames.includes(quote.poster.displayName.toLowerCase());
 
       // Check if filtering by speaker (who said the quote)
       const speakerMatch =
         quote.isQuoted &&
-        quote.speaker &&
-        username &&
-        quote.speaker.toLowerCase().includes(username.toLowerCase());
+        !!quote.speaker &&
+        allNames.some((name) =>
+          // Whole words, so "nem" doesn't match "Nemesis"
+          new RegExp(
+            `(^|[^\\p{L}])${escapeRegExp(name)}($|[^\\p{L}])`,
+            "iu",
+          ).test(quote.speaker!),
+        );
 
       return posterMatch || speakerMatch;
     });
@@ -196,6 +206,9 @@ export const fetchAndParseQuotes = async (
     totalFound: enrichedQuotes.length,
   };
 };
+
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** The server's quotes channel: the first text channel matching QUOTE_CHANNEL_NAMES */
 export const findQuoteChannel = (guild: Guild): TextChannel | undefined => {

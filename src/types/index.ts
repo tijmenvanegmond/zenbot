@@ -91,6 +91,8 @@ export interface QuoteSearchOptions {
   limit?: number;
   userId?: string;
   username?: string;
+  /** Every name the person goes by (see services/people.ts); matches poster or speaker */
+  names?: string[];
   random?: boolean;
 }
 

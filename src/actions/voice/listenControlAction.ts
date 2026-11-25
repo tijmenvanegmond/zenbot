@@ -20,6 +20,7 @@ import {
   transcribeSpeech,
 } from "../../services/speechToText";
 import { SPEECH_HINTS, WAKE_WORD } from "../../services/voice/vocabulary";
+import { preferredName } from "../../services/people";
 import { addRoomLine } from "../../services/voice/voiceRoomLog";
 import { OpusDecoder } from "../../services/voice/opusDecoder";
 import { AudioManager } from "../../services/voice/AudioManager";
@@ -128,7 +129,7 @@ async function respondToSpeech(
 
   // Everything heard goes in the room log, addressed to Zenbot or not, so it
   // can follow the conversation around a question
-  addRoomLine(context.guild.id, member.displayName, transcription, member.id);
+  addRoomLine(context.guild.id, preferredName(member), transcription, member.id);
 
   const named = WAKE_WORD.test(transcription);
   const humans = voiceChannel.members.filter((m) => !m.user.bot).size;
@@ -180,7 +181,7 @@ async function respondToSpeech(
     if (textChannel && "send" in textChannel) {
       await textChannel
         .send(
-          `🎤 **${member.displayName}:** ${transcription}\n🧘 ${reply.display}`.slice(
+          `🎤 **${preferredName(member)}:** ${transcription}\n🧘 ${reply.display}`.slice(
             0,
             2000,
           ),

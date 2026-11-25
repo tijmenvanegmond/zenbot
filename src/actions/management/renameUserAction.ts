@@ -6,11 +6,12 @@ import {
 } from "../actionTypes";
 import { GuildMember } from "discord.js";
 import { logger } from "../../utils/logger";
+import { findMemberByName } from "../../services/people";
 
 /**
- * The AI knows people by name, not ID: try the ID, then "me", then names in
- * the requester's voice channel, then the whole server (display name,
- * nickname or username, case-insensitive).
+ * The AI knows people by name, not ID: "me", an ID, or any name they go by
+ * (display name, nickname, username, or an alias like "nem"), checking the
+ * requester's voice channel first.
  */
 const resolveMember = async (
   context: ActionContext,
@@ -27,20 +28,7 @@ const resolveMember = async (
     return guild.members.fetch(target).catch(() => null);
   }
 
-  const lower = target.toLowerCase();
-  const matches = (m: GuildMember) =>
-    [m.displayName, m.nickname, m.user.username, m.user.globalName].some(
-      (name) => name?.toLowerCase() === lower,
-    );
-
-  const inVoice = context.voiceChannel?.members.find(matches);
-  if (inVoice) return inVoice;
-  const cached = guild.members.cache.find(matches);
-  if (cached) return cached;
-  const found = await guild.members
-    .fetch({ query: target, limit: 5 })
-    .catch(() => null);
-  return found?.find(matches) ?? found?.first() ?? null;
+  return findMemberByName(guild, target, context.voiceChannel?.members.values());
 };
 
 export class RenameUserAction implements ZenAction {

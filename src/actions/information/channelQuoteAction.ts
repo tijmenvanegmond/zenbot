@@ -13,6 +13,7 @@ import { ZenbotService } from "../../services/zenbotService";
 import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
 import { formatQuoteForDisplay } from "../../utils/quoteFormat";
 import { CHANNEL_TYPES } from "../../config";
+import { findMemberByName, namesFor } from "../../services/people";
 import { logger } from "../../utils/logger";
 
 // Zenbot's default voice
@@ -46,7 +47,8 @@ export class ChannelQuoteAction implements ZenAction {
         },
         username: {
           type: "string" as const,
-          description: "Filter quotes from or about a specific username",
+          description:
+            "Filter quotes from or about someone, by any name they go by",
         },
         use_voice: {
           type: "boolean" as const,
@@ -104,9 +106,22 @@ export class ChannelQuoteAction implements ZenAction {
       }
 
       // Get random quote with filtering
+      // Quotes name people however they were known at the time ("osha",
+      // "Oshy"): match every name the person goes by
+      const guild = context.interaction.guild!;
+      const person = user_id
+        ? await guild.members.fetch(user_id).catch(() => null)
+        : username
+          ? await findMemberByName(
+              guild,
+              username,
+              context.voiceChannel?.members.values(),
+            )
+          : null;
       const randomQuote = await getRandomQuote(quoteChannel, {
-        userId: user_id,
+        userId: user_id ?? person?.id,
         username: username,
+        names: person ? namesFor(person) : [],
       });
 
       if (!randomQuote) {

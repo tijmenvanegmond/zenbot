@@ -34,5 +34,7 @@ services:
         condition: service_started
     volumes:
       - /tmp/zenbot:/tmp/zenbot
+      # Things people teach Zenbot (aliases) - survives rebuilds
+      - ./data:/app/data
 
 # Volumes no longer needed - voice models baked into image

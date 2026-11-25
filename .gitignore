@@ -119,3 +119,6 @@ html-coverage/
 .playwright-mcp/
 # npm run tts output
 tts-output.wav
+
+# Runtime data (aliases.json etc.) - lives in the container volume
+data/
