@@ -1,17 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
-import { mkdtempSync, readFileSync } from "fs";
-import { tmpdir } from "os";
-import path from "path";
 
-// Aliases are written to disk: point the store at a temp dir before loading
-const dataDir = mkdtempSync(path.join(tmpdir(), "zenbot-people-"));
-process.env.ZENBOT_DATA_DIR = dataDir;
-
+// zenbot.db lives in the per-worker temp dir from test/setup/globals.ts
 let people: typeof import("../../src/services/people");
+let db: typeof import("../../src/services/db");
 beforeAll(async () => {
   people = await import("../../src/services/people");
+  db = await import("../../src/services/db");
 });
-beforeEach(() => people.resetAliasCache());
+beforeEach(() => db.resetDb());
 
 const member = (overrides: Record<string, any> = {}) =>
   ({
@@ -31,16 +27,15 @@ describe("people", () => {
     );
   });
 
-  it("an alias becomes the preferred name and is saved to disk", async () => {
+  it("an alias becomes the preferred name and is saved", async () => {
     await people.addAlias("g1", "u1", "Nem");
     expect(people.preferredName(member())).toBe("Nem");
     expect(people.describePerson(member())).toBe(
       "Nem (aka The worst of us, Nemjit)",
     );
-    const saved = JSON.parse(
-      readFileSync(path.join(dataDir, "aliases.json"), "utf8"),
-    );
-    expect(saved.g1.u1).toEqual(["Nem"]);
+    // Still there after reopening the database file
+    db.closeDb();
+    expect(people.getAliases("g1", "u1")).toEqual(["Nem"]);
   });
 
   it("recognises any name, case-insensitive", async () => {

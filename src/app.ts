@@ -14,6 +14,7 @@ import { AIServiceManager, MemorySessionStorage } from "./services/ai";
 import { AI_CONFIG, AI_ENABLED } from "./config/aiConfig";
 import { ZenbotService } from "./services/zenbotService";
 import { UnifiedVoiceService } from "./services/voice/UnifiedVoiceService";
+import { getDb, voiceLogDays } from "./services/db";
 
 // Allow overriding via command line arguments
 const DISCORD_API_TOKEN = process.argv[2] || process.env.DISCORD_API_TOKEN;
@@ -27,6 +28,17 @@ const aiManager = AI_ENABLED
   ? new AIServiceManager(AI_CONFIG, new MemorySessionStorage())
   : null;
 ZenbotService.initialize(aiManager);
+
+// Long-term memory (aliases, notes, voice lines): open it now so a broken
+// file shows up at startup, not mid-conversation
+try {
+  getDb();
+  logger.info(
+    `💾 Memory database ready (voice lines kept ${voiceLogDays()} days)`,
+  );
+} catch (error) {
+  logger.error("💾 Could not open the memory database:", error);
+}
 
 // Initialize Voice Service to show provider status at startup
 UnifiedVoiceService.getInstance();

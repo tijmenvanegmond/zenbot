@@ -42,6 +42,8 @@ Zenbot is a **multi-AI powered Discord bot** with a sardonic personality. Built 
 - `PORT` - HTTP server port (defaults to 3001)
 - `LOG_LEVEL` - Set to "DEBUG" for verbose logging
 - `PIPER_URL` - Piper TTS endpoint (defaults to `http://localhost:8080`)
+- `ZENBOT_DATA_DIR` - Where `zenbot.db` lives (defaults to `./data`, mounted in docker-compose)
+- `VOICE_LOG_DAYS` - Days of voice transcript kept for conversation recall (default 30, `0` stores none)
 - `DISCORD_DEV_TOKEN` - Separate test bot token used by `npm run dev`
 - `LIVE_BOT_URL` - Where `npm run dev` checks for the live bot (defaults to `http://localhost:3001/`)
 
@@ -106,8 +108,8 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - Mentioning the bot starts a free conversation through `ZenbotService.converse()` with function calling
 - Tools offered: `read_channel_quote`, `roll_dice`, `channel_management`, `rename_user`, `leave_voice`, `save_quote`, `set_alias`, `remember`, `forget`. Excluded: `speak`, voice control, listening, conference
 - `save_quote` (AI-only, "quote that!") posts a line from the voice room log to the quotes channel as `Name: "text"`, which `/quote` reads back. The AI only picks which line (`speaker`, `about`); the words always come from the transcript, so it can't invent a quote. Same line is saved once
-- People go by several names (`services/people.ts`): display name, server nickname, global name, username, plus aliases taught with `set_alias` ("call me Nem"; newest = preferred). Aliases are per guild in `data/aliases.json` (`ZENBOT_DATA_DIR`; mounted as `./data` in docker-compose so they survive rebuilds). Zenbot sees "Nem (aka The worst of us, nemjit)", calls people by their preferred name, and `findMemberByName` resolves any name for renaming, `save_quote` and the `/quote` speaker filter (whole-word match). `set_alias` follows the rename rule: yourself or people in voice with you
-- Memories (`services/memories.ts`, `data/memories.json`): notes about people, the server and Zenbot itself. `remember` saves one when asked, or on Zenbot's own initiative when something memorable is said (`overheard`, shown to the AI as hearsay); `forget` deletes - anyone for notes about themselves, the server or Zenbot, otherwise only whoever taught it. Each chat request gets notes about the speaker, people in voice, anyone the message names, Zenbot and the latest server notes (`describeMemories`, no extra requests). Caps: 15 per person, 30 server, 200 chars
+- People go by several names (`services/people.ts`): display name, server nickname, global name, username, plus aliases taught with `set_alias` ("call me Nem"; newest = preferred). Aliases are per guild in `zenbot.db` (see Long-term memory). Zenbot sees "Nem (aka The worst of us, nemjit)", calls people by their preferred name, and `findMemberByName` resolves any name for renaming, `save_quote` and the `/quote` speaker filter (whole-word match). `set_alias` follows the rename rule: yourself or people in voice with you
+- Memories (`services/memories.ts`, in `zenbot.db`): notes about people, the server and Zenbot itself. `remember` saves one when asked, or on Zenbot's own initiative when something memorable is said (`overheard`, shown to the AI as hearsay); `forget` deletes - anyone for notes about themselves, the server or Zenbot, otherwise only whoever taught it. Recall (`recallMemories`, no extra requests) scores notes for each chat request: topic (full-text match on the message plus recent voice lines, stemmed), who (speaker > named > in voice > Zenbot > server), age (<7d, <30d) and -0.5 for overheard. Max 10 notes, the speaker's best 2 always in, nothing under score 1 - so old unrelated notes stay out. Caps: 15 per person, 30 server, 200 chars
 - Session diary (`voice/sessionRecap.ts`): when a listened-to voice connection closes, the whole session (`takeSessionHistory`, up to 200 lines / 4h) goes to one fast-model call that writes a server note only if something noteworthy happened, else `NONE`. Skipped under 6 human lines
 - `leave_voice` (AI-only) only flags the guild; the chat path speaks the goodbye, then `leaveVoice()` waits for playback to end (`AudioManager.leaveWhenDone`) and leaves, ending /listen too. Leaving inside the tool would make the goodbye re-join the channel
 - `rename_user` takes a name or ID ("me" works). From chat it only renames the requester or people in their voice channel
@@ -122,6 +124,15 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - Zenbot has a will: the chat guide lets it refuse, bargain or do a request its own way (a funnier nickname than asked, "not quote-worthy"), sometimes rather than always. It still leaves when told to, and never claims an action a tool did not confirm
 - Fixed commands (`/advice`, `/remark`, `/quote`) deliberately don't use tools: they make one direct call and speak exactly what they show
 - The conversation itself lives in `src/services/zenbotChat.ts` (`getChatReply`, `speakReply`), shared with `/listen`
+
+### Long-term memory - zenbot.db
+
+- `services/db.ts`: one SQLite file via Node's built-in `node:sqlite` (no native dependency, no server), in `ZENBOT_DATA_DIR` (`./data`, a docker-compose volume, so it survives rebuilds). WAL mode, opened at startup
+- Tables: `aliases`, `memories` (+ FTS5 index `memories_fts`), `voice_lines` (+ `voice_lines_fts`). Indexes are stemmed (`porter unicode61`) and kept in sync by triggers
+- Schema changes: append to `MIGRATIONS`; `PRAGMA user_version` tracks what ran. Migration 1 also imported the old `aliases.json`/`memories.json` (renamed to `*.migrated`)
+- `voice_lines`: every room-log line (spoken, typed-from-voice, Zenbot's replies), pruned past `VOICE_LOG_DAYS` daily. Groundwork for conversation recall ("what did Osha say about the raid?") - nothing reads it yet
+- Node 22 calls `node:sqlite` experimental; the Dockerfile passes `--disable-warning=ExperimentalWarning`
+- Tests get a per-worker temp `ZENBOT_DATA_DIR` (`test/setup/globals.ts`); `resetDb()` gives a fresh file
 
 ### /listen - Voice Conversation
 

@@ -1,22 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
-import { mkdtempSync, readFileSync } from "fs";
-import { tmpdir } from "os";
-import path from "path";
 
-// Notes are written to disk: point the store at a temp dir before loading
-const dataDir = mkdtempSync(path.join(tmpdir(), "zenbot-memories-"));
-process.env.ZENBOT_DATA_DIR = dataDir;
-
+// zenbot.db lives in the per-worker temp dir from test/setup/globals.ts
 let memories: typeof import("../../src/services/memories");
-let people: typeof import("../../src/services/people");
+let db: typeof import("../../src/services/db");
 beforeAll(async () => {
   memories = await import("../../src/services/memories");
-  people = await import("../../src/services/people");
+  db = await import("../../src/services/db");
 });
-beforeEach(() => {
-  memories.resetMemories();
-  people.resetAliasCache();
-});
+beforeEach(() => db.resetDb());
 
 const member = (id: string, name: string, cache: any[] = []) =>
   ({
@@ -38,7 +29,7 @@ const note = (about: string, text: string, byId = "u1", by = "Nem") => ({
 });
 
 describe("memories", () => {
-  it("saves notes to disk, newest first, without duplicates", async () => {
+  it("saves notes, newest first, without duplicates", async () => {
     await memories.addMemory("g1", note("u2", "hates pineapple pizza"));
     await memories.addMemory("g1", note("u2", "owns three cats"));
     await memories.addMemory("g1", note("u2", "Hates pineapple pizza!"));
@@ -46,10 +37,8 @@ describe("memories", () => {
     const about = memories.memoriesAbout("g1", "u2").map((m) => m.text);
     expect(about).toHaveLength(2);
     expect(about).toContain("owns three cats");
-    const onDisk = JSON.parse(
-      readFileSync(path.join(dataDir, "memories.json"), "utf8"),
-    );
-    expect(onDisk.g1).toHaveLength(2);
+    db.closeDb();
+    expect(memories.memoriesAbout("g1", "u2")).toHaveLength(2);
   });
 
   it("rejects empty and overlong notes, and drops the oldest when full", async () => {
@@ -127,5 +116,62 @@ describe("memories", () => {
 
   it("says nothing when it knows nothing", () => {
     expect(memories.describeMemories("g1", [member("u1", "Nem")])).toBe("");
+  });
+});
+
+describe("recall", () => {
+  const DAY = 86_400_000;
+
+  it("brings up a note by topic, even about someone absent and unnamed", async () => {
+    const osha = member("u2", "Osha");
+    const nem = member("u1", "Nem", [osha]);
+    await memories.addMemory("g1", note("u2", "hates pineapple pizza"));
+
+    // Stemmed: "pizzas" finds "pizza"
+    expect(
+      memories.describeMemories("g1", [nem], "should we order pizzas tonight?"),
+    ).toContain("About Osha: hates pineapple pizza");
+    expect(memories.describeMemories("g1", [nem], "nice weather")).toBe("");
+  });
+
+  it("keeps old unrelated notes out, but recalls them on topic", async () => {
+    const nem = member("u1", "Nem");
+    const later = Date.now() + 90 * DAY;
+    await memories.addMemory(
+      "g1",
+      note(
+        memories.SERVER,
+        "the great dice feud of spring",
+        "zenbot",
+        "Zenbot",
+      ),
+    );
+
+    expect(memories.recallMemories("g1", [nem], "hello", later)).toEqual([]);
+    expect(
+      memories.recallMemories("g1", [nem], "roll the dice", later),
+    ).toHaveLength(1);
+  });
+
+  it("always includes the speaker's best notes, within the budget", async () => {
+    const nem = member("u1", "Nem");
+    for (let i = 0; i < 12; i++) {
+      await memories.addMemory(
+        "g1",
+        note(memories.SERVER, `raid night number ${i}`, "zenbot", "Zenbot"),
+      );
+    }
+    await memories.addMemory("g1", note("u1", "blames the dice"));
+
+    const recalled = memories.recallMemories("g1", [nem], "raid tonight");
+    expect(recalled).toHaveLength(10);
+    expect(recalled.map((m) => m.text)).toContain("blames the dice");
+  });
+
+  it("builds a safe full-text query from free text", () => {
+    expect(memories.topicQuery('the "pizza" OR (hungry)')).toBe(
+      '"pizza" OR "hungry"',
+    );
+    expect(memories.topicQuery("hey zenbot, the and")).toBeNull();
   });
 });

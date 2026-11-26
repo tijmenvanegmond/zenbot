@@ -7,7 +7,7 @@ import { AudioManager } from "./voice/AudioManager";
 import { VoiceSessionManager } from "./voiceSessionManager";
 import { takePendingLeave } from "../actions/voice/leaveVoiceAction";
 import { getVoiceConnection } from "@discordjs/voice";
-import { describeRoom } from "./voice/voiceRoomLog";
+import { describeRoom, recentRoomLines } from "./voice/voiceRoomLog";
 import { describePerson, preferredName } from "./people";
 import { describeMemories } from "./memories";
 import { logger } from "../utils/logger";
@@ -174,7 +174,13 @@ export const getChatReply = async ({
           .filter((m) => !m.user.bot && m.id !== member.id)
           .values() ?? []),
       ],
-      text,
+      // The topic is what's being said now, in the message and in voice
+      [
+        text,
+        ...(member.voice?.channel
+          ? recentRoomLines(member.guild.id).map((line) => line.text)
+          : []),
+      ].join(" "),
     ),
     GUIDE,
   ].join("\n");

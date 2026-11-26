@@ -1,3 +1,6 @@
+import { getDb, pruneVoiceLinesDaily, voiceLogDays } from "../db";
+import { logger } from "../../utils/logger";
+
 /**
  * What was recently said in a guild's voice channel, by whom - including
  * lines that didn't address Zenbot. Chat sessions are per person, so without
@@ -53,6 +56,8 @@ export const addRoomLine = (
   lines.push(line);
   if (lines.length > MAX_LINES) lines.splice(0, lines.length - MAX_LINES);
 
+  storeVoiceLine(guildId, line);
+
   const history = histories.get(guildId) ?? [];
   history.push(line);
   if (history.length > HISTORY_LINES) {
@@ -90,6 +95,24 @@ export const describeRoom = (guildId: string, exclude?: string): string => {
 export const recentRoomLines = (guildId: string): RoomLine[] => [
   ...fresh(guildId),
 ];
+
+/**
+ * Keep the line in zenbot.db for conversation recall (VOICE_LOG_DAYS, 0 = off).
+ * Never breaks the voice path: a failed write is only logged.
+ */
+const storeVoiceLine = (guildId: string, line: RoomLine): void => {
+  if (voiceLogDays() === 0) return;
+  try {
+    getDb()
+      .prepare(
+        "INSERT INTO voice_lines (guild_id, speaker, speaker_id, text, at) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(guildId, line.speaker, line.speakerId ?? null, line.text, line.at);
+    pruneVoiceLinesDaily();
+  } catch (error) {
+    logger.warn("💾 Failed to store voice line:", error);
+  }
+};
 
 /** Everything said since the last call (last 4 hours at most), oldest first */
 export const takeSessionHistory = (guildId: string): RoomLine[] => {

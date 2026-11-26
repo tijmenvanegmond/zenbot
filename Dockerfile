@@ -14,4 +14,5 @@ COPY personalities personalities
 
 # Port will be set via environment variable (default 3001)
 EXPOSE 3001
-CMD ["node", "dist/app.js"]
+# node:sqlite (zenbot.db) is "experimental" on Node 22 and says so on start
+CMD ["node", "--disable-warning=ExperimentalWarning", "dist/app.js"]

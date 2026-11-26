@@ -2,6 +2,13 @@
 // This file runs before all tests
 
 import { vi } from "vitest";
+import { mkdtempSync } from "fs";
+import { tmpdir } from "os";
+import path from "path";
+
+// zenbot.db (aliases, memories, voice lines) goes to a temp dir per test
+// worker, never the real data/
+process.env.ZENBOT_DATA_DIR = mkdtempSync(path.join(tmpdir(), "zenbot-test-"));
 
 // Mock Discord.js
 vi.mock("discord.js", () => ({
