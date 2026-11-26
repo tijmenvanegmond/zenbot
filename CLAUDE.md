@@ -116,6 +116,7 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - Replies that are empty, only markers, or leak tool summaries (`isUnusableReply`) get one retry without tools - the free-tier model does this occasionally after tool calls
 - Chat costs 1 Gemini request per message, 2 with a tool call (the model's answer after the tool round is used directly; the extra "final wrap" only runs when it ended without words). /listen adds 1 for transcription. The free tier allows 15/minute on flash-lite; rate-limit errors get their own reply (`chatErrorLine`)
 - 5s per-user cooldown (⏳ reaction) to protect the Gemini quota
+- Zenbot has a will: the chat guide lets it refuse, bargain or do a request its own way (a funnier nickname than asked, "not quote-worthy"), sometimes rather than always. It still leaves when told to, and never claims an action a tool did not confirm
 - Fixed commands (`/advice`, `/remark`, `/quote`) deliberately don't use tools: they make one direct call and speak exactly what they show
 - The conversation itself lives in `src/services/zenbotChat.ts` (`getChatReply`, `speakReply`), shared with `/listen`
 
