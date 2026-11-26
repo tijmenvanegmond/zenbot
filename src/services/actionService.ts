@@ -18,6 +18,10 @@ import { RollDiceAction } from "../actions/entertainment/rollDiceAction";
 import { LeaveVoiceAction } from "../actions/voice/leaveVoiceAction";
 import { SaveQuoteAction } from "../actions/information/saveQuoteAction";
 import { SetAliasAction } from "../actions/management/setAliasAction";
+import {
+  ForgetAction,
+  RememberAction,
+} from "../actions/information/memoryActions";
 import { ConferenceAction } from "../actions/ai/conferenceAction";
 
 /**
@@ -63,6 +67,8 @@ export class ActionService {
     this.registry.register(new LeaveVoiceAction());
     this.registry.register(new SaveQuoteAction());
     this.registry.register(new SetAliasAction());
+    this.registry.register(new RememberAction());
+    this.registry.register(new ForgetAction());
 
     // AI actions
     this.registry.register(new ConferenceAction());

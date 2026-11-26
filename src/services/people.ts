@@ -1,7 +1,5 @@
-import { promises as fs, readFileSync } from "fs";
-import path from "path";
 import { Guild, GuildMember } from "discord.js";
-import { logger } from "../utils/logger";
+import { jsonStore } from "./dataStore";
 
 /**
  * People go by several names: "The worst of us" is also nemjit, or nem.
@@ -10,35 +8,15 @@ import { logger } from "../utils/logger";
  * in data/aliases.json so they survive restarts.
  */
 
-const DATA_DIR =
-  process.env.ZENBOT_DATA_DIR || path.join(process.cwd(), "data");
-const ALIAS_FILE = path.join(DATA_DIR, "aliases.json");
 const MAX_ALIASES = 5;
 const MAX_ALIAS_CHARS = 32;
 
 /** guildId -> userId -> aliases, preferred first */
 type AliasStore = Record<string, Record<string, string[]>>;
 
-let store: AliasStore | null = null;
-
-const load = (): AliasStore => {
-  if (store) return store;
-  try {
-    store = JSON.parse(readFileSync(ALIAS_FILE, "utf8")) as AliasStore;
-  } catch {
-    store = {};
-  }
-  return store;
-};
-
-const save = async (): Promise<void> => {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(ALIAS_FILE, JSON.stringify(load(), null, 2));
-  } catch (error) {
-    logger.error("👥 Failed to save aliases:", error);
-  }
-};
+const aliasStore = jsonStore<AliasStore>("aliases.json", () => ({}));
+const load = aliasStore.load;
+const save = aliasStore.save;
 
 const same = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -138,6 +116,5 @@ export const findMemberByName = async (
 };
 
 /** For tests */
-export const resetAliasCache = (data: AliasStore = {}): void => {
-  store = data;
-};
+export const resetAliasCache = (data: AliasStore = {}): void =>
+  aliasStore.reset(data);

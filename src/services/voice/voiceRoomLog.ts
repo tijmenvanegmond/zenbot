@@ -20,6 +20,12 @@ export interface RoomLine {
 
 const rooms = new Map<string, RoomLine[]>();
 
+// Everything said since the last session recap (sessionRecap.ts), so the
+// diary note covers the whole session, not just the last few lines
+const HISTORY_LINES = 200;
+const HISTORY_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+const histories = new Map<string, RoomLine[]>();
+
 const fresh = (guildId: string): RoomLine[] => {
   const now = Date.now();
   const lines = (rooms.get(guildId) ?? []).filter(
@@ -37,14 +43,22 @@ export const addRoomLine = (
 ): void => {
   const trimmed = text.trim();
   if (!trimmed) return;
-  const lines = fresh(guildId);
-  lines.push({
+  const line = {
     speaker,
     speakerId,
     text: trimmed.slice(0, MAX_LINE_CHARS),
     at: Date.now(),
-  });
+  };
+  const lines = fresh(guildId);
+  lines.push(line);
   if (lines.length > MAX_LINES) lines.splice(0, lines.length - MAX_LINES);
+
+  const history = histories.get(guildId) ?? [];
+  history.push(line);
+  if (history.length > HISTORY_LINES) {
+    history.splice(0, history.length - HISTORY_LINES);
+  }
+  histories.set(guildId, history);
 };
 
 /**
@@ -77,5 +91,16 @@ export const recentRoomLines = (guildId: string): RoomLine[] => [
   ...fresh(guildId),
 ];
 
+/** Everything said since the last call (last 4 hours at most), oldest first */
+export const takeSessionHistory = (guildId: string): RoomLine[] => {
+  const cutoff = Date.now() - HISTORY_MAX_AGE_MS;
+  const history = (histories.get(guildId) ?? []).filter((l) => l.at >= cutoff);
+  histories.delete(guildId);
+  return history;
+};
+
 /** For tests */
-export const clearRoomLog = (): void => rooms.clear();
+export const clearRoomLog = (): void => {
+  rooms.clear();
+  histories.clear();
+};

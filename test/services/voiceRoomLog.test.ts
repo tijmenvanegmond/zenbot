@@ -38,3 +38,19 @@ describe("voiceRoomLog", () => {
     expect(describeRoom("g")).toBe("");
   });
 });
+
+describe("session history", () => {
+  it("keeps every line since the last recap, then starts over", async () => {
+    const log = await import("../../src/services/voice/voiceRoomLog");
+    log.clearRoomLog();
+    for (let i = 0; i < 15; i++)
+      log.addRoomLine("g9", "Osha", `line ${i}`, "u2");
+
+    // The prompt log keeps 10; the session history keeps all of them
+    expect(log.recentRoomLines("g9")).toHaveLength(10);
+    const history = log.takeSessionHistory("g9");
+    expect(history).toHaveLength(15);
+    expect(history[0].text).toBe("line 0");
+    expect(log.takeSessionHistory("g9")).toEqual([]);
+  });
+});

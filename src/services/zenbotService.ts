@@ -718,6 +718,41 @@ Reply with only the remark.`;
     }
     return null;
   }
+  /**
+   * The diary note for a finished voice session: one short line if something
+   * noteworthy happened, null for small talk. One direct call on the fast
+   * model, no tools. Throws when AI is unavailable or the call fails.
+   */
+  async writeSessionNote(transcript: string): Promise<string | null> {
+    const provider = this.requireAI().getProvider();
+    const prompt = `You are Zenbot, a sardonic Discord bot keeping a diary of your server. Below is a voice chat that just ended, transcribed automatically (expect errors). "Zenbot" lines are you.
+
+If something genuinely noteworthy happened - a memorable moment, a decision, a bold claim, a defeat, a joke worth calling back to - write ONE diary note under 150 characters, naming who, in your dry voice. Mundane chatter, game callouts, small talk or transcription noise: reply exactly NONE. Most sessions are NONE.
+
+Transcript:
+${transcript}`;
+    const raw = await Promise.race([
+      provider.generateText(prompt, {
+        temperature: 0.5,
+        maxTokens: 1000,
+        ...(provider.name === "gemini" && { model: FAST_GEMINI_MODEL }),
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("session note timed out")), 20000),
+      ),
+    ]);
+    const note = (
+      raw
+        .split("\n")
+        .map((line) => line.trim())
+        .find(Boolean) ?? ""
+    )
+      .replace(/^["“”']+|["“”']+$/g, "")
+      .trim();
+    if (!note || /^none\b/i.test(note) || note.length > 200) return null;
+    return note;
+  }
+
   // ===== QUOTE INTROS =====
 
   private recentQuoteIntros: string[] = [];

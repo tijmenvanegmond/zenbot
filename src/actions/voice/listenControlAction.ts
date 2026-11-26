@@ -29,6 +29,7 @@ import { preferredName } from "../../services/people";
 import { addRoomLine } from "../../services/voice/voiceRoomLog";
 import { OpusDecoder } from "../../services/voice/opusDecoder";
 import { AudioManager } from "../../services/voice/AudioManager";
+import { recapVoiceSession } from "../../services/voice/sessionRecap";
 import { AudioPlayerStatus } from "@discordjs/voice";
 
 // Audio processing constants - Adjusted for real speech patterns
@@ -412,6 +413,12 @@ export class ListenControlAction implements ZenAction {
     // with the connection, when Zenbot leaves.
     if (connection.__zenbotListening) return;
     connection.__zenbotListening = true;
+    // Session over: maybe a diary note, if anything noteworthy was said
+    connection.on("stateChange", (_old: unknown, state: { status: string }) => {
+      if (state.status === VoiceConnectionStatus.Destroyed) {
+        recapVoiceSession(target.guildId).catch(() => undefined);
+      }
+    });
     const receiver = connection.receiver;
 
     // Incoming audio is end-to-end encrypted (DAVE). Surface the library's
