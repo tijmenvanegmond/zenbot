@@ -5,7 +5,12 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { VoiceSessionManager } from "../../services/voiceSessionManager";
-import { joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
+import {
+  getVoiceConnection,
+  joinVoiceChannel,
+  VoiceConnectionStatus,
+} from "@discordjs/voice";
+import { TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { logger } from "../../utils/logger";
 import {
   chatErrorLine,
@@ -109,6 +114,13 @@ export { WAKE_WORD };
 // One reply at a time per guild: overlapping replies talk over each other
 const replyInFlight = new Set<string>();
 
+/** Where heard speech is answered: the voice channel, and a text channel for the log */
+export interface ListenTarget {
+  guildId: string;
+  voiceChannel: VoiceBasedChannel;
+  textChannel?: TextBasedChannel;
+}
+
 /**
  * Answer something said in voice: same conversation as @Zenbot chat (real
  * names, tools, voice mood; spoken text == posted text). Posts what was heard
@@ -117,10 +129,9 @@ const replyInFlight = new Set<string>();
 async function respondToSpeech(
   userId: string,
   transcription: string,
-  context: ActionContext,
+  target: ListenTarget,
 ): Promise<void> {
-  const voiceChannel = context.voiceChannel;
-  if (!voiceChannel || !context.guild) return;
+  const { guildId, voiceChannel, textChannel } = target;
 
   const member =
     voiceChannel.members.get(userId) ??
@@ -129,12 +140,7 @@ async function respondToSpeech(
 
   // Everything heard goes in the room log, addressed to Zenbot or not, so it
   // can follow the conversation around a question
-  addRoomLine(
-    context.guild.id,
-    preferredName(member),
-    transcription,
-    member.id,
-  );
+  addRoomLine(guildId, preferredName(member), transcription, member.id);
 
   const named = WAKE_WORD.test(transcription);
   const humans = voiceChannel.members.filter((m) => !m.user.bot).size;
@@ -155,15 +161,14 @@ async function respondToSpeech(
     return;
   }
 
-  if (replyInFlight.has(context.guild.id)) {
+  if (replyInFlight.has(guildId)) {
     logger.info(
       `🎤 Skipping "${transcription}" from ${member.displayName}: still answering`,
     );
     return;
   }
-  replyInFlight.add(context.guild.id);
+  replyInFlight.add(guildId);
 
-  const textChannel = context.interaction?.channel;
   try {
     logger.info(`🎤 ${member.displayName} (voice): "${transcription}"`);
     const reply = await getChatReply({
@@ -178,7 +183,7 @@ async function respondToSpeech(
       logger.info(`🎤 Zenbot lets "${transcription}" pass in silence`);
       return;
     }
-    addRoomLine(context.guild.id, "Zenbot (you)", reply.display, "zenbot");
+    addRoomLine(guildId, "Zenbot (you)", reply.display, "zenbot");
 
     // They said it out loud, so no need to repeat the trigger in voice
     await speakReply(voiceChannel, reply.speech, reply.mood, "voice-response");
@@ -197,7 +202,7 @@ async function respondToSpeech(
       `🎤 Zenbot -> ${member.displayName}${reply.mood ? ` [${reply.mood}]` : ""}: "${reply.display.substring(0, 120)}"`,
     );
     // Asked to leave: after the goodbye, which also ends this listen session
-    if (reply.leaveVoice) await leaveVoice(context.guild.id);
+    if (reply.leaveVoice) await leaveVoice(guildId);
   } catch (error) {
     logger.error(`🎤 Voice reply to ${member.displayName} failed:`, error);
     await speakReply(
@@ -207,7 +212,7 @@ async function respondToSpeech(
       "voice-error",
     ).catch(() => undefined);
   } finally {
-    replyInFlight.delete(context.guild.id);
+    replyInFlight.delete(guildId);
   }
 }
 
@@ -313,7 +318,11 @@ export class ListenControlAction implements ZenAction {
           }, timeoutMs);
 
           // Set up voice listening with transcription and AI processing
-          this.setupVoiceListening(connection, context);
+          this.setupVoiceListening(connection, {
+            guildId: context.guild.id,
+            voiceChannel: context.voiceChannel,
+            textChannel: context.interaction?.channel ?? undefined,
+          });
           logger.info(
             `🎭 Voice listening with AI processing enabled for ${duration} minutes`,
           );
@@ -397,7 +406,12 @@ export class ListenControlAction implements ZenAction {
   /**
    * Set up voice listening with transcription and AI processing
    */
-  private setupVoiceListening(connection: any, context: ActionContext): void {
+  setupVoiceListening(connection: any, target: ListenTarget): void {
+    // Once per connection: /listen after an @Zenbot follow-up (or the other
+    // way round) would otherwise answer everything twice. The listeners end
+    // with the connection, when Zenbot leaves.
+    if (connection.__zenbotListening) return;
+    connection.__zenbotListening = true;
     const receiver = connection.receiver;
 
     // Incoming audio is end-to-end encrypted (DAVE). Surface the library's
@@ -416,7 +430,7 @@ export class ListenControlAction implements ZenAction {
     const userSpeakStartTimes = new Map<string, number>(); // Track speaking duration
     const activeStreams = new Map<string, any>(); // Track active audio streams per user
     const startedOverBot = new Set<string>(); // Began while Zenbot was talking
-    const guildId = context.guild?.id ?? "";
+    const guildId = target.guildId;
 
     receiver.speaking.on("start", (userId: string) => {
       logger.info(`🎤 User ${userId} started speaking`);
@@ -523,7 +537,7 @@ export class ListenControlAction implements ZenAction {
                 );
 
                 // Process voice commands using action system
-                await respondToSpeech(userId, transcription, context);
+                await respondToSpeech(userId, transcription, target);
               } else {
                 logger.info(
                   `🎤 No speech detected in audio from user ${userId}`,
@@ -592,3 +606,25 @@ export class ListenControlAction implements ZenAction {
     return true;
   }
 }
+
+/**
+ * After an @Zenbot reply is spoken in voice, keep listening on that same
+ * connection until Zenbot idles out (AudioManager's 1-minute timer), so people
+ * can answer out loud. Unlike /listen it doesn't hold Zenbot in the channel;
+ * every spoken reply resets the idle timer, so a conversation keeps it there.
+ */
+export const listenWhileInVoice = (target: ListenTarget): void => {
+  const connection = getVoiceConnection(target.guildId);
+  if (
+    !connection ||
+    connection.state.status === VoiceConnectionStatus.Destroyed
+  ) {
+    return;
+  }
+  if (!(connection as any).__zenbotListening) {
+    logger.info(
+      `🎤 Listening in ${target.voiceChannel.name} until Zenbot leaves (follow-up to chat)`,
+    );
+  }
+  new ListenControlAction().setupVoiceListening(connection, target);
+};

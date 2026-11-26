@@ -111,6 +111,7 @@ Zenbot uses a unified actions system that provides a single interface for functi
 - `rename_user` takes a name or ID ("me" works). From chat it only renames the requester or people in their voice channel
 - `channel_management` rename defaults to the user's voice channel (also when the AI passes an unknown ID) and refuses up front past Discord's limit of 2 renames per channel per 10 minutes - discord.js would otherwise queue it and rename minutes later
 - The handler shows the reply and, if the author is in voice, speaks that same reply: "<name> asks: <message>", pause, reply. The AI never speaks for itself here, so text and voice can't diverge
+- After a spoken @Zenbot reply it keeps listening on that connection until the 1-minute idle leave (`listenWhileInVoice`), so people can answer out loud with the /listen rules (wake word, `[silent]`). Unlike /listen it doesn't hold the bot in the channel; each spoken reply resets the idle timer. Listeners attach once per connection (`__zenbotListening`), so /listen on top doesn't answer twice
 - Voice mood is an inline `[mood:calm|wise|playful|intense]` tag in the reply (`extractMood`), spoken with `piper-zen-<mood>`. It was a tool once; that cost an extra Gemini round on nearly every message
 - `[pause]` markers in replies are spoken as silence and removed from the text; `[gong]` (max one per reply) strikes the gong and shows as 🔔
 - Replies that are empty, only markers, or leak tool summaries (`isUnusableReply`) get one retry without tools - the free-tier model does this occasionally after tool calls

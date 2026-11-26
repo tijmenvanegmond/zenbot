@@ -9,6 +9,7 @@ import {
 import { preferredName } from "../services/people";
 import { addRoomLine } from "../services/voice/voiceRoomLog";
 import { toSpeakableText } from "../utils/speechText";
+import { listenWhileInVoice } from "../actions/voice/listenControlAction";
 import { logger } from "../utils/logger";
 
 /**
@@ -95,9 +96,15 @@ async function handleChat(client: Client, message: Message): Promise<void> {
       "chat",
     )
       .catch((error) => logger.error("💬 Failed to speak chat reply:", error))
-      // Goodbye first, then go
+      // Goodbye first, then go. Otherwise stay and listen for a spoken answer
       .then(async () => {
         if (reply.leaveVoice) await leaveVoice(message.guild!.id);
+        else
+          listenWhileInVoice({
+            guildId: member.guild.id,
+            voiceChannel,
+            textChannel: message.channel,
+          });
       });
   } else if (reply.leaveVoice) {
     await leaveVoice(message.guild!.id);
