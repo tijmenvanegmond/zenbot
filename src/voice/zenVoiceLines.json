@@ -1,59 +1,419 @@
 {
-  "data": [
-    {
-      "text": "Amid discord we will find tranquility",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/c/cd/Zenyatta_-_Amid_discord%2C_we_will_find_tranquility.ogg/revision/latest?cb=20220630044422",
-      "length": 8000
+  "categories": {
+    "heroSelected": [
+      {
+        "text": "Amid discord, we will find tranquility.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/c/cd/Zenyatta_-_Amid_discord%2C_we_will_find_tranquility.ogg/revision/latest?cb=20220630044422",
+        "length": 8000
+      },
+      {
+        "text": "True self is without form.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "We are in harmony.",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "setupPhase": [
+      {
+        "text": "In times of conflict, one must seek balance.",
+        "voiceUri": null,
+        "length": 6000
+      },
+      {
+        "text": "My memories from before the Awakening are blurry, like a fading dream. But I do remember some things.",
+        "voiceUri": null,
+        "length": 10000
+      },
+      {
+        "text": "Our mission awaits us.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Shed the weight of your doubts, and your mind will become clear.",
+        "voiceUri": null,
+        "length": 7000
+      },
+      {
+        "text": "A disciplined mind is your most dependable ally.",
+        "voiceUri": null,
+        "length": 6000
+      },
+      {
+        "text": "The greatest enemy is that which lies within.",
+        "voiceUri": null,
+        "length": 6000
+      },
+      {
+        "text": "Let us pave our path together.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "We must work and breathe as one.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "Shall we journey together?",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "orbOfHarmony": [
+      {
+        "text": "A balm for your wounds.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Be reassured. You are not alone.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "Harmony follows you.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Peace be upon you.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "I watch over you.",
+        "voiceUri": null,
+        "length": 3000
+      },
+      {
+        "text": "Healing is your reward.",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "orbOfDiscord": [
+      {
+        "text": "Attachment is the source of all suffering.",
+        "voiceUri": null,
+        "length": 6000
+      },
+      {
+        "text": "Doubt shrouds you.",
+        "voiceUri": null,
+        "length": 3000
+      },
+      {
+        "text": "This does not bode well for you.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "Gaze into the iris.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Discord consumes you.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Your soul is trapped.",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "transcendence": [
+      {
+        "text": "Experience tranquility.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Pass into the Iris.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Embrace the iris!",
+        "voiceUri": null,
+        "length": 3000
+      }
+    ],
+    "elimination": [
+      {
+        "text": "That was your lesson for today.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "Your flaws are revealed... How disappointing.",
+        "voiceUri": null,
+        "length": 6000
+      },
+      {
+        "text": "Death is whimsical today.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "How... disappointing.",
+        "voiceUri": null,
+        "length": 3000
+      },
+      {
+        "text": "Walk in harmony.",
+        "voiceUri": null,
+        "length": 3000
+      },
+      {
+        "text": "Experience nothingness.",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "philosophical": [
+      {
+        "text": "Adversity is an opportunity for change.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/d7/Zenyatta_-_Adversity_is_an_opportunity_for_change.ogg/revision/latest?cb=20170217114632",
+        "length": 8000
+      },
+      {
+        "text": "If you do not bend...you break.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/0b/Zenyatta_-_If_you_do_not_bend%2C_you_break.ogg/revision/latest?cb=20170217142923",
+        "length": 8000
+      },
+      {
+        "text": "In anger, you defeat only yourself.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6c/Zenyatta_-_In_anger_you_defeat_only_yourself.ogg/revision/latest?cb=20170217143050",
+        "length": 8000
+      },
+      {
+        "text": "One cannot survive on strength alone.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/df/Zenyatta_-_One_cannot_survive_on_strength_alone.ogg/revision/latest?cb=20170218203748",
+        "length": 8000
+      },
+      {
+        "text": "You must learn from your mistakes.",
+        "voiceUri": null,
+        "length": 8000
+      },
+      {
+        "text": "Move too quickly, and you overlook much.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/99/Zenyatta_-_Move_too_quickly_and_you_overlook_much.ogg/revision/latest?cb=20170218203711",
+        "length": 8000
+      },
+      {
+        "text": "Life is more than a series of ones and zeroes.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/98/Zenyatta_-_Life_is_more_than_a_series_of_ones_and_zeroes.ogg/revision/latest?cb=20170218203706",
+        "length": 7000
+      },
+      {
+        "text": "Always strive for improvement.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6d/Zenyatta_-_Always_strive_for_improvement.ogg/revision/latest?cb=20170217114743",
+        "length": 5000
+      },
+      {
+        "text": "Every rooster crows in its own pen.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/02/Zenyatta_-_Every_rooster_crows_in_its_own_pen.ogg/revision/latest?cb=20170217120036",
+        "length": 5000
+      },
+      {
+        "text": "Overconfidence is a flaky friend.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "Pain is an excellent teacher.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Free your mind.",
+        "voiceUri": null,
+        "length": 3000
+      },
+      {
+        "text": "Let go of that which weighs upon your mind.",
+        "voiceUri": null,
+        "length": 6000
+      },
+      {
+        "text": "Walk along the path to enlightenment.",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "I dreamt I was a butterfly.",
+        "voiceUri": null,
+        "length": 4000
+      },
+      {
+        "text": "Do I think? Does a submarine swim?",
+        "voiceUri": null,
+        "length": 5000
+      },
+      {
+        "text": "The iris embraces you.",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "greetings": [
+      {
+        "text": "Hello, world.",
+        "voiceUri": null,
+        "length": 3000
+      },
+      {
+        "text": "Greetings.",
+        "voiceUri": null,
+        "length": 2000
+      },
+      {
+        "text": "Peace be upon you.",
+        "voiceUri": null,
+        "length": 4000
+      }
+    ],
+    "interactions": {
+      "genji": [
+        {
+          "text": "It is nothing personal, Genji.",
+          "voiceUri": null,
+          "length": 5000
+        },
+        {
+          "text": "I sense within you the same rage that once consumed your brother.",
+          "voiceUri": null,
+          "length": 7000
+        }
+      ],
+      "ramattra": [
+        {
+          "text": "You have strayed too far, brother.",
+          "voiceUri": null,
+          "length": 5000
+        },
+        {
+          "text": "What has become of you, Ramattra?",
+          "voiceUri": null,
+          "length": 5000
+        }
+      ],
+      "symmetra": [
+        {
+          "text": "Your distress betrays you, Satya.",
+          "voiceUri": null,
+          "length": 5000
+        },
+        {
+          "text": "Only that which I have observed, experienced and processed.",
+          "voiceUri": null,
+          "length": 7000
+        }
+      ]
     },
-    {
-      "text": "Adversity is an opportunity for change.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/d7/Zenyatta_-_Adversity_is_an_opportunity_for_change.ogg/revision/latest?cb=20170217114632",
-      "length": 8000
-    },
-    {
-      "text": "If you do not bend...you break.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/0b/Zenyatta_-_If_you_do_not_bend%2C_you_break.ogg/revision/latest?cb=20170217142923",
-      "length": 8000
-    },
-    {
-      "text": "In anger, you defeat only yourself.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6c/Zenyatta_-_In_anger_you_defeat_only_yourself.ogg/revision/latest?cb=20170217143050",
-      "length": 8000
-    },
-    {
-      "text": "One cannot survive on strength alone.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/df/Zenyatta_-_One_cannot_survive_on_strength_alone.ogg/revision/latest?cb=20170218203748",
-      "length": 8000
-    },
-    {
-      "text": "You must learn from your mistakes.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/df/Zenyatta_-_One_cannot_survive_on_strength_alone.ogg/revision/latest?cb=20170218203748",
-      "length": 8000
-    },
-    {
-      "text": "Move too quickly, and you overlook much.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/99/Zenyatta_-_Move_too_quickly_and_you_overlook_much.ogg/revision/latest?cb=20170218203711",
-      "length": 8000
-    },
-    {
-      "text": "Life is more than a series of ones and zeroes.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/98/Zenyatta_-_Life_is_more_than_a_series_of_ones_and_zeroes.ogg/revision/latest?cb=20170218203706",
-      "length": 7000
-    },
-    {
-      "text": "Always strive for improvement.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6d/Zenyatta_-_Always_strive_for_improvement.ogg/revision/latest?cb=20170217114743",
-      "length": 5000
-    },
-    {
-      "text": "Every rooster crows in its own pen.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/02/Zenyatta_-_Every_rooster_crows_in_its_own_pen.ogg/revision/latest?cb=20170217120036",
-      "length": 5000
-    },
-    {
-      "text": "Embrace the rhythm. Embrace the beat. Embrace the melody. Move your feet.",
-      "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/e/e1/Zenyatta_move_your_feet.ogg/revision/latest?cb=20190129113707",
-      "length": 8000
-    }
-  ]
+    "special": [
+      {
+        "text": "How wonderful, a place where omnic and human live as equals.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/b/b3/Zenyatta_-_How_wonderful%2C_a_place_where_omnic_and_human_live_as_equals.ogg",
+        "length": 6500
+      },
+      {
+        "text": "I am becoming one with the objective.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/4/4f/Zenyatta_-_I_am_becoming_one_with_the_objective.ogg",
+        "length": 3700
+      },
+      {
+        "text": "I am on fire, but an extinguisher is not required.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/0/02/Zenyatta_-_I_am_on_fire%2C_but_an_extinguisher_is_not_required.ogg",
+        "length": 4600
+      },
+      {
+        "text": "I am on fire.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/a/a9/Zenyatta_-_I_am_on_fire.ogg",
+        "length": 1800
+      }
+    ]
+  },
+  "legacy": {
+    "data": [
+      {
+        "text": "Amid discord we will find tranquility",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/c/cd/Zenyatta_-_Amid_discord%2C_we_will_find_tranquility.ogg/revision/latest?cb=20220630044422",
+        "length": 8000
+      },
+      {
+        "text": "Adversity is an opportunity for change.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/d7/Zenyatta_-_Adversity_is_an_opportunity_for_change.ogg/revision/latest?cb=20170217114632",
+        "length": 8000
+      },
+      {
+        "text": "If you do not bend...you break.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/0b/Zenyatta_-_If_you_do_not_bend%2C_you_break.ogg/revision/latest?cb=20170217142923",
+        "length": 8000
+      },
+      {
+        "text": "In anger, you defeat only yourself.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6c/Zenyatta_-_In_anger_you_defeat_only_yourself.ogg/revision/latest?cb=20170217143050",
+        "length": 8000
+      },
+      {
+        "text": "One cannot survive on strength alone.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/d/df/Zenyatta_-_One_cannot_survive_on_strength_alone.ogg/revision/latest?cb=20170218203748",
+        "length": 8000
+      },
+      {
+        "text": "You must learn from your mistakes.",
+        "voiceUri": null,
+        "length": 8000
+      },
+      {
+        "text": "Move too quickly, and you overlook much.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/99/Zenyatta_-_Move_too_quickly_and_you_overlook_much.ogg/revision/latest?cb=20170218203711",
+        "length": 8000
+      },
+      {
+        "text": "Life is more than a series of ones and zeroes.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/98/Zenyatta_-_Life_is_more_than_a_series_of_ones_and_zeroes.ogg/revision/latest?cb=20170218203706",
+        "length": 7000
+      },
+      {
+        "text": "Always strive for improvement.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/6/6d/Zenyatta_-_Always_strive_for_improvement.ogg/revision/latest?cb=20170217114743",
+        "length": 5000
+      },
+      {
+        "text": "Every rooster crows in its own pen.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch_gamepedia/images/0/02/Zenyatta_-_Every_rooster_crows_in_its_own_pen.ogg/revision/latest?cb=20170217120036",
+        "length": 5000
+      },
+      {
+        "text": "How wonderful, a place where omnic and human live as equals.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/b/b3/Zenyatta_-_How_wonderful%2C_a_place_where_omnic_and_human_live_as_equals.ogg",
+        "length": 6500
+      },
+      {
+        "text": "I am becoming one with the objective.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/4/4f/Zenyatta_-_I_am_becoming_one_with_the_objective.ogg",
+        "length": 3700
+      },
+      {
+        "text": "I am on fire, but an extinguisher is not required.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/0/02/Zenyatta_-_I_am_on_fire%2C_but_an_extinguisher_is_not_required.ogg",
+        "length": 4600
+      },
+      {
+        "text": "I am on fire.",
+        "voiceUri": "https://static.wikia.nocookie.net/overwatch/images/a/a9/Zenyatta_-_I_am_on_fire.ogg",
+        "length": 1800
+      }
+    ]
+  }
 }

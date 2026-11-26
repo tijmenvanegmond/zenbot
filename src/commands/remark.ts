@@ -1,65 +1,92 @@
 import {
   CommandInteraction,
   Client,
-  GuildMember,
-  VoiceChannel,
+  MessageFlags,
   SlashCommandBuilder,
-  CommandInteractionOptionResolver,
 } from "discord.js";
 import { Command } from "./command";
-import { StreamType, createAudioResource } from "@discordjs/voice";
-import { turnTextIntoSpeechBuffer } from "../voice/tts";
-import { getInsult, getPraise } from "../voice/remark";
-import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
-import path from "node:path";
+import { ActionService } from "../services/actionService";
+import { RemarkType } from "../actions/entertainment/remarkAction";
+import { logger } from "../utils/logger";
+import {
+  getInteractionOptions,
+  createErrorResponse,
+} from "../utils/commandHelpers";
 
 export const Remark: Command = {
   data: new SlashCommandBuilder()
     .setName("remark")
-    .setDescription("A positive or Negative remark")
-    .addBooleanOption((option) =>
-      option.setName("positive").setDescription("Is the remark positive?"),
+    .setDescription("Generate a positive or negative remark about someone")
+    .addStringOption((option) =>
+      option
+        .setName("type")
+        .setDescription("Type of remark")
+        .setRequired(true)
+        .addChoices(
+          { name: "😊 Positive", value: RemarkType.POSITIVE },
+          { name: "😈 Negative", value: RemarkType.NEGATIVE },
+          { name: "🧘 Philosophical", value: RemarkType.PHILOSOPHICAL },
+          { name: "😏 Sarcastic", value: RemarkType.SARCASTIC },
+          { name: "💪 Encouraging", value: RemarkType.ENCOURAGING },
+          { name: "🔮 Mysterious", value: RemarkType.MYSTERIOUS },
+          { name: "🦉 Wise", value: RemarkType.WISE },
+          { name: "😄 Humorous", value: RemarkType.HUMOROUS },
+        ),
     )
     .addUserOption((option) =>
       option
         .setName("subject")
-        .setDescription("Who is the subject of the remark?"),
+        .setDescription("Who is the subject of the remark?")
+        .setRequired(false),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
+    try {
+      const options = getInteractionOptions(interaction);
+      const remarkType = options.getString("type");
+      const targetUser = options.getUser("subject");
 
-    if (!member?.voice?.channelId) {
-      console.log("reply-ing in text");
-      return await interaction.followUp({
-        content: "You have to be in voice to use this",
-        ephemeral: true,
-      });
+      if (!remarkType) {
+        return await interaction.followUp(
+          createErrorResponse(
+            "Please specify a remark type (positive or negative).",
+          ),
+        );
+      }
+
+      const actionService = ActionService.getInstance();
+
+      // Execute the generate remark action
+      const result = await actionService.executeFromCommand(
+        interaction,
+        "generate_remark",
+        {
+          type: remarkType,
+          subject_username: targetUser?.username,
+          subject_user_id: targetUser?.id,
+          use_voice: true,
+        },
+      );
+
+      if (result.success) {
+        await interaction.followUp({
+          flags: MessageFlags.Ephemeral,
+          content: result.responseText,
+        });
+      } else {
+        await interaction.followUp(
+          createErrorResponse(
+            result.responseText ||
+              result.error ||
+              "An error occurred while generating the remark.",
+          ),
+        );
+      }
+    } catch (error) {
+      logger.error("Error during remark command execution:", error);
+      await interaction.followUp(
+        createErrorResponse("An error occurred while delivering the remark."),
+      );
     }
-
-    let options = interaction.options as CommandInteractionOptionResolver;
-    let text = "";
-    if (options.getBoolean("positive")) {
-      text = await getPraise(options.getUser("subject")?.username);
-    } else {
-      text = await getInsult(options.getUser("subject")?.username);
-    }
-
-    const outputFilePath = "./output.opus";
-    const filepath = path.resolve(outputFilePath);
-    await turnTextIntoSpeechBuffer(text, filepath);
-    const resource = createAudioResource(filepath, {
-      inputType: StreamType.Opus,
-    });
-
-    await PlayResourceInVoiceChannel(
-      member.voice.channel as VoiceChannel,
-      resource,
-    );
-
-    await interaction.followUp({
-      ephemeral: true,
-      content: text,
-    });
   },
 };

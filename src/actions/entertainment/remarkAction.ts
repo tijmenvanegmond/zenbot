@@ -1,0 +1,208 @@
+import {
+  ZenAction,
+  ActionContext,
+  ActionParameters,
+  ActionResult,
+} from "../actionTypes";
+import { ZenbotService } from "../../services/zenbotService";
+import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
+import { logger } from "../../utils/logger";
+
+export enum RemarkType {
+  POSITIVE = "positive",
+  NEGATIVE = "negative",
+  PHILOSOPHICAL = "philosophical",
+  SARCASTIC = "sarcastic",
+  ENCOURAGING = "encouraging",
+  MYSTERIOUS = "mysterious",
+  WISE = "wise",
+  HUMOROUS = "humorous",
+}
+
+export class RemarkAction implements ZenAction {
+  name = "generate_remark";
+  description = "Generate a positive or negative remark about someone";
+  category = "entertainment" as const;
+
+  permissions = {
+    allowedSources: ["command", "api"],
+  };
+
+  schema = {
+    name: "generate_remark",
+    description:
+      "Generate a positive or negative remark about someone, with optional TTS playback",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        type: {
+          type: "string" as const,
+          description: "Type of remark to generate",
+          enum: Object.values(RemarkType),
+        },
+        subject_username: {
+          type: "string" as const,
+          description: "Username of the person the remark is about (optional)",
+        },
+        subject_user_id: {
+          type: "string" as const,
+          description: "User ID of the person the remark is about (optional)",
+        },
+        use_voice: {
+          type: "boolean" as const,
+          description:
+            "Whether to play the remark as TTS if user is in voice channel",
+        },
+      },
+      required: ["type"],
+    },
+  };
+
+  async execute(
+    context: ActionContext,
+    parameters: ActionParameters,
+  ): Promise<ActionResult> {
+    try {
+      const {
+        type,
+        subject_username,
+        subject_user_id,
+        use_voice = true,
+      } = parameters;
+
+      // Validate remark type
+      if (!Object.values(RemarkType).includes(type as RemarkType)) {
+        return {
+          success: false,
+          error: "Invalid remark type",
+          shouldRespond: true,
+          responseText: `Remark type must be either "${RemarkType.POSITIVE}" or "${RemarkType.NEGATIVE}".`,
+        };
+      }
+
+      // Determine subject name
+      let subjectName = subject_username;
+
+      // If user_id provided but no username, try to get username from context
+      if (subject_user_id && !subjectName && context.interaction) {
+        try {
+          const user =
+            await context.interaction.client.users.fetch(subject_user_id);
+          subjectName = user.username;
+        } catch (error) {
+          logger.warn(
+            `🎭 Could not fetch user ${subject_user_id} for remark:`,
+            error,
+          );
+        }
+      }
+
+      // Generate remark using unified Zenyatta service
+      let remarkText: string;
+      try {
+        if (!context.interaction) {
+          throw new Error(
+            "Interaction context required for unified remark generation",
+          );
+        }
+
+        const zenyatta = ZenbotService.getInstance();
+        const result = await zenyatta.generateRemark(
+          context.interaction,
+          type,
+          subjectName,
+          context.voiceChannel?.name,
+        );
+        remarkText = result.text;
+      } catch (remarkError) {
+        logger.error(`🎭 Failed to generate ${type} remark:`, remarkError);
+        return {
+          success: false,
+          error: "Failed to generate remark",
+          shouldRespond: true,
+          responseText:
+            "I encountered difficulty generating that remark. Please try again.",
+        };
+      }
+
+      // Speak the same text we show. When the AI calls this as a function,
+      // it gets remarkText back and decides what to say itself.
+      let spoken = false;
+      if (use_voice && context.source !== "ai" && context.voiceChannel) {
+        await UnifiedVoiceService.getInstance().speak({
+          text: remarkText,
+          voiceChannel: context.voiceChannel,
+          activityType: "remark",
+        });
+        spoken = true;
+      }
+
+      // Create response with appropriate emoji
+      const emojiMap: Record<RemarkType, string> = {
+        [RemarkType.POSITIVE]: "😊",
+        [RemarkType.NEGATIVE]: "😈",
+        [RemarkType.PHILOSOPHICAL]: "🧘",
+        [RemarkType.SARCASTIC]: "😏",
+        [RemarkType.ENCOURAGING]: "💪",
+        [RemarkType.MYSTERIOUS]: "🔮",
+        [RemarkType.WISE]: "🦉",
+        [RemarkType.HUMOROUS]: "😄",
+      };
+      const emoji = emojiMap[type as RemarkType] || "🤔";
+      const responseText = `${emoji} **Remark about ${subjectName}:** ${remarkText}`;
+
+      logger.info(
+        `🎭 Remark action: ${type} remark${subjectName ? ` about ${subjectName}` : ""}: "${remarkText}"${spoken ? " (spoken)" : ""}`,
+      );
+
+      return {
+        success: true,
+        message: `${type} remark generated`,
+        data: {
+          remarkText,
+          type,
+          subject: subjectName,
+          emoji,
+        },
+        shouldRespond: true,
+        responseText,
+        useVoice: false, // already spoken above (or left to the AI)
+      };
+    } catch (error) {
+      logger.error("🎭 Remark action failed:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        shouldRespond: true,
+        responseText: "An error occurred while generating the remark.",
+      };
+    }
+  }
+
+  validate(parameters: ActionParameters): boolean {
+    // Validate remark type
+    if (
+      !parameters.type ||
+      !Object.values(RemarkType).includes(parameters.type as RemarkType)
+    ) {
+      return false;
+    }
+
+    // Optional parameters should be strings if provided
+    if (
+      parameters.subject_username &&
+      typeof parameters.subject_username !== "string"
+    ) {
+      return false;
+    }
+
+    if (
+      parameters.subject_user_id &&
+      typeof parameters.subject_user_id !== "string"
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+}

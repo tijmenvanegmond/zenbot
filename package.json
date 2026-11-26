@@ -1,33 +1,45 @@
 {
   "name": "zenbot",
-  "version": "0.0.3",
-  "description": "a discord zenbot",
-  "main": "dist/bot.js",
+  "version": "0.1.0",
+  "description": "A sardonic Discord bot: Zenbot - concise, spicy AI guidance with voice and conversation memory",
+  "main": "dist/app.js",
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon src/app.ts",
-    "tts": "ts-node src/doTTS.ts",
-    "test": "ts-node src/test.ts",
+    "tts": "ts-node src/scripts/tts.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:multi-personality": "vitest run test/multi-personality.test.ts",
+    "demo:multi-personality": "ts-node src/demo-multi-personality.ts",
+    "coverage": "vitest run --coverage",
     "build": "tsc",
     "lint": "prettier --write ."
   },
   "dependencies": {
-    "@discordjs/voice": "^0.18.0",
+    "@anthropic-ai/sdk": "^0.61.0",
+    "@discordjs/opus": "^0.11.0",
+    "@discordjs/voice": "^0.19.2",
+    "@google/generative-ai": "^0.24.1",
     "discord.js": "^14.17",
     "dotenv": "^16.0.3",
     "fastify": "^4.26.2",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
-    "openai": "^4.77.0"
+    "openai": "^5.19.1",
+    "opusscript": "^0.0.8",
+    "say": "^0.16.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^22",
+    "@vitest/ui": "^2.1.8",
     "nodemon": "^3.1.0",
     "prettier": "^3.5.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "repository": {
     "type": "git",
@@ -37,9 +49,18 @@
     "discord",
     "bot",
     "voice",
-    "zen"
+    "zen",
+    "zenyatta",
+    "overwatch",
+    "philosophy",
+    "tts",
+    "harmony",
+    "tranquility"
   ],
-  "author": "Tijmen van Egmond",
+  "authors": [
+    "Tijmen van Egmond",
+    "Claude (Anthropic's AI Assistant)"
+  ],
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/tijmenvanegmond/zenbot/issues"

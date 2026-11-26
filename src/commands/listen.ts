@@ -1,87 +1,69 @@
-import {
-  CommandInteraction,
-  Client,
-  GuildMember,
-  VoiceChannel,
-  SlashCommandBuilder,
-  CommandInteractionOptionResolver,
-} from "discord.js";
+import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
 import { Command } from "./command";
-import { joinVoiceChannel } from "@discordjs/voice";
-import * as fs from "fs";
-
-const OUTPUT_FILE = "listen-test.opus";
+import { logger } from "../utils/logger";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from "../utils/commandHelpers";
+import { ActionService } from "../services/actionService";
 
 export const Listen: Command = {
   data: new SlashCommandBuilder()
     .setName("listen")
-    .setDescription("listens to a voice channel"),
+    .setDescription("listens to a voice channel")
+    .addIntegerOption((option) =>
+      option
+        .setName("time")
+        .setDescription("How long to listen in minutes (default: 1)")
+        .setMinValue(1)
+        .setMaxValue(60)
+        .setRequired(false),
+    ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
+    try {
+      // Get duration from user input or use default (1 minute)
+      const durationMinutes =
+        (interaction.options.get("time")?.value as number) || 1;
 
-    if (!member?.voice?.channelId) {
-      console.log("reply-ing in text");
-      return await interaction.followUp({
-        content: "You have to be in voice to use this",
-        ephemeral: true,
-      });
+      logger.info(
+        `${interaction.user.username} requesting listen session: ${durationMinutes} minutes`,
+      );
+
+      // Use the action system
+      const actionService = ActionService.getInstance();
+      const result = await actionService.executeFromCommand(
+        interaction,
+        "listen_control",
+        {
+          action: "start",
+          duration_minutes: durationMinutes,
+        },
+      );
+
+      // Handle the result
+      if (result.success) {
+        await interaction.editReply(
+          createSuccessResponse(
+            result.responseText ||
+              `Started listening for ${durationMinutes} minute${durationMinutes === 1 ? "" : "s"}`,
+          ),
+        );
+      } else {
+        await interaction.editReply(
+          createErrorResponse(
+            result.error ||
+              "An error occurred while starting the listen session.",
+          ),
+        );
+      }
+    } catch (error) {
+      logger.error("Error in listen command:", error);
+      await interaction.editReply(
+        createErrorResponse(
+          "🚨 There was a disturbance in the Iris while trying to listen. Please try again.",
+        ),
+      );
     }
-
-    let options = interaction.options as CommandInteractionOptionResolver;
-
-    console.log(
-      `Joining voice-channel ${member.voice.channel?.name} to listen`,
-    );
-
-    ListenToVoiceChannel(client, member.voice.channel as VoiceChannel);
-
-    await interaction.followUp({
-      ephemeral: true,
-      content: `Attemting to Listen to Voice Channel ${member.voice.channel?.name}`,
-    });
   },
 };
-
-async function ListenToVoiceChannel(
-  client: Client,
-  voiceChannel: VoiceChannel,
-  fileName = OUTPUT_FILE,
-) {
-  const connection = joinVoiceChannel({
-    selfDeaf: false,
-    channelId: voiceChannel.id,
-    guildId: voiceChannel.guildId,
-    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-  });
-
-  let reciever = connection.receiver;
-
-  let audioStreamCollection: Buffer[] = [];
-
-  reciever.speaking.on("start", (userId) => {
-    console.log(`User ${userId} started speaking`);
-    let audioStream = reciever.subscribe(userId);
-    audioStream.on("data", (data) => {
-      audioStreamCollection.push(data);
-    });
-  });
-
-  reciever.speaking.on("end", (userId) => {
-    var writeStream = fs.createWriteStream(process.cwd() + "/" + fileName, {
-      flags: "a",
-    });
-
-    console.log(`User ${userId} stopped speaking`);
-
-    const audioBuffer = audioStreamCollection[1];
-    writeStream.write(audioBuffer);
-    // for (let i = 0; i < audioStreamCollection.length; i++) {
-    //   const audioBuffer = audioStreamCollection[i];
-    //   writeStream.write(audioBuffer);
-    // }
-
-    writeStream.end();
-    console.log(`The file ${fileName} was saved!`);
-  });
-}

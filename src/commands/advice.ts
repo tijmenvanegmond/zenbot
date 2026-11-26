@@ -1,50 +1,84 @@
-import {
-  CommandInteraction,
-  Client,
-  GuildMember,
-  VoiceChannel,
-  SlashCommandBuilder,
-} from "discord.js";
+import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
 import { Command } from "./command";
-import { StreamType, createAudioResource } from "@discordjs/voice";
-import { VoiceLineDataCollection } from "../voice/voiceLineData";
-import PlayResourceInVoiceChannel from "../voice/playInVoiceChannel";
+import { logger } from "../utils/logger";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from "../utils/commandHelpers";
+import { ActionService } from "../services/actionService";
 
 export const Advice: Command = {
   data: new SlashCommandBuilder()
     .setName("advice")
     .setDescription(
-      "Zen has an answer for everything (make sure you are in a voice channel)",
+      "� Get blunt, spicy guidance from Zenbot (conversation-aware)",
+    )
+    .addStringOption((option) =>
+      option
+        .setName("topic")
+        .setDescription("What do you need guidance on?")
+        .setRequired(false),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("urgency")
+        .setDescription("How urgent is your need for guidance?")
+        .setRequired(false)
+        .addChoices(
+          { name: "🧘 Low - General wisdom", value: "low" },
+          { name: "🙏 Medium - Seeking clarity", value: "medium" },
+          { name: "⚡ High - Need immediate guidance", value: "high" },
+        ),
     ),
 
   execute: async (client: Client, interaction: CommandInteraction) => {
-    const member = interaction?.member as GuildMember;
-    const voiceLine =
-      VoiceLineDataCollection[
-        Math.floor(Math.random() * VoiceLineDataCollection.length)
-      ];
+    try {
+      const topic = interaction.options?.get("topic")?.value as string;
+      const urgency =
+        (interaction.options?.get("urgency")?.value as
+          | "low"
+          | "medium"
+          | "high") || "medium";
 
-    if (!member?.voice?.channelId) {
-      console.log('reply-ing in text with advice:"' + voiceLine.text + '"');
-      return await interaction.followUp({
-        content: voiceLine.text,
-        ephemeral: true,
-      });
+      logger.info(
+        `${interaction.user.username} requesting Zenbot advice: topic="${topic}", urgency=${urgency}`,
+      );
+
+      // Use the action system for proper architecture flow
+      const actionService = ActionService.getInstance();
+      const result = await actionService.executeFromCommand(
+        interaction,
+        "get_advice",
+        {
+          topic,
+          urgency,
+          advice_type: "ai_contextual", // Use AI-powered advice
+          use_voice: true, // Always attempt voice if user is in voice channel
+        },
+      );
+
+      // Handle the result
+      if (result.success) {
+        const responseMessage =
+          result.data?.source === "ai"
+            ? `� **Zenbot (AI):** ${result.responseText}`
+            : `� **Zenbot:** ${result.responseText}`;
+
+        await interaction.editReply(createSuccessResponse(responseMessage));
+      } else {
+        await interaction.editReply(
+          createErrorResponse(
+            result.error || "Zenbot refused to elaborate. Try again.",
+          ),
+        );
+      }
+    } catch (error) {
+      logger.error("Error in advice command:", error);
+      await interaction.editReply(
+        createErrorResponse(
+          "⚠️ Zenbot experienced a brain cramp. Ask again in a moment.",
+        ),
+      );
     }
-
-    const resource = createAudioResource(voiceLine.voiceUri, {
-      inputType: StreamType.Arbitrary,
-    });
-
-    await PlayResourceInVoiceChannel(
-      member.voice.channel as VoiceChannel,
-      resource,
-    );
-
-    const content = "consider this..";
-    await interaction.followUp({
-      ephemeral: true,
-      content,
-    });
   },
 };

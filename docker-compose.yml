@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  # Piper TTS Service - Custom multi-voice HTTP server
+  piper:
+    build:
+      context: .
+      dockerfile: Dockerfile.piper
+    container_name: zenbot-piper
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # Longer startup for model loading
+
+  # Zenbot Discord Bot
+  zenbot:
+    build: .
+    container_name: zenbot
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PIPER_URL=http://piper:8080
+    restart: unless-stopped
+    depends_on:
+      piper:
+        condition: service_started
+    volumes:
+      - /tmp/zenbot:/tmp/zenbot
+      # Things people teach Zenbot (aliases) - survives rebuilds
+      - ./data:/app/data
+
+# Volumes no longer needed - voice models baked into image
