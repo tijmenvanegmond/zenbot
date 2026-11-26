@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   Client,
   BaseInteraction,
   InteractionType,
@@ -16,7 +16,7 @@ export default (client: Client): void => {
         interaction.type === InteractionType.ApplicationCommand &&
         interaction.isChatInputCommand()
       ) {
-        await handleSlashCommand(client, interaction as CommandInteraction);
+        await handleSlashCommand(client, interaction);
       }
     } catch (err) {
       logger.error("Unhandled error in interactionCreate listener:", err);
@@ -26,7 +26,7 @@ export default (client: Client): void => {
 
 const handleSlashCommand = async (
   client: Client,
-  interaction: CommandInteraction,
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> => {
   try {
     logger.info(

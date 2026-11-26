@@ -192,8 +192,7 @@ export class GuildService {
     guild: Guild,
     channelId: string,
     expectedType:
-      | typeof CHANNEL_TYPES.GUILD_TEXT
-      | typeof CHANNEL_TYPES.GUILD_VOICE,
+      typeof CHANNEL_TYPES.GUILD_TEXT | typeof CHANNEL_TYPES.GUILD_VOICE,
   ): Channel | null {
     const channel = guild.channels.cache.get(channelId);
     if (!channel || channel.type !== expectedType) {
@@ -215,8 +214,7 @@ export class GuildService {
     guildId: string,
     channelId: string,
     channelType?:
-      | typeof CHANNEL_TYPES.GUILD_TEXT
-      | typeof CHANNEL_TYPES.GUILD_VOICE,
+      typeof CHANNEL_TYPES.GUILD_TEXT | typeof CHANNEL_TYPES.GUILD_VOICE,
   ): { guild: Guild; channel: T } | null {
     const guild = this.findGuild(client, guildId);
     if (!guild) return null;

@@ -75,12 +75,7 @@ export interface ZenAction {
   name: string;
   description: string;
   category:
-    | "voice"
-    | "information"
-    | "utility"
-    | "entertainment"
-    | "admin"
-    | "ai";
+    "voice" | "information" | "utility" | "entertainment" | "admin" | "ai";
 
   // Permission requirements
   permissions?: {

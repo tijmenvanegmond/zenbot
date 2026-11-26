@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   Client,
   MessageFlags,
   SlashCommandBuilder,
@@ -40,7 +40,7 @@ export const Remark: Command = {
         .setRequired(false),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
       const options = getInteractionOptions(interaction);
       const remarkType = options.getString("type");

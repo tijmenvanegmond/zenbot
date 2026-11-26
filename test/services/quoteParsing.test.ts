@@ -175,9 +175,8 @@ describe("quote filter by every name", () => {
   };
 
   it("matches speakers by any of their names, as whole words", async () => {
-    const { fetchAndParseQuotes } = await import(
-      "../../src/services/quoteService"
-    );
+    const { fetchAndParseQuotes } =
+      await import("../../src/services/quoteService");
     const channel = channelWith([
       'nem: "I meant to do that"',
       'The worst of us: "trust me"',

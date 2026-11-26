@@ -26,7 +26,7 @@
     "@google/generative-ai": "^0.24.1",
     "discord.js": "^14.17",
     "dotenv": "^16.0.3",
-    "fastify": "^4.26.2",
+    "fastify": "^5.12.8",
     "ffmpeg-static": "^5.1.0",
     "libsodium-wrappers": "^0.7.11",
     "openai": "^5.19.1",
@@ -35,11 +35,11 @@
   },
   "devDependencies": {
     "@types/node": "^22",
-    "@vitest/ui": "^2.1.8",
-    "nodemon": "^3.1.0",
+    "@vitest/ui": "^3.2.7",
+    "nodemon": "^3.1.14",
     "prettier": "^3.5.3",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^3.2.7"
   },
   "repository": {
     "type": "git",
@@ -65,5 +65,15 @@
   "bugs": {
     "url": "https://github.com/tijmenvanegmond/zenbot/issues"
   },
-  "homepage": "https://github.com/tijmenvanegmond/zenbot#readme"
+  "homepage": "https://github.com/tijmenvanegmond/zenbot#readme",
+  "allowScripts": {
+    "@discordjs/opus@0.11.0": true,
+    "ffmpeg-static@5.3.0": true,
+    "esbuild@0.28.2": true
+  },
+  "overrides": {
+    "@discordjs/node-pre-gyp": {
+      "tar": "^7.5.23"
+    }
+  }
 }

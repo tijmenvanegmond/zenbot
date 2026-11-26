@@ -1,4 +1,8 @@
-import { SlashCommandBuilder, CommandInteraction, Client } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  Client,
+} from "discord.js";
 import { Command } from "./command";
 import { ActionService } from "../services/actionService";
 import { logger } from "../utils/logger";
@@ -111,7 +115,7 @@ export const conferenceCommand: Command = {
         .setRequired(false),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
       const question = interaction.options.get("question")?.value as string;
 

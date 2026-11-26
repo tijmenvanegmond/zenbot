@@ -126,11 +126,7 @@ export interface VoiceLineCategories {
 }
 
 export type AdviceContext =
-  | "greeting"
-  | "philosophical"
-  | "harmony"
-  | "discord"
-  | "transcendence";
+  "greeting" | "philosophical" | "harmony" | "discord" | "transcendence";
 
 // ===== REMARK TYPES =====
 export interface RemarkResult {

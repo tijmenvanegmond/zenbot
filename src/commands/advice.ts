@@ -1,4 +1,8 @@
-import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  Client,
+  SlashCommandBuilder,
+} from "discord.js";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
 import {
@@ -31,14 +35,12 @@ export const Advice: Command = {
         ),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
       const topic = interaction.options?.get("topic")?.value as string;
       const urgency =
         (interaction.options?.get("urgency")?.value as
-          | "low"
-          | "medium"
-          | "high") || "medium";
+          "low" | "medium" | "high") || "medium";
 
       logger.info(
         `${interaction.user.username} requesting Zenbot advice: topic="${topic}", urgency=${urgency}`,

@@ -1,7 +1,6 @@
 import {
+  ChatInputCommandInteraction,
   Client,
-  CommandInteraction,
-  CommandInteractionOptionResolver,
   GuildMember,
   SlashCommandBuilder,
   MessageFlags,
@@ -26,9 +25,9 @@ export const Rename: Command = {
         .setDescription("The new name for said user"),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
-      let options = interaction.options as CommandInteractionOptionResolver;
+      const options = interaction.options;
       let member = options.getMember("user_to_rename") as GuildMember;
       const newNickname = options.getString("new_nickname");
 

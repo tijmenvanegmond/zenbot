@@ -1,6 +1,9 @@
 FROM node:22-alpine
 WORKDIR /app
 
+# Security patches released after the base image was built (openssl, zlib...)
+RUN apk upgrade --no-cache
+
 # Create directories for TTS files
 RUN mkdir -p /tmp/zenbot && chmod 777 /tmp/zenbot
 

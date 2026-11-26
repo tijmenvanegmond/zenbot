@@ -1,4 +1,8 @@
-import { Client, CommandInteraction, SlashCommandBuilder } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  Client,
+  SlashCommandBuilder,
+} from "discord.js";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
 import {
@@ -56,7 +60,7 @@ export const TTS: Command = {
         .setRequired(false),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
       const text = interaction.options?.get("text")?.value as string;
       let profile = interaction.options?.get("profile")?.value as string;

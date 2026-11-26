@@ -1,6 +1,6 @@
 import {
+  ChatInputCommandInteraction,
   CommandInteraction,
-  CommandInteractionOptionResolver,
   GuildMember,
   MessageFlags,
 } from "discord.js";
@@ -38,9 +38,9 @@ export function validateVoiceChannel(interaction: CommandInteraction): {
  * Safely gets typed interaction options
  */
 export function getInteractionOptions(
-  interaction: CommandInteraction,
-): CommandInteractionOptionResolver {
-  return interaction.options as CommandInteractionOptionResolver;
+  interaction: ChatInputCommandInteraction,
+) {
+  return interaction.options;
 }
 
 /**

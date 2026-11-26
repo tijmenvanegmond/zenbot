@@ -1,4 +1,8 @@
-import { CommandInteraction, Client, SlashCommandBuilder } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  Client,
+  SlashCommandBuilder,
+} from "discord.js";
 import { Command } from "./command";
 import { logger } from "../utils/logger";
 import {
@@ -20,7 +24,7 @@ export const Listen: Command = {
         .setRequired(false),
     ),
 
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
       // Get duration from user input or use default (1 minute)
       const durationMinutes =

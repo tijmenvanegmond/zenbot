@@ -1,4 +1,4 @@
-import { CommandInteraction, Client } from "discord.js";
+import { ChatInputCommandInteraction, Client } from "discord.js";
 
 export interface Command {
   data: {
@@ -6,5 +6,5 @@ export interface Command {
     description: string;
     options: any;
   };
-  execute: (client: Client, interaction: CommandInteraction) => void;
+  execute: (client: Client, interaction: ChatInputCommandInteraction) => void;
 }

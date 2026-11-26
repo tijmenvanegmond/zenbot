@@ -1,5 +1,5 @@
 import {
-  CommandInteraction,
+  ChatInputCommandInteraction,
   Client,
   SlashCommandBuilder,
   TextChannel,
@@ -33,7 +33,7 @@ export const Quote: Command = {
         .setDescription("Filter quotes from or about a specific user")
         .setRequired(false),
     ),
-  execute: async (client: Client, interaction: CommandInteraction) => {
+  execute: async (client: Client, interaction: ChatInputCommandInteraction) => {
     try {
       const options = getInteractionOptions(interaction);
       const quoteChannel = options.getChannel("quote_channel") as TextChannel;
