@@ -148,9 +148,6 @@ export class PiperProvider implements VoiceProvider {
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     try {
-      // Encode text for URL
-      const encodedText = encodeURIComponent(text);
-
       // Build URL with voice, speed, and effects parameters
       const params = new URLSearchParams({
         text: text,
@@ -220,7 +217,7 @@ export class PiperProvider implements VoiceProvider {
         },
       };
 
-      const resource = await this.createAudio(text, config);
+      await this.createAudio(text, config);
       return { success: true, audioSize: 1000 }; // Placeholder size
     } catch (error) {
       logger.error("Piper provider test failed:", error);

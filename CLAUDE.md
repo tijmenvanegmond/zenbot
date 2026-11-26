@@ -9,7 +9,7 @@ Zenbot is a **multi-AI powered Discord bot** with a sardonic personality. Built 
 **Key Features:**
 
 - Multi-Provider AI (OpenAI, Claude, Gemini) with unified memory
-- Sharp, concise responses with sardonic personality (see `ZENBOT_PERSONALITY.md`)
+- Sharp, concise responses with sardonic personality (see `personalities/zenbot-default.md`)
 - Advanced TTS & voice interactions
 - Comprehensive REST API
 - Circuit breaker protection with intelligent fallbacks
@@ -532,7 +532,7 @@ When working with Zenbot, embrace these meditative practices:
 
 ### Zenbot Personality
 
-**See `ZENBOT_PERSONALITY.md` for the complete personality system.**
+**See `personalities/zenbot-default.md` for the complete personality system.**
 
 **Core Character:**
 
@@ -579,13 +579,13 @@ Multiple AI providers engage in philosophical debates and synthesize unified res
 
 **Dynamic Loading:**
 
-- `ZENBOT_PERSONALITY.md` - Authoritative personality definition
+- `personalities/zenbot-default.md` - Authoritative personality definition
 - `buildZenbotSystemPrompt()` - Loads personality at runtime
 - Fallback system if file missing or corrupted
 
 **Benefits:** Runtime updates, version control, AI-driven improvements, consistency across providers
 
-**Template:** See `ZENBOT_PERSONALITY.md` for complete personality definition and response guidelines.
+**Template:** See `personalities/zenbot-default.md` for complete personality definition and response guidelines.
 
 **Loading:** `buildZenbotSystemPrompt()` reads personality file, extracts template, combines with context.
 

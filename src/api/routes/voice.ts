@@ -95,7 +95,7 @@ export default async function voiceRoutes(
       }
 
       try {
-        const connection = joinVoiceChannel({
+        joinVoiceChannel({
           channelId: channel.id,
           guildId: guild.id,
           adapterCreator: guild.voiceAdapterCreator,
@@ -125,7 +125,7 @@ export default async function voiceRoutes(
   fastify.post(
     "/guilds/:guildId/voice-channels/:channelId/leave",
     async function handler(request: any, reply) {
-      const { guildId, channelId } = request.params;
+      const { guildId } = request.params;
 
       const guild = discordClient.guilds.cache.get(guildId);
       if (!guild) {

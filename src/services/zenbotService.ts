@@ -20,9 +20,7 @@ import {
   AISession,
   ZenbotSession,
   ZenbotSessionContext,
-  GenerationOptions,
   StreamEvent,
-  AIServiceError,
 } from "./ai";
 import {
   UnifiedConferenceManager,
@@ -34,7 +32,6 @@ import { validateVoiceChannel } from "../utils/commandHelpers";
 import { ActionService } from "./actionService";
 import { EnrichedQuote, RemarkResult } from "../types";
 import { logger } from "../utils/logger";
-import { randomUUID } from "crypto";
 import {
   DEFAULT_GEMINI_MODEL,
   FAST_GEMINI_MODEL,
@@ -71,7 +68,6 @@ export class ZenbotService {
   private aiManager: AIServiceManager | null;
   private actionService: ActionService;
   private conferenceManager: UnifiedConferenceManager | null = null;
-  private personalityCache = new Map<string, string>();
 
   // Session management - maps user+context to session IDs
   private userSessions = new Map<string, string>();
@@ -1080,7 +1076,6 @@ VOICE CHANNEL MANAGEMENT:
       const {
         requireConsensus = false,
         debateRounds = 2,
-        maxProviders = 3,
         providerFilter = "all",
       } = options;
 

@@ -161,7 +161,7 @@ export class SystemProvider implements VoiceProvider {
         },
       };
 
-      const resource = await this.createAudio(text, config);
+      await this.createAudio(text, config);
       return { success: true, audioSize: 1000 }; // Placeholder size
     } catch (error) {
       logger.error("System provider test failed:", error);

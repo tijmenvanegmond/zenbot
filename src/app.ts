@@ -29,7 +29,7 @@ const aiManager = AI_ENABLED
 ZenbotService.initialize(aiManager);
 
 // Initialize Voice Service to show provider status at startup
-const voiceService = UnifiedVoiceService.getInstance();
+UnifiedVoiceService.getInstance();
 logger.info("🎤 Voice service initialized");
 
 if (aiManager) {

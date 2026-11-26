@@ -16,7 +16,7 @@
  */
 
 import OpenAI from "openai";
-import { Config, OPENAI_API_KEY, AI_CONFIG, VOICE_CONFIG } from "../config";
+import { OPENAI_API_KEY, AI_CONFIG, VOICE_CONFIG } from "../config";
 import { logger } from "../utils/logger";
 export class OpenAIService {
   private static instance: OpenAI | null = null;

@@ -1,6 +1,6 @@
 import { VoiceChannel } from "discord.js";
 import { AudioResource } from "@discordjs/voice";
-import { VoiceConfig, VoiceRequest, VoiceResult } from "./types";
+import { VoiceRequest, VoiceResult } from "./types";
 import { AudioManager } from "./AudioManager";
 import { ProfileManager } from "./ProfileManager";
 import { ProviderFactory } from "./providers/ProviderFactory";
@@ -54,7 +54,10 @@ export class UnifiedVoiceService {
         provider = this.providerFactory.getProvider(config.provider);
       } catch (error) {
         // If requested provider is unavailable, try to fall back
-        logger.warn(`🎤 Provider ${config.provider} unavailable, attempting fallback:`, error instanceof Error ? error.message : error);
+        logger.warn(
+          `🎤 Provider ${config.provider} unavailable, attempting fallback:`,
+          error instanceof Error ? error.message : error,
+        );
 
         try {
           // Try to get best available provider (piper or system)
@@ -65,14 +68,21 @@ export class UnifiedVoiceService {
           } else {
             actualConfig = this.profileManager.getConfig(); // Generic fallback
           }
-          logger.info(`🎤 Using fallback provider: ${provider.name} with profile: ${actualConfig.provider}`);
+          logger.info(
+            `🎤 Using fallback provider: ${provider.name} with profile: ${actualConfig.provider}`,
+          );
         } catch (fallbackError) {
-          throw new Error(`No voice providers available. Original error: ${error instanceof Error ? error.message : error}`);
+          throw new Error(
+            `No voice providers available. Original error: ${error instanceof Error ? error.message : error}`,
+          );
         }
       }
 
       // Generate audio
-      const audioResource = await provider.createAudio(request.text, actualConfig);
+      const audioResource = await provider.createAudio(
+        request.text,
+        actualConfig,
+      );
 
       // Play in voice channel if specified
       if (request.voiceChannel) {

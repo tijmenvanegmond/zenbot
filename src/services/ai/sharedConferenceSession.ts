@@ -559,30 +559,6 @@ Provide your final position incorporating the best insights while maintaining de
   }
 
   /**
-   * Present multiple perspectives when consensus is low
-   */
-  private presentMultiplePerspectives(
-    contributions: ProviderContribution[],
-    consensusLevel: number,
-  ): {
-    finalResponse: string;
-    consensusLevel: number;
-    reasoning: string;
-  } {
-    const perspectives = contributions
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, 3) // Top 3 most confident
-      .map((c, i) => `**${c.providerName}**: ${c.message.content}`)
-      .join("\n\n");
-
-    return {
-      finalResponse: `Multiple AI perspectives on this (consensus: ${(consensusLevel * 100).toFixed(0)}%):\n\n${perspectives}`,
-      consensusLevel,
-      reasoning: `Low consensus (${consensusLevel.toFixed(2)}), presenting multiple perspectives`,
-    };
-  }
-
-  /**
    * Calculate confidence level for a response
    */
   private calculateConfidence(response: string): number {

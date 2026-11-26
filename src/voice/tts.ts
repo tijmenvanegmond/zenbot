@@ -5,7 +5,6 @@ import path from "node:path";
 import { Readable } from "stream";
 import { createAudioResource, StreamType } from "@discordjs/voice";
 import { logger } from "../utils/logger";
-import { ZenbotService } from "../services/zenbotService";
 dotenv.config();
 
 export async function turnTextIntoSpeechBuffer(

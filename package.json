@@ -1,8 +1,8 @@
 {
   "name": "zenbot",
   "version": "0.1.0",
-  "description": "� A Discord bot: Zenbot – concise, spicy AI guidance with conversation memory",
-  "main": "dist/bot.js",
+  "description": "A sardonic Discord bot: Zenbot - concise, spicy AI guidance with voice and conversation memory",
+  "main": "dist/app.js",
   "engines": {
     "node": "22.x"
   },

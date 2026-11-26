@@ -9,7 +9,6 @@ import {
 import { logger } from "../utils/logger";
 import { CHANNEL_TYPES } from "../config";
 import {
-  GuildInfo,
   TextChannelInfo,
   VoiceChannelInfo,
   MemberInfo,

@@ -3,12 +3,11 @@
  * Orchestrates true multi-AI conference with real-time collaboration
  */
 
-import { AIServiceManager, AIProvider, GenerationOptions } from "./types";
+import { AIServiceManager } from "./types";
 import {
   SharedConferenceManager,
   SharedConferenceSession,
 } from "./sharedConferenceSession";
-import { DefaultAIServiceManager } from "./aiServiceManager";
 import { ZenbotVirtualProvider } from "./zenbotVirtualProvider";
 import { logger } from "../../utils/logger";
 
@@ -244,7 +243,6 @@ export class UnifiedConferenceManager {
     const healthyProviders = Object.keys(healthCheck).filter(
       (p) => healthCheck[p],
     );
-    const stats = this.conferenceManager.getStats();
     const currentProviders = new Set<string>(); // Will be populated by actual provider names
 
     for (const provider of healthyProviders) {

@@ -122,3 +122,9 @@ tts-output.wav
 
 # Runtime data (aliases.json etc.) - lives in the container volume
 data/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Runtime TTS scratch files
+temp/

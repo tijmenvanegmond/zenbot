@@ -5,11 +5,7 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { logger } from "../../utils/logger";
-import {
-  VoiceChannel,
-  VoiceBasedChannel,
-  PermissionFlagsBits,
-} from "discord.js";
+import { VoiceBasedChannel, PermissionFlagsBits } from "discord.js";
 
 /**
  * Channel Management Action - handles voice channel operations like renaming, creating, and management
@@ -101,7 +97,6 @@ export class ChannelManagementAction implements ZenAction {
         channel_id,
         name_style = "creative",
         custom_name,
-        force_update = false,
       } = parameters;
 
       logger.info(
@@ -318,7 +313,7 @@ export class ChannelManagementAction implements ZenAction {
       .sort(); // Simple alphabetical sort
 
     const numMembers = memberNames.length;
-    let possibleNames: string[] = [];
+    let possibleNames: string[] = ["ฅ^•ﻌ•^ฅ"];
 
     // Check for special users (like Timbo)
     if (channel.members.some((m) => m.user.id === "299595170767306752")) {

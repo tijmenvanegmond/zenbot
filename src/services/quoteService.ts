@@ -151,7 +151,6 @@ export const fetchAndParseQuotes = async (
     userId,
     username,
     names = [],
-    random = false,
   } = options;
 
   // Fetch messages with content - embrace the flow of stored wisdom

@@ -1,5 +1,4 @@
 import { VoiceConnection, VoiceConnectionStatus } from "@discordjs/voice";
-import { VoiceChannel } from "discord.js";
 import { logger } from "../utils/logger";
 
 export interface VoiceSession {

@@ -15,8 +15,6 @@ import {
 import { Readable } from "stream";
 import https from "https";
 import http from "http";
-import fs from "fs";
-import path from "path";
 
 // Legacy collection for backward compatibility
 export const VoiceLineDataCollection: VoiceLineData[] = adviceList.legacy.data;

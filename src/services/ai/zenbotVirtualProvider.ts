@@ -8,7 +8,6 @@ import {
   AIProvider,
   AISession,
   Message,
-  SessionMetadata,
   SessionOptions,
   AIServiceManager,
 } from "./types";
