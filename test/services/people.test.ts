@@ -26,7 +26,9 @@ const member = (overrides: Record<string, any> = {}) =>
 describe("people", () => {
   it("knows every Discord name, without duplicates", () => {
     expect(people.namesFor(member())).toEqual(["The worst of us", "Nemjit"]);
-    expect(people.describePerson(member())).toBe("The worst of us (aka Nemjit)");
+    expect(people.describePerson(member())).toBe(
+      "The worst of us (aka Nemjit)",
+    );
   });
 
   it("an alias becomes the preferred name and is saved to disk", async () => {
@@ -81,7 +83,8 @@ describe("people", () => {
     });
     const guild = { id: "g1", members: { cache: { find: () => undefined } } };
     expect(
-      (await people.findMemberByName(guild as any, "nem", [osha, member()]))?.id,
+      (await people.findMemberByName(guild as any, "nem", [osha, member()]))
+        ?.id,
     ).toBe("u1");
   });
 });

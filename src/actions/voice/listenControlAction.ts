@@ -129,7 +129,12 @@ async function respondToSpeech(
 
   // Everything heard goes in the room log, addressed to Zenbot or not, so it
   // can follow the conversation around a question
-  addRoomLine(context.guild.id, preferredName(member), transcription, member.id);
+  addRoomLine(
+    context.guild.id,
+    preferredName(member),
+    transcription,
+    member.id,
+  );
 
   const named = WAKE_WORD.test(transcription);
   const humans = voiceChannel.members.filter((m) => !m.user.bot).size;

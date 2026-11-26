@@ -111,10 +111,7 @@ describe("WAKE_WORD", () => {
     "time boxes",
     "Tim, both of you",
     "the bolts are loose",
-  ])(
-    "ignores: %s",
-    (text) => {
-      expect(WAKE_WORD.test(text)).toBe(false);
-    },
-  );
+  ])("ignores: %s", (text) => {
+    expect(WAKE_WORD.test(text)).toBe(false);
+  });
 });

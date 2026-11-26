@@ -7,10 +7,7 @@ import {
 } from "../actionTypes";
 import { findQuoteChannel } from "../../services/quoteService";
 import { findMemberByName } from "../../services/people";
-import {
-  RoomLine,
-  recentRoomLines,
-} from "../../services/voice/voiceRoomLog";
+import { RoomLine, recentRoomLines } from "../../services/voice/voiceRoomLog";
 import { logger } from "../../utils/logger";
 
 /**
@@ -77,9 +74,7 @@ export const pickQuoteLine = (
   });
 
   if (wantSpeaker || wantWords.length > 0) return matches[0];
-  return (
-    matches.find((line) => line.speakerId !== requesterId) ?? matches[0]
-  );
+  return matches.find((line) => line.speakerId !== requesterId) ?? matches[0];
 };
 
 export class SaveQuoteAction implements ZenAction {
@@ -106,7 +101,7 @@ export class SaveQuoteAction implements ZenAction {
         about: {
           type: "string" as const,
           description:
-            "A few words from the line, to pick a specific one (e.g. \"pizza\"). Leave out for their latest line",
+            'A few words from the line, to pick a specific one (e.g. "pizza"). Leave out for their latest line',
         },
       },
       required: [] as string[],
@@ -141,9 +136,7 @@ export class SaveQuoteAction implements ZenAction {
       parameters.speaker,
       parameters.about,
       // Zenbot's own lines are logged as "zenbot", not its account ID
-      speakerMember?.id === guild.members.me?.id
-        ? "zenbot"
-        : speakerMember?.id,
+      speakerMember?.id === guild.members.me?.id ? "zenbot" : speakerMember?.id,
     );
     if (!line) {
       return {
@@ -159,7 +152,8 @@ export class SaveQuoteAction implements ZenAction {
     if (!channel) {
       return {
         success: false,
-        error: 'No quotes channel (a text channel with "quotes" in its name) - nothing saved',
+        error:
+          'No quotes channel (a text channel with "quotes" in its name) - nothing saved',
         shouldRespond: true,
         responseText: "There's no quotes channel to save it to.",
       };

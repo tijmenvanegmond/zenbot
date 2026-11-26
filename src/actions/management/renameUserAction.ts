@@ -28,7 +28,11 @@ const resolveMember = async (
     return guild.members.fetch(target).catch(() => null);
   }
 
-  return findMemberByName(guild, target, context.voiceChannel?.members.values());
+  return findMemberByName(
+    guild,
+    target,
+    context.voiceChannel?.members.values(),
+  );
 };
 
 export class RenameUserAction implements ZenAction {

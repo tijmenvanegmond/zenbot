@@ -5,10 +5,7 @@ import {
   ActionResult,
 } from "../actionTypes";
 import { TextChannel } from "discord.js";
-import {
-  findQuoteChannel,
-  getRandomQuote,
-} from "../../services/quoteService";
+import { findQuoteChannel, getRandomQuote } from "../../services/quoteService";
 import { ZenbotService } from "../../services/zenbotService";
 import { UnifiedVoiceService } from "../../services/voice/UnifiedVoiceService";
 import { formatQuoteForDisplay } from "../../utils/quoteFormat";

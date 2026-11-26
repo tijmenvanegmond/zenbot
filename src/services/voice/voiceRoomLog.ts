@@ -56,7 +56,10 @@ export const describeRoom = (guildId: string, exclude?: string): string => {
   if (exclude) {
     // Only the newest copy is the current message; earlier repeats are history
     const last = lines.length - 1;
-    if (last >= 0 && lines[last].text === exclude.trim().slice(0, MAX_LINE_CHARS)) {
+    if (
+      last >= 0 &&
+      lines[last].text === exclude.trim().slice(0, MAX_LINE_CHARS)
+    ) {
       lines = lines.slice(0, last);
     }
   }

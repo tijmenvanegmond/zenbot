@@ -10,7 +10,8 @@ import { logger } from "../utils/logger";
  * in data/aliases.json so they survive restarts.
  */
 
-const DATA_DIR = process.env.ZENBOT_DATA_DIR || path.join(process.cwd(), "data");
+const DATA_DIR =
+  process.env.ZENBOT_DATA_DIR || path.join(process.cwd(), "data");
 const ALIAS_FILE = path.join(DATA_DIR, "aliases.json");
 const MAX_ALIASES = 5;
 const MAX_ALIAS_CHARS = 32;
